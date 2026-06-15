@@ -67,9 +67,10 @@ namespace-local Service, and proves the existing health endpoint from inside an
 isolated K3d cluster. `US-011` adds required platform configuration and a
 separate readiness endpoint that checks PostgreSQL, MinIO, NATS, and
 Meilisearch, including failure propagation during a controlled NATS outage.
+`US-012` adds a repeatable in-cluster NATS publish/subscribe smoke proof through
+the namespace-local Service.
 These stories do not satisfy the complete Phase 1 acceptance contract above;
-storage buckets, external development routes, and publish/subscribe proof
-remain outstanding.
+storage buckets and external development routes remain outstanding.
 
 ## Boundary Rules
 

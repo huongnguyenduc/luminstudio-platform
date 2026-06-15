@@ -49,6 +49,10 @@ Selected work:
 - `US-011 Connect the Go API to platform services` adds environment-backed
   PostgreSQL, MinIO, NATS, and Meilisearch connectivity with separate liveness
   and readiness behavior, without adding product data or event contracts.
+- `US-012 NATS publish subscribe smoke` proves that a client pod can publish
+  and receive a smoke payload through the namespace-local NATS Service without
+  adding product event schemas, JetStream persistence, worker behavior, or API
+  publication.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 

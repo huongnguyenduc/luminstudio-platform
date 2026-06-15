@@ -16,11 +16,11 @@ claim component build targets or runtime services exist.
 
 ## Phase 1 Infrastructure Verification
 
-Verify the persistent Meilisearch deployment, in-cluster API access, and
-pod-replacement persistence in an isolated K3d cluster:
+Verify the NATS publish/subscribe smoke path through the namespace-local
+Service in an isolated K3d cluster:
 
 ```bash
-bash scripts/verify-us-009.sh
+bash scripts/verify-us-012.sh
 ```
 
 ## Harness CLI
