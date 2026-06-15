@@ -40,6 +40,16 @@ RETURNING id, slug, name, description, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
   sprite_asset`
 
+const queueSourceAssetSQL = `
+UPDATE products
+SET source_asset = $2,
+  processing_status = $3,
+  updated_at = $4
+WHERE id = $1
+RETURNING id, slug, name, description, information_sections, mesh_color_config,
+  source_asset, created_at, updated_at, processing_status, optimized_asset,
+  sprite_asset`
+
 const selectProductColumns = `
 SELECT id, slug, name, description, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
@@ -91,6 +101,13 @@ type updateProductArgs struct {
 	UpdatedAt           time.Time
 }
 
+type queueSourceAssetArgs struct {
+	ID               string
+	SourceAsset      []byte
+	ProcessingStatus ProcessingStatus
+	UpdatedAt        time.Time
+}
+
 func NewInsertProductArgs(id string, draft ProductDraft, now time.Time) (insertProductArgs, error) {
 	if !productIDPattern.MatchString(id) {
 		return insertProductArgs{}, fmt.Errorf("id must match the v1 product id contract")
@@ -121,6 +138,25 @@ func NewInsertProductArgs(id string, draft ProductDraft, now time.Time) (insertP
 		ProcessingStatus:    ProcessingNotStarted,
 		CreatedAt:           now,
 		UpdatedAt:           now,
+	}, nil
+}
+
+func NewQueueSourceAssetArgs(id string, sourceAsset ObjectRef, now time.Time) (queueSourceAssetArgs, error) {
+	if !productIDPattern.MatchString(id) {
+		return queueSourceAssetArgs{}, fmt.Errorf("id must match the v1 product id contract")
+	}
+	if err := sourceAsset.validate(); err != nil {
+		return queueSourceAssetArgs{}, fmt.Errorf("sourceAsset: %w", err)
+	}
+	encodedSourceAsset, err := encodeJSON(&sourceAsset)
+	if err != nil {
+		return queueSourceAssetArgs{}, fmt.Errorf("encode source asset: %w", err)
+	}
+	return queueSourceAssetArgs{
+		ID:               id,
+		SourceAsset:      encodedSourceAsset,
+		ProcessingStatus: ProcessingQueued,
+		UpdatedAt:        now,
 	}, nil
 }
 
@@ -192,6 +228,27 @@ func (store Store) UpdateProduct(ctx context.Context, id string, draft ProductDr
 		args.InformationSections,
 		args.MeshColorConfig,
 		args.SourceAsset,
+		args.UpdatedAt,
+	)
+	record, err := scanProduct(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ProductRecord{}, ErrProductNotFound
+		}
+		return ProductRecord{}, err
+	}
+	return record, record.Validate()
+}
+
+func (store Store) QueueSourceAsset(ctx context.Context, id string, sourceAsset ObjectRef, now time.Time) (ProductRecord, error) {
+	args, err := NewQueueSourceAssetArgs(id, sourceAsset, now)
+	if err != nil {
+		return ProductRecord{}, err
+	}
+	row := store.db.QueryRow(ctx, queueSourceAssetSQL,
+		args.ID,
+		args.SourceAsset,
+		args.ProcessingStatus,
 		args.UpdatedAt,
 	)
 	record, err := scanProduct(row)

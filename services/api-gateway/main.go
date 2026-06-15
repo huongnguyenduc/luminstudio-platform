@@ -58,6 +58,7 @@ func run(getenv func(string) string) error {
 		Handler: routes(
 			checker,
 			product.NewHandler(productStore).
+				WithSourceAssetStore(product.NewMinIOSourceAssetStore(checker.MinIO())).
 				WithEventPublisher(product.NewNATSPublisher(config.NATSURL, config.DependencyTimeout)),
 		),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -78,6 +79,7 @@ func routes(readiness health.Readiness, productHandler product.Handler) http.Han
 	mux.HandleFunc("GET /admin/products", productHandler.ListProducts)
 	mux.HandleFunc("GET /admin/products/{id}", productHandler.GetProduct)
 	mux.HandleFunc("PUT /admin/products/{id}", productHandler.UpdateProduct)
+	mux.HandleFunc("POST /admin/products/{id}/source-glb", productHandler.UploadProductSource)
 	return mux
 }
 

@@ -76,3 +76,31 @@ func TestNewUpdateProductArgsRejectsInvalidInput(t *testing.T) {
 		t.Fatal("expected invalid draft to be rejected")
 	}
 }
+
+func TestNewQueueSourceAssetArgsEncodesQueuedSourceAsset(t *testing.T) {
+	now := time.Date(2026, 6, 15, 15, 0, 0, 0, time.UTC)
+	source := ObjectRef{
+		Bucket:      "lumin-source-glb",
+		Key:         "products/prod_12345678/source.glb",
+		ContentType: "model/gltf-binary",
+	}
+
+	args, err := NewQueueSourceAssetArgs("prod_12345678", source, now)
+	if err != nil {
+		t.Fatalf("building queue source args failed: %v", err)
+	}
+
+	if args.ProcessingStatus != ProcessingQueued {
+		t.Fatalf("processing status = %q, want %q", args.ProcessingStatus, ProcessingQueued)
+	}
+	if args.UpdatedAt != now {
+		t.Fatalf("updated at = %s", args.UpdatedAt)
+	}
+	var got ObjectRef
+	if err := json.Unmarshal(args.SourceAsset, &got); err != nil {
+		t.Fatalf("source asset was not JSON: %v", err)
+	}
+	if got.Key != "products/prod_12345678/source.glb" {
+		t.Fatalf("source key = %q", got.Key)
+	}
+}

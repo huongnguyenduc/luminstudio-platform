@@ -31,7 +31,9 @@ updates through `PUT /admin/products/{id}`. Admin product create and update
 mutations now publish v1 `product.updated` events through NATS for later
 asynchronous search synchronization. The first product search-sync consumer now
 handles `product.updated` events and upserts derived product documents into the
-Meilisearch `products` index.
+Meilisearch `products` index. The Go API now exposes the first source GLB
+upload route, stores source assets in MinIO, queues product processing state,
+and publishes `3d.task.created` for later worker processing.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -192,6 +194,12 @@ Product search synchronization verification:
 
 ```bash
 bash scripts/verify-us-021.sh
+```
+
+Admin source GLB upload and task event verification:
+
+```bash
+bash scripts/verify-us-022.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

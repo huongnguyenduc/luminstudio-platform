@@ -73,9 +73,19 @@ from PostgreSQL, and upserts a derived document into the Meilisearch `products`
 index. Search sync failures are logged and do not add synchronous Meilisearch
 coupling to admin product mutation responses.
 
-Authentication, authorization, product delete workflows, source GLB uploads,
-customer catalog/search HTTP routes, retry/outbox semantics, dead-letter
-handling, and worker processing remain deferred.
+The Go API now exposes administrator source GLB upload through
+`POST /admin/products/{id}/source-glb`. The endpoint accepts a multipart
+`source` `.glb` file for an existing product with valid mesh color
+configuration, stores the object in MinIO under
+`lumin-source-glb/products/{productId}/source.glb`, updates PostgreSQL with the
+source asset reference and `queued` processing status, publishes
+`product.updated`, and publishes `3d.task.created` for later worker
+processing.
+
+Authentication, authorization, product delete workflows, worker mesh
+optimization, 360-degree rendering, processing completion consumption,
+customer catalog/search HTTP routes, retry/outbox semantics, and dead-letter
+handling remain deferred.
 
 ## Processing Pipeline
 

@@ -104,6 +104,12 @@ Selected work:
   document into the Meilisearch `products` index without adding catalog/search
   HTTP routes, mobile UI, uploads, worker processing, retry/outbox semantics,
   auth, or live K3d proof.
+- `US-022 Admin Source GLB Upload And Task Event` exposes
+  `POST /admin/products/{id}/source-glb`, stores one source `.glb` in the
+  `lumin-source-glb` MinIO bucket, updates the product source asset and queued
+  processing status, and publishes `3d.task.created` without adding admin UI,
+  worker processing, processing completion consumption, retry/outbox semantics,
+  auth, or live K3d proof.
 
 ## Phase 3: Mobile Catalog And Search
 

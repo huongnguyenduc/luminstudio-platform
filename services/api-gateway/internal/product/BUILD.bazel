@@ -6,6 +6,7 @@ go_library(
         "events.go",
         "handler.go",
         "model.go",
+        "source_assets.go",
         "store.go",
     ],
     importpath = "lumin.studio/services/api-gateway/internal/product",
@@ -15,6 +16,7 @@ go_library(
     ],
     deps = [
         "@com_github_jackc_pgx_v5//:pgx",
+        "@com_github_minio_minio_go_v7//:minio-go",
     ],
 )
 

@@ -1,9 +1,12 @@
 package product
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -23,15 +26,38 @@ type creatorStub struct {
 }
 
 type eventPublisherStub struct {
-	event ProductUpdatedEvent
-	err   error
-	calls int
+	event     ProductUpdatedEvent
+	taskEvent TaskCreatedEvent
+	err       error
+	calls     int
+	taskCalls int
 }
 
 func (stub *eventPublisherStub) PublishProductUpdated(_ context.Context, event ProductUpdatedEvent) error {
 	stub.calls++
 	stub.event = event
 	return stub.err
+}
+
+func (stub *eventPublisherStub) PublishProcessingTaskCreated(_ context.Context, event TaskCreatedEvent) error {
+	stub.taskCalls++
+	stub.taskEvent = event
+	return stub.err
+}
+
+type sourceAssetStoreStub struct {
+	ref       ObjectRef
+	err       error
+	called    bool
+	productID string
+	sizeBytes int64
+}
+
+func (stub *sourceAssetStoreStub) PutSourceAsset(_ context.Context, productID string, _ io.Reader, sizeBytes int64) (ObjectRef, error) {
+	stub.called = true
+	stub.productID = productID
+	stub.sizeBytes = sizeBytes
+	return stub.ref, stub.err
 }
 
 func (stub *creatorStub) InsertProduct(_ context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error) {
@@ -48,6 +74,20 @@ func (stub *creatorStub) UpdateProduct(_ context.Context, id string, draft Produ
 	stub.draft = draft
 	stub.now = now
 	return stub.record, stub.err
+}
+
+func (stub *creatorStub) QueueSourceAsset(_ context.Context, id string, sourceAsset ObjectRef, now time.Time) (ProductRecord, error) {
+	stub.called = true
+	stub.requestedID = id
+	stub.now = now
+	if stub.err != nil {
+		return ProductRecord{}, stub.err
+	}
+	record := stub.record
+	record.SourceAsset = &sourceAsset
+	record.ProcessingStatus = ProcessingQueued
+	record.UpdatedAt = now
+	return record, nil
 }
 
 func (stub *creatorStub) GetProduct(_ context.Context, id string) (ProductRecord, error) {
@@ -195,6 +235,106 @@ func TestCreateProductReportsEventPublicationFailure(t *testing.T) {
 	}
 	if publisher.calls != 1 {
 		t.Fatalf("publisher calls = %d, want 1", publisher.calls)
+	}
+}
+
+func TestUploadProductSourceStoresAssetQueuesRecordAndPublishesTask(t *testing.T) {
+	now := time.Date(2026, 6, 15, 15, 0, 0, 0, time.UTC)
+	repository := &creatorStub{record: validRecord(now)}
+	sourceRef := ObjectRef{
+		Bucket:      "lumin-source-glb",
+		Key:         "products/prod_12345678/source.glb",
+		ContentType: "model/gltf-binary",
+	}
+	sourceStore := &sourceAssetStoreStub{ref: sourceRef}
+	publisher := &eventPublisherStub{}
+	handler := NewHandler(repository).
+		WithSourceAssetStore(sourceStore).
+		WithEventPublisher(publisher)
+	handler.now = func() time.Time { return now }
+	handler.newEventID = func() (string, error) { return "evt_12345678", nil }
+	handler.newTaskID = func() (string, error) { return "task_12345678", nil }
+	handler.newCorrelation = func() (string, error) { return "corr_generated", nil }
+
+	recorder := httptest.NewRecorder()
+	request := newSourceUploadRequest(t, "/admin/products/prod_12345678/source-glb", "source.glb", []byte("glTF"))
+	request.SetPathValue("id", "prod_12345678")
+	request.Header.Set(correlationIDHeader, "corr_request")
+
+	handler.UploadProductSource(recorder, request)
+
+	if recorder.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusAccepted, recorder.Body.String())
+	}
+	if sourceStore.productID != "prod_12345678" || sourceStore.sizeBytes != 4 {
+		t.Fatalf("unexpected source store call: %#v", sourceStore)
+	}
+	if repository.requestedID != "prod_12345678" {
+		t.Fatalf("queued id = %q", repository.requestedID)
+	}
+	var got ProductRecord
+	if err := json.Unmarshal(recorder.Body.Bytes(), &got); err != nil {
+		t.Fatalf("response was not product JSON: %v", err)
+	}
+	if got.ProcessingStatus != ProcessingQueued || got.SourceAsset == nil {
+		t.Fatalf("unexpected queued record: %#v", got)
+	}
+	if publisher.calls != 1 || publisher.event.Type != productUpdatedEventType {
+		t.Fatalf("unexpected product.updated publication: %#v", publisher)
+	}
+	if publisher.taskCalls != 1 {
+		t.Fatalf("task publications = %d, want 1", publisher.taskCalls)
+	}
+	if publisher.taskEvent.Type != taskCreatedEventType || publisher.taskEvent.Payload.TaskID != "task_12345678" {
+		t.Fatalf("unexpected task event: %#v", publisher.taskEvent)
+	}
+	if publisher.taskEvent.CorrelationID != "corr_request" || publisher.taskEvent.Payload.ProductID != "prod_12345678" {
+		t.Fatalf("unexpected task metadata: %#v", publisher.taskEvent)
+	}
+}
+
+func TestUploadProductSourceRequiresMeshColorConfig(t *testing.T) {
+	now := time.Date(2026, 6, 15, 15, 0, 0, 0, time.UTC)
+	record := validRecord(now)
+	record.MeshColorConfig = nil
+	sourceStore := &sourceAssetStoreStub{}
+	handler := NewHandler(&creatorStub{record: record}).
+		WithSourceAssetStore(sourceStore).
+		WithEventPublisher(&eventPublisherStub{})
+
+	recorder := httptest.NewRecorder()
+	request := newSourceUploadRequest(t, "/admin/products/prod_12345678/source-glb", "source.glb", []byte("glTF"))
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.UploadProductSource(recorder, request)
+
+	if recorder.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusConflict)
+	}
+	if sourceStore.called {
+		t.Fatal("source file must not be stored when mesh config is missing")
+	}
+}
+
+func TestUploadProductSourceRejectsNonGLBFilename(t *testing.T) {
+	now := time.Date(2026, 6, 15, 15, 0, 0, 0, time.UTC)
+	sourceStore := &sourceAssetStoreStub{}
+	handler := NewHandler(&creatorStub{record: validRecord(now)}).
+		WithSourceAssetStore(sourceStore).
+		WithEventPublisher(&eventPublisherStub{})
+	handler.newCorrelation = func() (string, error) { return "corr_generated", nil }
+
+	recorder := httptest.NewRecorder()
+	request := newSourceUploadRequest(t, "/admin/products/prod_12345678/source-glb", "source.txt", []byte("glTF"))
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.UploadProductSource(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+	if sourceStore.called {
+		t.Fatal("invalid source file must not be stored")
 	}
 }
 
@@ -430,6 +570,56 @@ func TestNewProductUpdatedEventMatchesContract(t *testing.T) {
 	if event.Payload.ProductID != "prod_12345678" || !event.Payload.ChangedAt.Equal(now) {
 		t.Fatalf("unexpected payload: %#v", event.Payload)
 	}
+}
+
+func TestNewTaskIDMatchesProcessingTaskContract(t *testing.T) {
+	id, err := NewTaskID()
+	if err != nil {
+		t.Fatalf("new task id failed: %v", err)
+	}
+	if !taskIDPattern.MatchString(id) {
+		t.Fatalf("task id %q does not match contract", id)
+	}
+}
+
+func TestNewTaskCreatedEventMatchesContract(t *testing.T) {
+	now := time.Date(2026, 6, 15, 15, 0, 0, 0, time.UTC)
+	record := validRecord(now)
+	record.ProcessingStatus = ProcessingQueued
+
+	event, err := NewTaskCreatedEvent("evt_12345678", "corr_12345678", "task_12345678", record)
+	if err != nil {
+		t.Fatalf("build 3d.task.created event: %v", err)
+	}
+
+	if event.Type != "3d.task.created" || event.SchemaVersion != "v1" {
+		t.Fatalf("unexpected envelope: %#v", event)
+	}
+	if event.Payload.TaskID != "task_12345678" || event.Payload.ProductID != "prod_12345678" {
+		t.Fatalf("unexpected payload: %#v", event.Payload)
+	}
+	if event.Payload.SourceAsset.Bucket != "lumin-source-glb" || event.Payload.MeshColorConfig["mesh_body"].Default != "#FFFFFF" {
+		t.Fatalf("unexpected task payload: %#v", event.Payload)
+	}
+}
+
+func newSourceUploadRequest(t *testing.T, target, filename string, payload []byte) *http.Request {
+	t.Helper()
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("source", filename)
+	if err != nil {
+		t.Fatalf("create multipart source file: %v", err)
+	}
+	if _, err := part.Write(payload); err != nil {
+		t.Fatalf("write multipart source file: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close multipart writer: %v", err)
+	}
+	request := httptest.NewRequest(http.MethodPost, target, body)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	return request
 }
 
 func validDraftJSON(t *testing.T) string {

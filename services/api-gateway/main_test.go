@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -37,12 +38,20 @@ func (productCreatorStub) ListProducts(_ context.Context) ([]product.ProductReco
 	return []product.ProductRecord{routeProductRecord(time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC))}, nil
 }
 
+func (productCreatorStub) QueueSourceAsset(_ context.Context, _ string, sourceAsset product.ObjectRef, now time.Time) (product.ProductRecord, error) {
+	record := routeProductRecord(now)
+	record.SourceAsset = &sourceAsset
+	record.ProcessingStatus = product.ProcessingQueued
+	return record, nil
+}
+
 func routeProductRecord(now time.Time) product.ProductRecord {
 	return product.ProductRecord{
 		ID:               "prod_12345678",
 		Name:             "Arc Chair",
 		Slug:             "arc-chair",
 		Description:      "Configurable chair.",
+		MeshColorConfig:  product.MeshColorConfig{"mesh_body": {Default: "#FFFFFF", Allowed: []string{"#FFFFFF"}}},
 		CreatedAt:        now,
 		UpdatedAt:        now,
 		ProcessingStatus: product.ProcessingNotStarted,
@@ -115,6 +124,42 @@ func TestRoutesExposeAdminProductUpdate(t *testing.T) {
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
 	}
+}
+
+func TestRoutesExposeAdminProductSourceUpload(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	body := "--lumin\r\nContent-Disposition: form-data; name=\"source\"; filename=\"source.glb\"\r\nContent-Type: model/gltf-binary\r\n\r\nglTF\r\n--lumin--\r\n"
+	request := httptest.NewRequest(http.MethodPost, "/admin/products/prod_12345678/source-glb", strings.NewReader(body))
+	request.Header.Set("Content-Type", "multipart/form-data; boundary=lumin")
+
+	sourceRef := product.ObjectRef{Bucket: "lumin-source-glb", Key: "products/prod_12345678/source.glb", ContentType: "model/gltf-binary"}
+	handler := product.NewHandler(productCreatorStub{}).
+		WithSourceAssetStore(sourceAssetStoreRouteStub{ref: sourceRef}).
+		WithEventPublisher(eventPublisherRouteStub{})
+
+	routes(readyStub{}, handler).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusAccepted, recorder.Body.String())
+	}
+}
+
+type sourceAssetStoreRouteStub struct {
+	ref product.ObjectRef
+}
+
+func (stub sourceAssetStoreRouteStub) PutSourceAsset(_ context.Context, _ string, _ io.Reader, _ int64) (product.ObjectRef, error) {
+	return stub.ref, nil
+}
+
+type eventPublisherRouteStub struct{}
+
+func (eventPublisherRouteStub) PublishProductUpdated(context.Context, product.ProductUpdatedEvent) error {
+	return nil
+}
+
+func (eventPublisherRouteStub) PublishProcessingTaskCreated(context.Context, product.TaskCreatedEvent) error {
+	return nil
 }
 
 func TestPortFromEnv(t *testing.T) {

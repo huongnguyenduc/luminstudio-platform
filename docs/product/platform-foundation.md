@@ -84,7 +84,10 @@ routes. `US-020` wires product mutation event publication to NATS with unit and
 Bazel proof, without adding live K3d platform proof or search synchronization.
 `US-021` adds the first product search-sync consumer and Meilisearch document
 upsert path with unit and Bazel proof, without adding live K3d platform proof
-or customer search routes.
+or customer search routes. `US-022` adds the first admin source GLB upload API,
+MinIO source object write, queued product source state, and
+`3d.task.created` event publication with unit and Bazel proof, without adding
+live K3d platform proof or worker processing.
 
 ## Boundary Rules
 

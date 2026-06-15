@@ -21,8 +21,12 @@ that preserves server-owned product fields. Product create and update mutations
 now publish v1 `product.updated` events through NATS for later asynchronous
 search synchronization. The API gateway now also runs a search-sync consumer
 that handles `product.updated`, reads product records from PostgreSQL, and
-upserts derived documents into the Meilisearch `products` index. Uploads,
-customer search routes, retry/outbox semantics, and worker processing remain
+upserts derived documents into the Meilisearch `products` index. Source GLB
+upload is now exposed at `POST /admin/products/{id}/source-glb`; the handler
+stores the source object in MinIO, updates the product source asset and queued
+processing status, publishes `product.updated`, and publishes
+`3d.task.created` for later worker processing. Customer search routes,
+retry/outbox semantics, processing completion, and worker processing remain
 deferred to later stories.
 
 Run native tests:
@@ -83,4 +87,11 @@ Verify product search synchronization from the repository root:
 
 ```bash
 bash scripts/verify-us-021.sh
+```
+
+Verify admin source GLB upload and task event publication from the repository
+root:
+
+```bash
+bash scripts/verify-us-022.sh
 ```

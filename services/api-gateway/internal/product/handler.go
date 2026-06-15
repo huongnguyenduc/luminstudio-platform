@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
 const maxProductDraftBytes = 1 << 20
+const maxSourceGLBBytes = 200 << 20
 
 type Creator interface {
 	InsertProduct(ctx context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error)
@@ -27,17 +29,28 @@ type Reader interface {
 	ListProducts(ctx context.Context) ([]ProductRecord, error)
 }
 
+type SourceAssetQueuer interface {
+	QueueSourceAsset(ctx context.Context, id string, sourceAsset ObjectRef, now time.Time) (ProductRecord, error)
+}
+
 type Repository interface {
 	Creator
 	Updater
 	Reader
+	SourceAssetQueuer
+}
+
+type SourceAssetStore interface {
+	PutSourceAsset(ctx context.Context, productID string, source io.Reader, sizeBytes int64) (ObjectRef, error)
 }
 
 type Handler struct {
 	repository     Repository
+	sourceAssets   SourceAssetStore
 	eventPublisher EventPublisher
 	now            func() time.Time
 	newID          func() (string, error)
+	newTaskID      func() (string, error)
 	newEventID     func() (string, error)
 	newCorrelation func() (string, error)
 }
@@ -47,6 +60,7 @@ func NewHandler(repository Repository) Handler {
 		repository:     repository,
 		now:            func() time.Time { return time.Now().UTC() },
 		newID:          NewID,
+		newTaskID:      NewTaskID,
 		newEventID:     NewEventID,
 		newCorrelation: NewCorrelationID,
 	}
@@ -54,6 +68,11 @@ func NewHandler(repository Repository) Handler {
 
 func (handler Handler) WithEventPublisher(publisher EventPublisher) Handler {
 	handler.eventPublisher = publisher
+	return handler
+}
+
+func (handler Handler) WithSourceAssetStore(store SourceAssetStore) Handler {
+	handler.sourceAssets = store
 	return handler
 }
 
@@ -108,6 +127,98 @@ func (handler Handler) CreateProduct(response http.ResponseWriter, request *http
 	if err := json.NewEncoder(response).Encode(record); err != nil {
 		http.Error(response, "could not encode response", http.StatusInternalServerError)
 	}
+}
+
+func (handler Handler) UploadProductSource(response http.ResponseWriter, request *http.Request) {
+	if handler.repository == nil {
+		writeError(response, http.StatusServiceUnavailable, "product persistence is not configured")
+		return
+	}
+	if handler.sourceAssets == nil {
+		writeError(response, http.StatusServiceUnavailable, "source asset storage is not configured")
+		return
+	}
+	if handler.eventPublisher == nil {
+		writeError(response, http.StatusServiceUnavailable, "processing event publication is not configured")
+		return
+	}
+
+	id := request.PathValue("id")
+	if !productIDPattern.MatchString(id) {
+		writeError(response, http.StatusBadRequest, "id must match the v1 product id contract")
+		return
+	}
+	existing, err := handler.repository.GetProduct(request.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrProductNotFound) {
+			writeError(response, http.StatusNotFound, "product not found")
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not read product")
+		return
+	}
+	if existing.MeshColorConfig == nil {
+		writeError(response, http.StatusConflict, "meshColorConfig is required before source upload")
+		return
+	}
+	if err := existing.MeshColorConfig.validate(); err != nil {
+		writeError(response, http.StatusConflict, err.Error())
+		return
+	}
+	correlationID, err := handler.correlationIDForRequest(request)
+	if err != nil {
+		if errors.Is(err, errInvalidCorrelationID) {
+			writeError(response, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not allocate correlation id")
+		return
+	}
+
+	request.Body = http.MaxBytesReader(response, request.Body, maxSourceGLBBytes)
+	if err := request.ParseMultipartForm(1 << 20); err != nil {
+		writeError(response, http.StatusBadRequest, "request body must be multipart/form-data with a source GLB file")
+		return
+	}
+	file, header, err := request.FormFile("source")
+	if err != nil {
+		writeError(response, http.StatusBadRequest, "source GLB file is required")
+		return
+	}
+	defer file.Close()
+	if header.Size <= 0 {
+		writeError(response, http.StatusBadRequest, "source GLB file must not be empty")
+		return
+	}
+	if !strings.HasSuffix(strings.ToLower(header.Filename), ".glb") {
+		writeError(response, http.StatusBadRequest, "source filename must end with .glb")
+		return
+	}
+
+	sourceAsset, err := handler.sourceAssets.PutSourceAsset(request.Context(), id, file, header.Size)
+	if err != nil {
+		writeError(response, http.StatusBadGateway, "could not store source GLB")
+		return
+	}
+	record, err := handler.repository.QueueSourceAsset(request.Context(), id, sourceAsset, handler.now())
+	if err != nil {
+		if errors.Is(err, ErrProductNotFound) {
+			writeError(response, http.StatusNotFound, "product not found")
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not queue source asset")
+		return
+	}
+	if err := handler.publishProductUpdated(request.Context(), record, correlationID); err != nil {
+		writeError(response, http.StatusBadGateway, "could not publish product update event")
+		return
+	}
+	if err := handler.publishProcessingTaskCreated(request.Context(), record, correlationID); err != nil {
+		writeError(response, http.StatusBadGateway, "could not publish processing task event")
+		return
+	}
+
+	writeJSON(response, http.StatusAccepted, record)
 }
 
 func (handler Handler) GetProduct(response http.ResponseWriter, request *http.Request) {
@@ -210,17 +321,45 @@ func NewEventID() (string, error) {
 	return newPrefixedRandomID("evt_")
 }
 
+func NewTaskID() (string, error) {
+	return newPrefixedRandomID("task_")
+}
+
 func NewCorrelationID() (string, error) {
 	return newPrefixedRandomID("corr_")
 }
 
 func newPrefixedRandomID(prefix string) (string, error) {
-	var bytes [18]byte
-	if _, err := rand.Read(bytes[:]); err != nil {
-		return "", fmt.Errorf("read random bytes: %w", err)
+	for {
+		var bytes [18]byte
+		if _, err := rand.Read(bytes[:]); err != nil {
+			return "", fmt.Errorf("read random bytes: %w", err)
+		}
+		encoded := base64.RawURLEncoding.EncodeToString(bytes[:])
+		if isAlphaNumeric(encoded[0]) {
+			return prefix + encoded, nil
+		}
 	}
-	encoded := base64.RawURLEncoding.EncodeToString(bytes[:])
-	return prefix + encoded, nil
+}
+
+func isAlphaNumeric(value byte) bool {
+	return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z') || (value >= '0' && value <= '9')
+}
+
+func (handler Handler) publishProcessingTaskCreated(ctx context.Context, record ProductRecord, correlationID string) error {
+	eventID, err := handler.newEventID()
+	if err != nil {
+		return fmt.Errorf("allocate event id: %w", err)
+	}
+	taskID, err := handler.newTaskID()
+	if err != nil {
+		return fmt.Errorf("allocate task id: %w", err)
+	}
+	event, err := NewTaskCreatedEvent(eventID, correlationID, taskID, record)
+	if err != nil {
+		return err
+	}
+	return handler.eventPublisher.PublishProcessingTaskCreated(ctx, event)
 }
 
 func (handler Handler) correlationIDForRequest(request *http.Request) (string, error) {

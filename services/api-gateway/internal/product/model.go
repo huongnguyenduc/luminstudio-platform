@@ -67,6 +67,7 @@ type ProductRecord struct {
 var (
 	slugPattern      = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 	productIDPattern = regexp.MustCompile(`^prod_[A-Za-z0-9][A-Za-z0-9_-]{7,63}$`)
+	taskIDPattern    = regexp.MustCompile(`^task_[A-Za-z0-9][A-Za-z0-9_-]{7,63}$`)
 	meshIDPattern    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$`)
 	hexColorPattern  = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
 	objectKeyPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._/-]*$`)
