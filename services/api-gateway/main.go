@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 	"lumin.studio/services/api-gateway/internal/health"
 	"lumin.studio/services/api-gateway/internal/platform"
 	"lumin.studio/services/api-gateway/internal/product"
+	"lumin.studio/services/api-gateway/internal/search"
 )
 
 const defaultPort = 8080
@@ -39,9 +41,25 @@ func run(getenv func(string) string) error {
 	}
 	defer checker.Close()
 
+	productStore := product.NewStore(checker.Postgres())
+	searchSyncer := search.NewSyncer(
+		productStore,
+		search.NewMeilisearchIndexer(config.MeilisearchURL, config.MeilisearchKey, config.DependencyTimeout),
+	)
+	go func() {
+		err := search.NewNATSSubscriber(config.NATSURL, config.DependencyTimeout, searchSyncer).Run(context.Background())
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.Error("product search sync stopped", "error", err)
+		}
+	}()
+
 	server := &http.Server{
-		Addr:              fmt.Sprintf(":%d", port),
-		Handler:           routes(checker, product.NewHandler(product.NewStore(checker.Postgres()))),
+		Addr: fmt.Sprintf(":%d", port),
+		Handler: routes(
+			checker,
+			product.NewHandler(productStore).
+				WithEventPublisher(product.NewNATSPublisher(config.NATSURL, config.DependencyTimeout)),
+		),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

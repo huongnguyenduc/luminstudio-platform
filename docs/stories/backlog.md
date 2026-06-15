@@ -9,6 +9,6 @@ boundaries derived from `docs/product/roadmap.md`.
 | E01 | Bazel toolchains and component builds | active; US-001, US-002, and US-003 implemented |
 | E02 | K3d dev infrastructure | active; US-004 through US-009 implemented |
 | E03 | API connectivity and NATS smoke flow | active; US-010 through US-014 implemented |
-| E04-E07 | Admin, API, search sync, and 3D processing | active; US-015 through US-019 implemented |
+| E04-E07 | Admin, API, search sync, and 3D processing | active; US-015 through US-021 implemented |
 | E08-E10 | Flutter catalog, previews, and search | unsliced |
 | E11-E13 | 3D detail, configuration, and cart | unsliced |

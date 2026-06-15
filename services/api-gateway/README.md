@@ -17,8 +17,13 @@ server-side product identity, persists through the product store, and returns a
 created product record. Admin read routes now expose `GET /admin/products` and
 `GET /admin/products/{id}` from PostgreSQL-backed product storage. Admin update
 behavior now exposes `PUT /admin/products/{id}` as a full-replacement update
-that preserves server-owned product fields. Uploads, NATS publication, search
-synchronization, and worker processing remain deferred to later stories.
+that preserves server-owned product fields. Product create and update mutations
+now publish v1 `product.updated` events through NATS for later asynchronous
+search synchronization. The API gateway now also runs a search-sync consumer
+that handles `product.updated`, reads product records from PostgreSQL, and
+upserts derived documents into the Meilisearch `products` index. Uploads,
+customer search routes, retry/outbox semantics, and worker processing remain
+deferred to later stories.
 
 Run native tests:
 
@@ -66,4 +71,16 @@ Verify the admin product update HTTP API from the repository root:
 
 ```bash
 bash scripts/verify-us-019.sh
+```
+
+Verify admin product mutation event publication from the repository root:
+
+```bash
+bash scripts/verify-us-020.sh
+```
+
+Verify product search synchronization from the repository root:
+
+```bash
+bash scripts/verify-us-021.sh
 ```

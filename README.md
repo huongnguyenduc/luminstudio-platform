@@ -27,7 +27,11 @@ The Go API now exposes the first runtime admin product creation route,
 `POST /admin/products`, backed by the product store. Admin product read routes
 now expose persisted records through `GET /admin/products` and
 `GET /admin/products/{id}`. Admin product update now exposes full-replacement
-updates through `PUT /admin/products/{id}`.
+updates through `PUT /admin/products/{id}`. Admin product create and update
+mutations now publish v1 `product.updated` events through NATS for later
+asynchronous search synchronization. The first product search-sync consumer now
+handles `product.updated` events and upserts derived product documents into the
+Meilisearch `products` index.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -176,6 +180,18 @@ Admin product update API verification:
 
 ```bash
 bash scripts/verify-us-019.sh
+```
+
+Admin product mutation event publication verification:
+
+```bash
+bash scripts/verify-us-020.sh
+```
+
+Product search synchronization verification:
+
+```bash
+bash scripts/verify-us-021.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

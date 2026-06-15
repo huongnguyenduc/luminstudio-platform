@@ -61,9 +61,21 @@ as creation, validates the path identity before persistence access, updates the
 PostgreSQL product row, and preserves server-owned identity, creation time,
 processing status, and processed asset references.
 
+The Go API now publishes a v1 `product.updated` event after successful
+`POST /admin/products` and `PUT /admin/products/{id}` persistence. The event is
+published through NATS with a stable envelope, correlation identity, product
+identity, and changed timestamp so a later search-sync handler can update
+Meilisearch asynchronously.
+
+The Go API now runs the first search-sync consumer for `product.updated`. The
+consumer validates the event envelope, reads the authoritative product record
+from PostgreSQL, and upserts a derived document into the Meilisearch `products`
+index. Search sync failures are logged and do not add synchronous Meilisearch
+coupling to admin product mutation responses.
+
 Authentication, authorization, product delete workflows, source GLB uploads,
-event publication, search synchronization, and worker processing remain
-deferred.
+customer catalog/search HTTP routes, retry/outbox semantics, dead-letter
+handling, and worker processing remain deferred.
 
 ## Processing Pipeline
 

@@ -34,17 +34,27 @@ type Repository interface {
 }
 
 type Handler struct {
-	repository Repository
-	now        func() time.Time
-	newID      func() (string, error)
+	repository     Repository
+	eventPublisher EventPublisher
+	now            func() time.Time
+	newID          func() (string, error)
+	newEventID     func() (string, error)
+	newCorrelation func() (string, error)
 }
 
 func NewHandler(repository Repository) Handler {
 	return Handler{
-		repository: repository,
-		now:        func() time.Time { return time.Now().UTC() },
-		newID:      NewID,
+		repository:     repository,
+		now:            func() time.Time { return time.Now().UTC() },
+		newID:          NewID,
+		newEventID:     NewEventID,
+		newCorrelation: NewCorrelationID,
 	}
+}
+
+func (handler Handler) WithEventPublisher(publisher EventPublisher) Handler {
+	handler.eventPublisher = publisher
+	return handler
 }
 
 func (handler Handler) CreateProduct(response http.ResponseWriter, request *http.Request) {
@@ -68,6 +78,15 @@ func (handler Handler) CreateProduct(response http.ResponseWriter, request *http
 		writeError(response, http.StatusBadRequest, err.Error())
 		return
 	}
+	correlationID, err := handler.correlationIDForRequest(request)
+	if err != nil {
+		if errors.Is(err, errInvalidCorrelationID) {
+			writeError(response, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not allocate correlation id")
+		return
+	}
 
 	id, err := handler.newID()
 	if err != nil {
@@ -77,6 +96,10 @@ func (handler Handler) CreateProduct(response http.ResponseWriter, request *http
 	record, err := handler.repository.InsertProduct(request.Context(), id, draft, handler.now())
 	if err != nil {
 		writeError(response, http.StatusInternalServerError, "could not create product")
+		return
+	}
+	if err := handler.publishProductUpdated(request.Context(), record, correlationID); err != nil {
+		writeError(response, http.StatusBadGateway, "could not publish product update event")
 		return
 	}
 
@@ -137,6 +160,15 @@ func (handler Handler) UpdateProduct(response http.ResponseWriter, request *http
 		writeError(response, http.StatusBadRequest, err.Error())
 		return
 	}
+	correlationID, err := handler.correlationIDForRequest(request)
+	if err != nil {
+		if errors.Is(err, errInvalidCorrelationID) {
+			writeError(response, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not allocate correlation id")
+		return
+	}
 
 	record, err := handler.repository.UpdateProduct(request.Context(), id, draft, handler.now())
 	if err != nil {
@@ -145,6 +177,10 @@ func (handler Handler) UpdateProduct(response http.ResponseWriter, request *http
 			return
 		}
 		writeError(response, http.StatusInternalServerError, "could not update product")
+		return
+	}
+	if err := handler.publishProductUpdated(request.Context(), record, correlationID); err != nil {
+		writeError(response, http.StatusBadGateway, "could not publish product update event")
 		return
 	}
 
@@ -167,12 +203,57 @@ func (handler Handler) ListProducts(response http.ResponseWriter, request *http.
 }
 
 func NewID() (string, error) {
+	return newPrefixedRandomID("prod_")
+}
+
+func NewEventID() (string, error) {
+	return newPrefixedRandomID("evt_")
+}
+
+func NewCorrelationID() (string, error) {
+	return newPrefixedRandomID("corr_")
+}
+
+func newPrefixedRandomID(prefix string) (string, error) {
 	var bytes [18]byte
 	if _, err := rand.Read(bytes[:]); err != nil {
 		return "", fmt.Errorf("read random bytes: %w", err)
 	}
 	encoded := base64.RawURLEncoding.EncodeToString(bytes[:])
-	return "prod_" + encoded, nil
+	return prefix + encoded, nil
+}
+
+func (handler Handler) correlationIDForRequest(request *http.Request) (string, error) {
+	if handler.eventPublisher == nil {
+		return "", nil
+	}
+	correlationID := request.Header.Get(correlationIDHeader)
+	if correlationID != "" {
+		if !validCorrelationID(correlationID) {
+			return "", errInvalidCorrelationID
+		}
+		return correlationID, nil
+	}
+	correlationID, err := handler.newCorrelation()
+	if err != nil {
+		return "", err
+	}
+	return correlationID, nil
+}
+
+func (handler Handler) publishProductUpdated(ctx context.Context, record ProductRecord, correlationID string) error {
+	if handler.eventPublisher == nil {
+		return nil
+	}
+	eventID, err := handler.newEventID()
+	if err != nil {
+		return fmt.Errorf("allocate event id: %w", err)
+	}
+	event, err := NewProductUpdatedEvent(eventID, correlationID, record)
+	if err != nil {
+		return err
+	}
+	return handler.eventPublisher.PublishProductUpdated(ctx, event)
 }
 
 func writeJSON(response http.ResponseWriter, status int, payload any) {

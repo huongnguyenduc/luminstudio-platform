@@ -95,6 +95,15 @@ Selected work:
   a full-replacement update for persisted product drafts without adding delete
   workflows, uploads, events, search synchronization, worker processing, auth,
   or UI behavior.
+- `US-020 Admin Product Mutation Event Publication` publishes v1
+  `product.updated` events after successful admin product creation and
+  full-replacement update persistence without adding search synchronization,
+  uploads, worker processing, retry/outbox semantics, auth, or UI behavior.
+- `US-021 Product Search Synchronization` consumes v1 `product.updated` events,
+  reads the authoritative product record from PostgreSQL, and upserts a derived
+  document into the Meilisearch `products` index without adding catalog/search
+  HTTP routes, mobile UI, uploads, worker processing, retry/outbox semantics,
+  auth, or live K3d proof.
 
 ## Phase 3: Mobile Catalog And Search
 

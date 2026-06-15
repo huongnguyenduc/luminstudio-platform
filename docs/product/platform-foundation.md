@@ -79,7 +79,12 @@ PostgreSQL product schema foundation without applying it to the live K3d
 database yet. `US-017` adds the first runtime admin product creation route on
 the Go API with unit and Bazel proof, without adding live K3d platform proof,
 uploads, event publication, search synchronization, worker behavior, auth, or
-UI.
+UI. `US-018` and `US-019` add admin product read and full-replacement update
+routes. `US-020` wires product mutation event publication to NATS with unit and
+Bazel proof, without adding live K3d platform proof or search synchronization.
+`US-021` adds the first product search-sync consumer and Meilisearch document
+upsert path with unit and Bazel proof, without adding live K3d platform proof
+or customer search routes.
 
 ## Boundary Rules
 

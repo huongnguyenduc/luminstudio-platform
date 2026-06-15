@@ -27,6 +27,11 @@ must tolerate common misspellings. The source target is less than 100 ms for
 the search path; the benchmark environment and percentile are still to be
 defined before this becomes release proof.
 
+The backend now maintains the first derived Meilisearch `products` index from
+admin product mutations through `product.updated` events. Customer-facing
+catalog and search HTTP routes remain deferred until Phase 3 stories select
+the mobile search surface.
+
 ## Product Detail And Device Tier
 
 - The app derives a device tier from OS and memory/device information at

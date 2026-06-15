@@ -1,0 +1,20 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "search",
+    srcs = ["sync.go"],
+    importpath = "lumin.studio/services/api-gateway/internal/search",
+    visibility = ["//services/api-gateway:__pkg__"],
+    deps = [
+        "//services/api-gateway/internal/product",
+    ],
+)
+
+go_test(
+    name = "search_test",
+    srcs = ["sync_test.go"],
+    embed = [":search"],
+    deps = [
+        "//services/api-gateway/internal/product",
+    ],
+)

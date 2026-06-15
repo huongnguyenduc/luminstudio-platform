@@ -22,6 +22,18 @@ type creatorStub struct {
 	requestedID string
 }
 
+type eventPublisherStub struct {
+	event ProductUpdatedEvent
+	err   error
+	calls int
+}
+
+func (stub *eventPublisherStub) PublishProductUpdated(_ context.Context, event ProductUpdatedEvent) error {
+	stub.calls++
+	stub.event = event
+	return stub.err
+}
+
 func (stub *creatorStub) InsertProduct(_ context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error) {
 	stub.called = true
 	stub.id = id
@@ -53,12 +65,17 @@ func TestCreateProductPersistsValidatedDraft(t *testing.T) {
 	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	record := validRecord(now)
 	creator := &creatorStub{record: record}
+	publisher := &eventPublisherStub{}
 	handler := NewHandler(creator)
+	handler = handler.WithEventPublisher(publisher)
 	handler.now = func() time.Time { return now }
 	handler.newID = func() (string, error) { return "prod_12345678", nil }
+	handler.newEventID = func() (string, error) { return "evt_12345678", nil }
+	handler.newCorrelation = func() (string, error) { return "corr_generated", nil }
 
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "/admin/products", strings.NewReader(validDraftJSON(t)))
+	request.Header.Set(correlationIDHeader, "corr_request")
 
 	handler.CreateProduct(recorder, request)
 
@@ -83,6 +100,18 @@ func TestCreateProductPersistsValidatedDraft(t *testing.T) {
 	}
 	if got.ID != record.ID || got.ProcessingStatus != ProcessingNotStarted {
 		t.Fatalf("unexpected response: %#v", got)
+	}
+	if publisher.calls != 1 {
+		t.Fatalf("publisher calls = %d, want 1", publisher.calls)
+	}
+	if publisher.event.ID != "evt_12345678" || publisher.event.Type != productUpdatedEventType {
+		t.Fatalf("unexpected event envelope: %#v", publisher.event)
+	}
+	if publisher.event.SchemaVersion != eventSchemaVersion || publisher.event.CorrelationID != "corr_request" {
+		t.Fatalf("unexpected event metadata: %#v", publisher.event)
+	}
+	if publisher.event.Payload.ProductID != record.ID || !publisher.event.Payload.ChangedAt.Equal(now) {
+		t.Fatalf("unexpected event payload: %#v", publisher.event.Payload)
 	}
 }
 
@@ -116,6 +145,24 @@ func TestCreateProductRejectsTrailingJSON(t *testing.T) {
 	}
 }
 
+func TestCreateProductRejectsInvalidCorrelationID(t *testing.T) {
+	creator := &creatorStub{}
+	handler := NewHandler(creator).WithEventPublisher(&eventPublisherStub{})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/admin/products", strings.NewReader(validDraftJSON(t)))
+	request.Header.Set(correlationIDHeader, "bad")
+
+	handler.CreateProduct(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+	if creator.called {
+		t.Fatal("invalid correlation id must not reach persistence")
+	}
+}
+
 func TestCreateProductReportsPersistenceFailure(t *testing.T) {
 	handler := NewHandler(&creatorStub{err: errors.New("database unavailable")})
 	handler.newID = func() (string, error) { return "prod_12345678", nil }
@@ -127,6 +174,27 @@ func TestCreateProductReportsPersistenceFailure(t *testing.T) {
 
 	if recorder.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestCreateProductReportsEventPublicationFailure(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	publisher := &eventPublisherStub{err: errors.New("nats unavailable")}
+	handler := NewHandler(&creatorStub{record: validRecord(now)}).WithEventPublisher(publisher)
+	handler.newID = func() (string, error) { return "prod_12345678", nil }
+	handler.newEventID = func() (string, error) { return "evt_12345678", nil }
+	handler.newCorrelation = func() (string, error) { return "corr_generated", nil }
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/admin/products", strings.NewReader(validDraftJSON(t)))
+
+	handler.CreateProduct(recorder, request)
+
+	if recorder.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadGateway)
+	}
+	if publisher.calls != 1 {
+		t.Fatalf("publisher calls = %d, want 1", publisher.calls)
 	}
 }
 
@@ -192,8 +260,12 @@ func TestUpdateProductPersistsValidatedDraft(t *testing.T) {
 	now := time.Date(2026, 6, 15, 13, 0, 0, 0, time.UTC)
 	record := validRecord(now)
 	repository := &creatorStub{record: record}
+	publisher := &eventPublisherStub{}
 	handler := NewHandler(repository)
+	handler = handler.WithEventPublisher(publisher)
 	handler.now = func() time.Time { return now }
+	handler.newEventID = func() (string, error) { return "evt_12345678", nil }
+	handler.newCorrelation = func() (string, error) { return "corr_generated", nil }
 
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPut, "/admin/products/prod_12345678", strings.NewReader(validDraftJSON(t)))
@@ -219,6 +291,12 @@ func TestUpdateProductPersistsValidatedDraft(t *testing.T) {
 	}
 	if got.ID != "prod_12345678" {
 		t.Fatalf("id = %q", got.ID)
+	}
+	if publisher.calls != 1 {
+		t.Fatalf("publisher calls = %d, want 1", publisher.calls)
+	}
+	if publisher.event.Payload.ProductID != "prod_12345678" || publisher.event.CorrelationID != "corr_generated" {
+		t.Fatalf("unexpected product.updated event: %#v", publisher.event)
 	}
 }
 
@@ -286,6 +364,27 @@ func TestUpdateProductReturnsNotFound(t *testing.T) {
 	}
 }
 
+func TestUpdateProductReportsEventPublicationFailure(t *testing.T) {
+	now := time.Date(2026, 6, 15, 13, 0, 0, 0, time.UTC)
+	publisher := &eventPublisherStub{err: errors.New("nats unavailable")}
+	handler := NewHandler(&creatorStub{record: validRecord(now)}).WithEventPublisher(publisher)
+	handler.newEventID = func() (string, error) { return "evt_12345678", nil }
+	handler.newCorrelation = func() (string, error) { return "corr_generated", nil }
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/admin/products/prod_12345678", strings.NewReader(validDraftJSON(t)))
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.UpdateProduct(recorder, request)
+
+	if recorder.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadGateway)
+	}
+	if publisher.calls != 1 {
+		t.Fatalf("publisher calls = %d, want 1", publisher.calls)
+	}
+}
+
 func TestListProductsReturnsRecords(t *testing.T) {
 	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	handler := NewHandler(&creatorStub{records: []ProductRecord{validRecord(now)}})
@@ -314,6 +413,22 @@ func TestNewIDMatchesProductContract(t *testing.T) {
 	}
 	if !productIDPattern.MatchString(id) {
 		t.Fatalf("id %q does not match product id contract", id)
+	}
+}
+
+func TestNewProductUpdatedEventMatchesContract(t *testing.T) {
+	now := time.Date(2026, 6, 15, 13, 0, 0, 0, time.UTC)
+
+	event, err := NewProductUpdatedEvent("evt_12345678", "corr_12345678", validRecord(now))
+	if err != nil {
+		t.Fatalf("build product.updated event: %v", err)
+	}
+
+	if event.Type != "product.updated" || event.SchemaVersion != "v1" {
+		t.Fatalf("unexpected envelope: %#v", event)
+	}
+	if event.Payload.ProductID != "prod_12345678" || !event.Payload.ChangedAt.Equal(now) {
+		t.Fatalf("unexpected payload: %#v", event.Payload)
 	}
 }
 
