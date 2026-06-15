@@ -1,7 +1,7 @@
 # Lumin Studio
 
 Lumin Studio is a 3D commerce platform composed of an admin web application,
-a Go API gateway, an asynchronous Rust/C++ 3D worker, and a Flutter customer
+a Go API gateway, an asynchronous Rust 3D worker, and a Flutter customer
 application. PostgreSQL, MinIO, NATS, and Meilisearch provide persistence,
 object storage, event delivery, and search.
 
@@ -36,11 +36,15 @@ upload route, stores source assets in MinIO, queues product processing state,
 and publishes `3d.task.created` for later worker processing. The Rust worker
 now parses and validates v1 `3d.task.created` events and hands the referenced
 source GLB object to a source asset reader before mesh optimization or
-rendering.
+rendering. The worker now also uses the upstream-recommended Rust `meshopt`
+crate to simplify supported indexed triangle primitives in GLB 2.0 assets while
+preserving scene, node, and material metadata. The supplied pet-tag fixture
+provides repeatable native and Bazel proof for this mesh optimization boundary.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
-status is queried through the Harness CLI.
+status is queried through the Harness CLI. Dependency attribution is recorded
+in [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md).
 
 ## Repository Map
 
@@ -50,7 +54,7 @@ apps/
   web-admin/            React and Vite administration application
 services/
   api-gateway/          Go API and event coordination
-  worker-3d/            Rust worker and C++ FFI boundary
+  worker-3d/            Rust worker and 3D processing boundary
 packages/
   shared-types/         API, event, and schema contracts
   third-party/          Reviewed native third-party sources
@@ -209,6 +213,12 @@ Worker task event and source download foundation verification:
 
 ```bash
 bash scripts/verify-us-023.sh
+```
+
+GLB mesh optimization foundation verification:
+
+```bash
+bash scripts/verify-us-024.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

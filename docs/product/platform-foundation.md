@@ -7,9 +7,9 @@
 | `apps/web-admin` | React + Vite | Product administration and asset upload UI |
 | `apps/mobile-flutter` | Flutter + BLoC | Customer catalog, 3D detail, and cart |
 | `services/api-gateway` | Go | Business API, persistence, storage coordination, and event publication |
-| `services/worker-3d` | Rust + C++ FFI | Mesh optimization, 360 rendering, and processed asset upload |
+| `services/worker-3d` | Rust | Mesh optimization, 360 rendering, and processed asset upload |
 | `packages/shared-types` | Protobuf/OpenAPI/JSON Schema | Versioned contracts shared across components |
-| `packages/third-party` | Native sources/metadata | Reviewed native dependencies such as meshoptimizer |
+| `packages/third-party` | Native sources/metadata | Reviewed native dependencies only when a selected story requires them |
 | `infra/k8s` | Kustomize/Kubernetes | Dev namespace resources and routing |
 | `infra/scripts` | Shell/automation | Repeatable local and CI operational commands |
 
@@ -92,6 +92,12 @@ task intake foundation for `3d.task.created`: v1 event parsing, validation,
 the `lumin.3d.task.created` subscription boundary, and source asset reader
 handoff, without adding live K3d platform proof, mesh optimization, rendering,
 processed uploads, or completion publication.
+`US-024` adds the first mesh optimization boundary through the pinned Rust
+`meshopt` crate. It parses supported GLB 2.0 triangle primitives, simplifies
+their index buffers, rebuilds a valid embedded binary buffer, preserves
+scene/node/material metadata, and verifies the supplied pet-tag fixture through
+Cargo and Bazel without adding renderer, storage, event, or runtime subscriber
+wiring.
 
 ## Boundary Rules
 

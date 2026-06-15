@@ -68,7 +68,7 @@ Goal: implement product administration, search synchronization, and processed
 - Epic `E04`: Product management and dynamic information sections.
 - Epic `E05`: GLB upload and mesh color configuration.
 - Epic `E06`: Event-driven Meilisearch synchronization.
-- Epic `E07`: Rust/C++ processing and completion flow.
+- Epic `E07`: Rust processing and completion flow.
 
 Selected work:
 
@@ -117,6 +117,11 @@ Selected work:
   meshoptimizer, 360-degree rendering, processed asset uploads,
   `3d.task.completed` publication, retry/outbox semantics, auth, UI, or live
   K3d proof.
+- `US-024 Worker GLB Mesh Optimization` uses the pinned Rust `meshopt` crate to
+  simplify supported GLB 2.0 indexed triangle primitives, preserve scene and
+  material metadata, rebuild a valid smaller binary asset, and verify the
+  supplied pet-tag fixture without adding 360-degree rendering, MinIO upload,
+  runtime task wiring, completion publication, retry semantics, auth, or UI.
 
 ## Phase 3: Mobile Catalog And Search
 

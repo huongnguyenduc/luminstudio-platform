@@ -19,3 +19,12 @@ scripts/bin/harness-cli.exe
 **/node_modules/
 **/.dart_tool/
 **/build/
+.omx/
+.codex/*
+!.codex/agents/
+!.codex/agents/**
+!.codex/skills/
+!.codex/skills/**
+.codex/skills/.system/**
+!.codex/prompts/
+!.codex/prompts/**

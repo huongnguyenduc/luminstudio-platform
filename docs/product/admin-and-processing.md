@@ -88,8 +88,17 @@ source GLB object from a source asset reader. This covers the worker-side source
 intake handoff before mesh optimization, 360-degree rendering, processed asset
 upload, `3d.task.completed` publication, or API completion consumption.
 
-Authentication, authorization, product delete workflows, worker mesh
-optimization, 360-degree rendering, processing completion consumption,
+The worker now has the first mesh optimization implementation through the
+upstream-recommended Rust `meshopt` crate. Supported GLB 2.0 assets with one
+embedded buffer, indexed triangle primitives, float32 `POSITION` accessors, and
+tightly packed u16/u32 index buffer views can be simplified into a smaller valid
+GLB while preserving scene, node, mesh, and material metadata. Unsupported or
+ambiguous buffer layouts are rejected before processing. The deterministic
+output naming helper follows `[productId]_low.glb`; storage upload and runtime
+task wiring remain deferred.
+
+Authentication, authorization, product delete workflows, 360-degree rendering,
+processing completion consumption,
 customer catalog/search HTTP routes, retry/outbox semantics, and dead-letter
 handling remain deferred.
 
@@ -97,7 +106,7 @@ handling remain deferred.
 
 1. The API publishes `3d.task.created` with a stable task and product identity.
 2. The Rust worker downloads the source GLB from MinIO.
-3. A reviewed C++ FFI wrapper invokes meshoptimizer to create a low-poly GLB.
+3. The Rust worker invokes the pinned `meshopt` crate to create a low-poly GLB.
 4. A headless renderer creates a 360-degree sprite asset.
 5. The worker uploads processed assets to MinIO.
 6. The worker publishes `3d.task.completed` with output object references.
@@ -117,7 +126,7 @@ handling remain open decisions for later Phase 2 implementation stories.
 
 ## Quality Requirements
 
-- FFI ownership and allocation rules must be explicit and leak-tested.
+- Unsupported GLB layouts must fail before emitting a partial optimized asset.
 - Duplicate events must not corrupt product state or create conflicting output
   references.
 - Search and processing failures must be observable without blocking unrelated

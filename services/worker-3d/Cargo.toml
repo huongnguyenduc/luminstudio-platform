@@ -5,6 +5,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
+meshopt = "0.6.2"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 
@@ -15,3 +16,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "worker-3d"
 path = "src/main.rs"
+
+[[bin]]
+name = "optimize-glb"
+path = "src/bin/optimize_glb.rs"

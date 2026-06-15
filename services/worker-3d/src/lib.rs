@@ -6,6 +6,8 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpStream;
 use std::time::Duration;
 
+pub mod glb_optimizer;
+
 const DEFAULT_CONCURRENCY: usize = 1;
 
 #[derive(Debug, Eq, PartialEq)]
