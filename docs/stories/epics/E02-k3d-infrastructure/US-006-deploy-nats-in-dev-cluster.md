@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -62,4 +62,15 @@ connect to and verify.
 
 ## Evidence
 
-No implementation evidence yet.
+- `kubectl kustomize infra/k8s/overlays/dev`: pass; rendered one NATS
+  `Deployment`, one namespace-local `Service`, pinned image, monitoring probes,
+  and no deferred platform services or persistence.
+- `bazelisk build //infra/k8s:dev-manifests //infra/k8s:dev-cluster-config
+  //infra/scripts:dev-cluster`: pass.
+- `bash scripts/verify-us-006.sh`: pass; isolated cluster apply was idempotent,
+  the NATS rollout reached one Ready replica, an EndpointSlice address existed,
+  and an in-cluster curl pod received an `ok` health response through Service
+  DNS before the verification cluster was deleted.
+- `infra/scripts/dev-cluster.sh apply`: pass against `lumin-dev`; deployment
+  `nats` reached `1/1` Ready and Service `nats` exposed ports `4222` and `8222`
+  through an EndpointSlice in namespace `dev`.

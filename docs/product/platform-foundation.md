@@ -55,8 +55,11 @@ tests, and operational health endpoint; `US-002` covers the Rust worker build,
 tests, and startup/configuration boundary; `US-003` covers the Web Admin build,
 tests, and non-product shell; `US-004` introduces the renderable Kustomize
 boundary for the `dev` namespace; and `US-005` adds a repeatable local K3d
-cluster lifecycle with live namespace proof. They do not satisfy the complete
-Phase 1 acceptance contract above, and no platform service is deployed yet.
+cluster lifecycle with live namespace proof. `US-006` deploys a healthy core
+NATS server behind a namespace-local Service and proves its monitoring health
+endpoint from inside the cluster. These stories do not satisfy the complete
+Phase 1 acceptance contract above; PostgreSQL, MinIO, Meilisearch, application
+connectivity, and publish/subscribe proof remain outstanding.
 
 ## Boundary Rules
 

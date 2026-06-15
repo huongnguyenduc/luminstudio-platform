@@ -16,3 +16,9 @@ infra/scripts/dev-cluster.sh delete
 
 Set `LUMIN_CLUSTER_NAME` only for isolated verification or parallel local
 clusters. The default cluster is `lumin-dev`.
+
+Run the isolated NATS platform verification with:
+
+```bash
+bash scripts/verify-us-006.sh
+```

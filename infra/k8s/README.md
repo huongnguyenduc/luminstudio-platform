@@ -3,9 +3,9 @@
 Kustomize resources for the local K3d `dev` namespace, including PostgreSQL,
 MinIO, NATS, Meilisearch, application workloads, and Traefik routing.
 
-The first Phase 1 infrastructure slice provides a renderable Kustomize base and
-the `overlays/dev` namespace boundary. The next slice adds a pinned K3d cluster
-configuration, but still does not deploy platform or application workloads.
+The development overlay now deploys a single-node core NATS server with an
+internal Service and monitoring health probes. PostgreSQL, MinIO, Meilisearch,
+application workloads, persistence, and ingress remain deferred.
 
 Create the local cluster and apply the development overlay with:
 
@@ -25,6 +25,12 @@ Render the current development overlay with:
 
 ```bash
 kubectl kustomize infra/k8s/overlays/dev
+```
+
+Verify the NATS deployment in an isolated cluster with:
+
+```bash
+bash scripts/verify-us-006.sh
 ```
 
 Infrastructure stories must add health, persistence, routing, and rollback

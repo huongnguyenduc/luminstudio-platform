@@ -17,11 +17,6 @@ grep -q '^    app.kubernetes.io/managed-by: kustomize$' <<<"$rendered"
 grep -q '^    app.kubernetes.io/part-of: lumin-studio$' <<<"$rendered"
 grep -q '^    lumin.studio/environment: dev$' <<<"$rendered"
 
-if grep -Eq '^kind: (Deployment|StatefulSet|Service)$' <<<"$rendered"; then
-  echo "US-004 must not introduce platform workloads" >&2
-  exit 1
-fi
-
 bazelisk build //infra/k8s:dev-manifests
 
 echo "US-004 verification passed"

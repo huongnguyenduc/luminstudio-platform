@@ -11,8 +11,9 @@ Phase 0 established the product contract and monorepo foundation. Phase 1 is in
 progress: the Go API has an operational health endpoint, and the Rust worker
 has an executable startup/configuration target. The React + Vite Web Admin has
 an executable build/test target and a non-product shell. A repeatable local
-K3d cluster now hosts the labeled `dev` namespace. External service deployments,
-3D processing, and product workflows have not been implemented yet.
+K3d cluster now hosts the labeled `dev` namespace and a healthy namespace-local
+NATS service. PostgreSQL, MinIO, Meilisearch, 3D processing, and product
+workflows have not been implemented yet.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -76,6 +77,12 @@ K3d development cluster lifecycle verification:
 
 ```bash
 bash scripts/verify-us-005.sh
+```
+
+NATS development deployment verification:
+
+```bash
+bash scripts/verify-us-006.sh
 ```
 
 Bazel is the selected top-level build system. Go and Rust rules now provide the
