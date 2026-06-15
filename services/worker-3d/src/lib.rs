@@ -7,6 +7,7 @@ use std::net::TcpStream;
 use std::time::Duration;
 
 pub mod glb_optimizer;
+pub mod sprite_renderer;
 
 const DEFAULT_CONCURRENCY: usize = 1;
 

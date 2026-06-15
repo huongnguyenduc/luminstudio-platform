@@ -98,6 +98,10 @@ their index buffers, rebuilds a valid embedded binary buffer, preserves
 scene/node/material metadata, and verifies the supplied pet-tag fixture through
 Cargo and Bazel without adding renderer, storage, event, or runtime subscriber
 wiring.
+`US-025` selects Blender 4.5 LTS as the headless sprite renderer and proves a
+fixed 24-frame JPEG sprite sheet against the supplied GLB fixture without
+adding worker image packaging, storage upload, completion events, runtime task
+wiring, or live K3d proof.
 
 ## Boundary Rules
 
@@ -135,6 +139,6 @@ complete in the Harness matrix.
 
 - Go HTTP framework: Fiber or Gin.
 - Exact Bazel rules and pinned toolchains for Go, Rust, JavaScript, and Dart.
-- Headless renderer used for 360-degree sprite generation.
+- Exact Blender 4.5 LTS patch and worker image packaging approach.
 - Flutter 3D viewer and JavaScript/native bridge implementation.
 - Event schema format and compatibility/versioning policy.

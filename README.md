@@ -40,6 +40,11 @@ rendering. The worker now also uses the upstream-recommended Rust `meshopt`
 crate to simplify supported indexed triangle primitives in GLB 2.0 assets while
 preserving scene, node, and material metadata. The supplied pet-tag fixture
 provides repeatable native and Bazel proof for this mesh optimization boundary.
+Blender 4.5 LTS is now the selected headless 360-degree renderer, and the
+pet-tag fixture proves deterministic 24-frame, 6-by-4 JPEG sprite generation
+with the locally installed compatible Blender build. Worker image packaging,
+processed asset upload, runtime task wiring, and completion events remain
+deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -219,6 +224,12 @@ GLB mesh optimization foundation verification:
 
 ```bash
 bash scripts/verify-us-024.sh
+```
+
+360-degree sprite rendering verification:
+
+```bash
+bash scripts/verify-us-025.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

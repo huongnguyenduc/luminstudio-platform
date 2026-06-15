@@ -11,8 +11,10 @@ subject constant, a core-NATS subscriber boundary, and a `SourceAssetReader`
 handoff for the referenced source GLB. The first optimization boundary uses the
 pinned Rust `meshopt` crate to simplify supported GLB 2.0 indexed triangle
 primitives and rebuild a smaller valid asset while preserving scene, node, and
-material metadata. It does not yet introduce 360-degree rendering, processed
-asset uploads, completion event publication, runtime subscriber wiring, or live
+material metadata. The next rendering boundary selects Blender 4.5 LTS
+headless automation and defines a deterministic 24-frame, 6-by-4 JPEG sprite
+sheet. It does not yet package Blender in the worker image, upload processed
+assets, publish completion events, wire runtime task processing, or add live
 K3d worker proof.
 
 Run native tests:
@@ -43,4 +45,10 @@ Run the mesh optimization story verification from the repository root:
 
 ```bash
 bash scripts/verify-us-024.sh
+```
+
+Run the 360-degree sprite rendering verification from the repository root:
+
+```bash
+bash scripts/verify-us-025.sh
 ```

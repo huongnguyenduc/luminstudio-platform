@@ -97,10 +97,17 @@ ambiguous buffer layouts are rejected before processing. The deterministic
 output naming helper follows `[productId]_low.glb`; storage upload and runtime
 task wiring remain deferred.
 
-Authentication, authorization, product delete workflows, 360-degree rendering,
-processing completion consumption,
-customer catalog/search HTTP routes, retry/outbox semantics, and dead-letter
-handling remain deferred.
+The worker uses Blender's headless CLI and Python API as the selected
+360-degree renderer. The initial deterministic contract uses EEVEE, a fixed
+camera orbit and lighting setup, 24 frames at 160-by-160 pixels, and a 6-by-4
+JPEG sprite sheet named `[productId]_360_sprite.jpg`. Determinism is scoped to
+the same Blender build, platform, script, input, and render configuration.
+Worker image packaging, runtime task wiring, output upload, and completion
+publication remain deferred.
+
+Authentication, authorization, product delete workflows, processing completion
+consumption, customer catalog/search HTTP routes, retry/outbox semantics, and
+dead-letter handling remain deferred.
 
 ## Processing Pipeline
 

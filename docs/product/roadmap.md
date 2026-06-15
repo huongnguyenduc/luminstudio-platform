@@ -122,6 +122,10 @@ Selected work:
   material metadata, rebuild a valid smaller binary asset, and verify the
   supplied pet-tag fixture without adding 360-degree rendering, MinIO upload,
   runtime task wiring, completion publication, retry semantics, auth, or UI.
+- `US-025 Worker 360-Degree Sprite Rendering` selects Blender 4.5 LTS headless
+  automation and proves a deterministic 24-frame, 6-by-4 JPEG sprite sheet
+  against the supplied GLB fixture without adding worker image packaging,
+  MinIO upload, runtime task wiring, completion publication, auth, or UI.
 
 ## Phase 3: Mobile Catalog And Search
 
