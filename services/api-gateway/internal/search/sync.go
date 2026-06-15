@@ -22,6 +22,7 @@ const (
 	productIndexUID = "products"
 	natsQueueGroup  = "search-sync"
 	natsSID         = "1"
+	natsConnect     = "CONNECT {\"verbose\":false,\"pedantic\":true,\"lang\":\"go\",\"version\":\"lumin-api-gateway\"}\r\n"
 )
 
 type ProductReader interface {
@@ -229,7 +230,7 @@ func (subscriber NATSSubscriber) runOnce(ctx context.Context) error {
 	if !strings.HasPrefix(line, "INFO ") {
 		return errors.New("unexpected NATS greeting")
 	}
-	if _, err := fmt.Fprintf(connection, "SUB %s %s %s\r\nPING\r\n", subscriber.subject, subscriber.queueGroup, subscriber.sid); err != nil {
+	if _, err := fmt.Fprintf(connection, "%sSUB %s %s %s\r\nPING\r\n", natsConnect, subscriber.subject, subscriber.queueGroup, subscriber.sid); err != nil {
 		return fmt.Errorf("subscribe to product.updated: %w", err)
 	}
 

@@ -16,8 +16,10 @@ headless automation and defines a deterministic 24-frame, 6-by-4 JPEG sprite
 sheet. The runtime processing boundary now reads source objects through the
 official MinIO Rust SDK, runs optimization and Blender rendering, uploads the
 optimized GLB and sprite sheet, and publishes `3d.task.completed` through core
-NATS. It does not yet package Blender in the worker image, deploy the worker to
-K3d, consume completion in the Go API, or add retry/dead-letter behavior.
+NATS. The development worker image now packages the worker binary, Blender, and
+the render script for K3d deployment, and the live smoke runs the worker through
+the Go API, NATS, MinIO, and completion consumer boundaries. Production Blender
+image hardening and retry/dead-letter behavior remain deferred.
 
 Run native tests:
 
@@ -60,4 +62,11 @@ root:
 
 ```bash
 bash scripts/verify-us-026.sh
+```
+
+Run the worker K3d deployment and live processing smoke verification from the
+repository root:
+
+```bash
+bash scripts/verify-us-028.sh
 ```

@@ -111,6 +111,12 @@ consumption.
 `3d.task.completed` and atomically records both processed asset references plus
 completed product state without adding live K3d proof or retry/dead-letter
 semantics.
+`US-028` packages the Rust worker as a local development image, deploys it to
+K3d, and proves one live processing path from API source upload through NATS,
+worker processing, MinIO processed uploads, completion publication, and API
+completion consumption without adding production image hardening,
+retry/dead-letter behavior, auth, UI, mobile, or customer catalog/search
+routes.
 
 ## Boundary Rules
 
@@ -148,6 +154,7 @@ complete in the Harness matrix.
 
 - Go HTTP framework: Fiber or Gin.
 - Exact Bazel rules and pinned toolchains for Go, Rust, JavaScript, and Dart.
-- Exact Blender 4.5 LTS patch and worker image packaging approach.
+- Production worker image packaging approach for the pinned Blender 4.5 LTS
+  runtime.
 - Flutter 3D viewer and JavaScript/native bridge implementation.
 - Event schema format and compatibility/versioning policy.

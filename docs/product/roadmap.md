@@ -134,6 +134,12 @@ Selected work:
   `3d.task.completed` events in the Go API and atomically stores processed asset
   references plus completed processing state without adding worker packaging,
   live K3d proof, retries, outbox/dead-letter behavior, auth, or UI.
+- `US-028 Worker K3d Deployment And Live Processing Smoke` packages the Rust
+  worker as a local development image, deploys it to K3d, and proves one live
+  source upload can complete through API, NATS, worker processing, MinIO
+  processed uploads, completion publication, and API completion consumption
+  without adding production image hardening, retries, outbox/dead-letter
+  behavior, auth, UI, mobile, or customer catalog/search routes.
 
 ## Phase 3: Mobile Catalog And Search
 

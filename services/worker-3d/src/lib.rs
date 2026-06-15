@@ -66,6 +66,7 @@ pub fn startup_message(config: &Config) -> String {
 const TASK_CREATED_EVENT_TYPE: &str = "3d.task.created";
 const EVENT_SCHEMA_VERSION: &str = "v1";
 pub const TASK_CREATED_SUBJECT: &str = "lumin.3d.task.created";
+pub const NATS_CONNECT: &str = "CONNECT {\"verbose\":false,\"pedantic\":true,\"lang\":\"rust\",\"version\":\"lumin-worker-3d\"}\r\n";
 
 #[derive(Debug, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -342,18 +343,37 @@ impl NATSSubscriber {
     }
 
     pub fn run_once<H: TaskEventHandler>(&self, handler: &mut H) -> Result<(), String> {
+        self.run(handler, true)
+    }
+
+    pub fn run_forever<H: TaskEventHandler>(&self, handler: &mut H) -> Result<(), String> {
+        self.run(handler, false)
+    }
+
+    fn run<H: TaskEventHandler>(
+        &self,
+        handler: &mut H,
+        stop_after_first: bool,
+    ) -> Result<(), String> {
         if self.host.trim().is_empty() {
             return Err("NATS host is not configured".to_owned());
         }
-        let mut stream = TcpStream::connect(&self.host).map_err(|error| error.to_string())?;
-        stream
-            .set_read_timeout(Some(self.timeout))
-            .map_err(|error| error.to_string())?;
+        let mut stream =
+            TcpStream::connect(&self.host).map_err(|error| format!("connect to NATS: {error}"))?;
+        if stop_after_first {
+            stream
+                .set_read_timeout(Some(self.timeout))
+                .map_err(|error| format!("set NATS read timeout: {error}"))?;
+        }
         stream
             .set_write_timeout(Some(self.timeout))
-            .map_err(|error| error.to_string())?;
+            .map_err(|error| format!("set NATS write timeout: {error}"))?;
 
-        let mut reader = BufReader::new(stream.try_clone().map_err(|error| error.to_string())?);
+        let mut reader = BufReader::new(
+            stream
+                .try_clone()
+                .map_err(|error| format!("clone NATS stream: {error}"))?,
+        );
         let mut line = String::new();
         reader
             .read_line(&mut line)
@@ -364,18 +384,28 @@ impl NATSSubscriber {
 
         write!(
             stream,
-            "SUB {} {} {}\r\nPING\r\n",
-            self.subject, self.queue_group, self.sid
+            "{}SUB {} {} {}\r\nPING\r\n",
+            NATS_CONNECT, self.subject, self.queue_group, self.sid
         )
         .map_err(|error| format!("subscribe to 3d.task.created: {error}"))?;
         stream.flush().map_err(|error| error.to_string())?;
 
         loop {
             line.clear();
-            reader
+            let bytes_read = reader
                 .read_line(&mut line)
-                .map_err(|error| error.to_string())?;
+                .map_err(|error| format!("read NATS line: {error}"))?;
+            if bytes_read == 0 {
+                return Err("NATS connection closed".to_owned());
+            }
             let trimmed = line.trim_end_matches(['\r', '\n']);
+            if trimmed == "PING" {
+                stream
+                    .write_all(b"PONG\r\n")
+                    .and_then(|_| stream.flush())
+                    .map_err(|error| format!("respond to NATS ping: {error}"))?;
+                continue;
+            }
             if trimmed == "PONG" || trimmed.starts_with("+OK") {
                 continue;
             }
@@ -391,7 +421,10 @@ impl NATSSubscriber {
                 if terminator != [b'\r', b'\n'] {
                     return Err("invalid NATS message terminator".to_owned());
                 }
-                return handler.handle_task_created(&data);
+                handler.handle_task_created(&data)?;
+                if stop_after_first {
+                    return Ok(());
+                }
             }
         }
     }

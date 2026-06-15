@@ -17,3 +17,4 @@ resources:
   - postgres-secret.yaml
   - postgres-service.yaml
   - postgres-statefulset.yaml
+  - worker-3d-deployment.yaml

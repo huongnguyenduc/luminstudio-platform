@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -220,6 +221,13 @@ func validateText(name, value string, minLength, maxLength int) error {
 func encodeJSON(value any) ([]byte, error) {
 	if value == nil {
 		return nil, nil
+	}
+	reflected := reflect.ValueOf(value)
+	switch reflected.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		if reflected.IsNil() {
+			return nil, nil
+		}
 	}
 	return json.Marshal(value)
 }

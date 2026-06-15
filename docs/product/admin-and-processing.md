@@ -106,14 +106,18 @@ The runtime worker now composes source download, mesh optimization, Blender
 rendering, and uploads processed assets to MinIO. It writes optimized GLBs to
 `lumin-optimized-glb`, writes sprite sheets to `lumin-360-sprites`, and
 publishes a v1 `3d.task.completed` event only after both uploads succeed.
-Worker image packaging, live K3d deployment, and retry/dead-letter behavior
-remain deferred.
+The worker now also has a local development worker image and K3d Deployment so
+the live development platform can run the processing loop through NATS and
+MinIO. Production image hardening and retry/dead-letter behavior remain
+deferred.
 
 The Go API now consumes valid v1 `3d.task.completed` events through a dedicated
 NATS queue group. It strictly validates the completion envelope and processed
 object references, then atomically stores the optimized GLB and sprite assets
-and marks the authoritative PostgreSQL product record as `completed`. Worker
-image packaging, live K3d deployment, retry/outbox semantics, failure events,
+and marks the authoritative PostgreSQL product record as `completed`. The live
+development smoke now proves that one uploaded GLB can move from `queued` to
+`completed` through the API, NATS, worker, MinIO, and completion consumer
+boundaries. Retry/outbox semantics, failure events, production image hardening,
 and dead-letter behavior remain deferred.
 
 Authentication, authorization, product delete workflows, customer

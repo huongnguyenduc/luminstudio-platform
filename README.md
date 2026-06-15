@@ -20,7 +20,6 @@ also proves message transport through the namespace-local Service. MinIO
 development buckets for source GLB, optimized GLB, and 360-degree sprite assets
 are bootstrapped idempotently in the dev namespace, and Traefik host routes
 expose MinIO administration plus Meilisearch inspection for local development.
-3D processing and end-to-end product workflows have not been implemented yet.
 The first Phase 2 shared product, asset, and event contracts plus the Go API
 product validation and PostgreSQL product schema foundation are implemented.
 The Go API now exposes the first runtime admin product creation route,
@@ -47,8 +46,11 @@ composes source download, mesh optimization, Blender rendering, processed
 MinIO uploads, and v1 `3d.task.completed` publication behind testable ports.
 The Go API now consumes valid worker completion events and atomically records
 the optimized GLB, sprite sheet, and completed processing state in PostgreSQL.
-Worker image packaging, live K3d deployment, and retry/dead-letter behavior
-remain deferred.
+The Rust worker now has a local development container image and K3d Deployment,
+and an isolated live smoke proves source upload through the Go API, NATS task
+delivery, worker processing, MinIO processed uploads, completion publication,
+and API completion consumption. Production worker image hardening and
+retry/dead-letter behavior remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -240,6 +242,18 @@ Worker runtime processing and output upload verification:
 
 ```bash
 bash scripts/verify-us-026.sh
+```
+
+API processing completion consumption verification:
+
+```bash
+bash scripts/verify-us-027.sh
+```
+
+Worker K3d deployment and live processing smoke verification:
+
+```bash
+bash scripts/verify-us-028.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

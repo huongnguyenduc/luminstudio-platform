@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -114,6 +115,7 @@ func (handler Handler) CreateProduct(response http.ResponseWriter, request *http
 	}
 	record, err := handler.repository.InsertProduct(request.Context(), id, draft, handler.now())
 	if err != nil {
+		slog.ErrorContext(request.Context(), "create product failed", "error", err)
 		writeError(response, http.StatusInternalServerError, "could not create product")
 		return
 	}

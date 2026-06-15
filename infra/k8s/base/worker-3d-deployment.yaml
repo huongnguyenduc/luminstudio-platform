@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-3d
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: worker-3d
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: worker-3d
+    spec:
+      containers:
+        - name: worker-3d
+          image: lumin/worker-3d:dev
+          imagePullPolicy: Never
+          env:
+            - name: WORKER_RUNTIME
+              value: "1"
+            - name: NATS_HOST
+              value: nats:4222
+            - name: MINIO_ENDPOINT
+              value: http://minio:9000
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: MINIO_ROOT_USER
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: MINIO_ROOT_PASSWORD
+            - name: BLENDER_BINARY
+              value: /usr/bin/blender
+            - name: BLENDER_RENDER_SCRIPT
+              value: /opt/lumin/render_360_sprite.py
+            - name: WORKER_DEPENDENCY_TIMEOUT_SECONDS
+              value: "30"
+            - name: HOME
+              value: /tmp
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+        - name: tmp
+          emptyDir: {}

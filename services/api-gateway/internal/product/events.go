@@ -20,6 +20,7 @@ const (
 	productUpdatedSubject   = "lumin.product.updated"
 	taskCreatedSubject      = "lumin.3d.task.created"
 	correlationIDHeader     = "X-Correlation-ID"
+	natsConnect             = "CONNECT {\"verbose\":false,\"pedantic\":true,\"lang\":\"go\",\"version\":\"lumin-api-gateway\"}\r\n"
 )
 
 const ProductUpdatedSubject = productUpdatedSubject
@@ -228,17 +229,33 @@ func (publisher NATSPublisher) publish(ctx context.Context, subject string, even
 	if !strings.HasPrefix(line, "INFO ") {
 		return errors.New("unexpected NATS greeting")
 	}
-	if _, err := fmt.Fprintf(connection, "PUB %s %d\r\n%s\r\nPING\r\n", subject, len(payload), payload); err != nil {
+	if _, err := fmt.Fprintf(connection, "%sPUB %s %d\r\n%s\r\nPING\r\n", natsConnect, subject, len(payload), payload); err != nil {
 		return fmt.Errorf("publish %s event: %w", eventName, err)
 	}
 	line, err = reader.ReadString('\n')
 	if err != nil {
 		return fmt.Errorf("read NATS publish acknowledgement: %w", err)
 	}
-	if strings.TrimSpace(line) != "PONG" {
-		return errors.New("unexpected NATS publish acknowledgement")
+	for {
+		switch strings.TrimSpace(line) {
+		case "PONG":
+			return nil
+		case "PING":
+			if _, err := connection.Write([]byte("PONG\r\n")); err != nil {
+				return fmt.Errorf("respond to NATS ping: %w", err)
+			}
+		default:
+			if strings.HasPrefix(line, "+OK") {
+				// Continue waiting for the PONG that confirms the publish round trip.
+				break
+			}
+			return errors.New("unexpected NATS publish acknowledgement")
+		}
+		line, err = reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("read NATS publish acknowledgement: %w", err)
+		}
 	}
-	return nil
 }
 
 func validEventID(value string) bool {

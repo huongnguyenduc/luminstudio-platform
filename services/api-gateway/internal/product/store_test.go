@@ -38,6 +38,23 @@ func TestNewInsertProductArgsEncodesValidatedDraft(t *testing.T) {
 	}
 }
 
+func TestNewInsertProductArgsUsesSQLNullForNilOptionalJSON(t *testing.T) {
+	draft := validDraft()
+	draft.MeshColorConfig = nil
+	draft.SourceAsset = nil
+
+	args, err := NewInsertProductArgs("prod_12345678", draft, time.Now())
+	if err != nil {
+		t.Fatalf("building insert args failed: %v", err)
+	}
+	if args.MeshColorConfig != nil {
+		t.Fatalf("mesh config = %q, want SQL NULL", string(args.MeshColorConfig))
+	}
+	if args.SourceAsset != nil {
+		t.Fatalf("source asset = %q, want SQL NULL", string(args.SourceAsset))
+	}
+}
+
 func TestNewInsertProductArgsRejectsInvalidID(t *testing.T) {
 	_, err := NewInsertProductArgs("bad", validDraft(), time.Now())
 	if err == nil {

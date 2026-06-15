@@ -13,6 +13,15 @@ import bpy
 from mathutils import Vector
 
 
+def install_numpy_compatibility_aliases() -> None:
+    try:
+        import numpy as np
+    except ModuleNotFoundError:
+        return
+    if "bool" not in vars(np):
+        np.bool = bool
+
+
 def parse_args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     parser = argparse.ArgumentParser()
@@ -41,6 +50,7 @@ def reset_scene() -> None:
 
 
 def import_glb(path: Path) -> list[bpy.types.Object]:
+    install_numpy_compatibility_aliases()
     bpy.ops.import_scene.gltf(filepath=str(path))
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
     if not meshes:

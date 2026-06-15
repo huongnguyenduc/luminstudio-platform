@@ -3,7 +3,7 @@ use crate::processing_pipeline::{
     Clock, CompletionPublisher, MeshoptGlbOptimizer, ProcessedAssetStore, ProcessingPipeline,
     RuntimeTaskHandler, SpriteRenderer, TASK_COMPLETED_SUBJECT, TaskCompletedEvent,
 };
-use crate::{NATSSubscriber, ObjectRef, SourceAssetReader, TaskProcessor};
+use crate::{NATS_CONNECT, NATSSubscriber, ObjectRef, SourceAssetReader, TaskProcessor};
 use minio::s3::client::{MinioClient, MinioClientBuilder};
 use minio::s3::creds::StaticProvider;
 use minio::s3::http::BaseUrl;
@@ -261,7 +261,7 @@ fn publish_nats(
     if !line.starts_with("INFO ") {
         return Err("unexpected NATS greeting".to_owned());
     }
-    write!(stream, "PUB {subject} {}\r\n", payload.len())
+    write!(stream, "{NATS_CONNECT}PUB {subject} {}\r\n", payload.len())
         .and_then(|_| stream.write_all(payload))
         .and_then(|_| stream.write_all(b"\r\nPING\r\n"))
         .and_then(|_| stream.flush())
@@ -273,6 +273,10 @@ fn publish_nats(
             .map_err(|error| format!("confirm completion publication: {error}"))?;
         match line.trim_end_matches(['\r', '\n']) {
             "PONG" => return Ok(()),
+            "PING" => stream
+                .write_all(b"PONG\r\n")
+                .and_then(|_| stream.flush())
+                .map_err(|error| format!("respond to NATS ping: {error}"))?,
             value if value.starts_with("+OK") => continue,
             value if value.starts_with("-ERR") => return Err(value.to_owned()),
             value => return Err(format!("unexpected NATS publication response: {value}")),
@@ -315,8 +319,47 @@ pub fn run_once_from_env() -> Result<(), String> {
     run_once(RuntimeConfig::from_env()?)
 }
 
-pub fn runtime_enabled() -> bool {
+pub fn run_forever(config: RuntimeConfig) -> Result<(), String> {
+    let store = MinioAssetStore::new(
+        &config.minio_endpoint,
+        &config.minio_access_key,
+        &config.minio_secret_key,
+    )?;
+    let reader = store.clone();
+    let renderer = BlenderSpriteRenderer::new(config.blender_binary, config.renderer_script)?;
+    let publisher =
+        NATSTaskCompletedPublisher::new(config.nats_host.clone(), config.dependency_timeout);
+    let pipeline = ProcessingPipeline::new(
+        MeshoptGlbOptimizer::new(OptimizationConfig::default()),
+        renderer,
+        store,
+        publisher,
+        SystemClock,
+    );
+    let mut handler = RuntimeTaskHandler::new(TaskProcessor::new(reader), pipeline);
+    let subscriber = NATSSubscriber::new(config.nats_host, config.dependency_timeout);
+    loop {
+        match subscriber.run_forever(&mut handler) {
+            Ok(()) => return Ok(()),
+            Err(error) if error.starts_with("connect to NATS:") => {
+                eprintln!("worker-3d waiting for NATS: {error}");
+                std::thread::sleep(Duration::from_secs(2));
+            }
+            Err(error) => return Err(error),
+        }
+    }
+}
+
+pub fn run_forever_from_env() -> Result<(), String> {
+    run_forever(RuntimeConfig::from_env()?)
+}
+
+pub fn runtime_once_enabled() -> bool {
     env::var("WORKER_RUN_ONCE").as_deref() == Ok("1")
+}
+
+pub fn runtime_enabled() -> bool {
+    env::var("WORKER_RUNTIME").as_deref() == Ok("1")
 }
 
 #[cfg(test)]
@@ -347,5 +390,26 @@ mod tests {
     #[test]
     fn exposes_completion_subject() {
         assert_eq!(TASK_COMPLETED_SUBJECT, "lumin.3d.task.completed");
+    }
+
+    #[test]
+    fn runtime_modes_are_separate() {
+        unsafe {
+            env::set_var("WORKER_RUN_ONCE", "1");
+            env::remove_var("WORKER_RUNTIME");
+        }
+        assert!(runtime_once_enabled());
+        assert!(!runtime_enabled());
+
+        unsafe {
+            env::remove_var("WORKER_RUN_ONCE");
+            env::set_var("WORKER_RUNTIME", "1");
+        }
+        assert!(!runtime_once_enabled());
+        assert!(runtime_enabled());
+
+        unsafe {
+            env::remove_var("WORKER_RUNTIME");
+        }
     }
 }

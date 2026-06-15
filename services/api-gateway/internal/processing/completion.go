@@ -20,6 +20,7 @@ import (
 const (
 	natsQueueGroup = "processing-completion"
 	natsSID        = "2"
+	natsConnect    = "CONNECT {\"verbose\":false,\"pedantic\":true,\"lang\":\"go\",\"version\":\"lumin-api-gateway\"}\r\n"
 )
 
 type ProductCompleter interface {
@@ -122,7 +123,7 @@ func (subscriber NATSSubscriber) runOnce(ctx context.Context) error {
 	if !strings.HasPrefix(line, "INFO ") {
 		return errors.New("unexpected NATS greeting")
 	}
-	if _, err := fmt.Fprintf(connection, "SUB %s %s %s\r\nPING\r\n", product.ProcessingTaskCompletedSubject, natsQueueGroup, natsSID); err != nil {
+	if _, err := fmt.Fprintf(connection, "%sSUB %s %s %s\r\nPING\r\n", natsConnect, product.ProcessingTaskCompletedSubject, natsQueueGroup, natsSID); err != nil {
 		return fmt.Errorf("subscribe to 3d.task.completed: %w", err)
 	}
 	for {
