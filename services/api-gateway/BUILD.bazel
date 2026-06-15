@@ -1,4 +1,6 @@
-load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("@rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library", "go_test")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load")
+load("@tar.bzl", "tar")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,6 +15,56 @@ go_library(
 go_binary(
     name = "api-gateway",
     embed = [":api_gateway_lib"],
+)
+
+go_cross_binary(
+    name = "api-gateway-linux-amd64",
+    platform = "@rules_go//go/toolchain:linux_amd64",
+    target = ":api-gateway",
+)
+
+go_cross_binary(
+    name = "api-gateway-linux-arm64",
+    platform = "@rules_go//go/toolchain:linux_arm64",
+    target = ":api-gateway",
+)
+
+tar(
+    name = "api-gateway-layer-amd64",
+    srcs = [":api-gateway-linux-amd64"],
+)
+
+tar(
+    name = "api-gateway-layer-arm64",
+    srcs = [":api-gateway-linux-arm64"],
+)
+
+oci_image(
+    name = "api-gateway-image-amd64",
+    architecture = "amd64",
+    entrypoint = ["/services/api-gateway/api-gateway-linux-amd64"],
+    os = "linux",
+    tars = [":api-gateway-layer-amd64"],
+)
+
+oci_image(
+    name = "api-gateway-image-arm64",
+    architecture = "arm64",
+    entrypoint = ["/services/api-gateway/api-gateway-linux-arm64"],
+    os = "linux",
+    tars = [":api-gateway-layer-arm64"],
+)
+
+oci_load(
+    name = "api-gateway-image-load-amd64",
+    image = ":api-gateway-image-amd64",
+    repo_tags = ["lumin/api-gateway:dev"],
+)
+
+oci_load(
+    name = "api-gateway-image-load-arm64",
+    image = ":api-gateway-image-arm64",
+    repo_tags = ["lumin/api-gateway:dev"],
 )
 
 go_test(

@@ -3,10 +3,10 @@
 Kustomize resources for the local K3d `dev` namespace, including PostgreSQL,
 MinIO, NATS, Meilisearch, application workloads, and Traefik routing.
 
-The development overlay deploys a single-node core NATS server plus persistent
-single-instance PostgreSQL, MinIO, and Meilisearch StatefulSets. All are
-reachable only through namespace-local Services. Storage buckets, product
-search indexes, application workloads, external routing, backups, and product
+The development overlay deploys the Go API, a single-node core NATS server, and
+persistent single-instance PostgreSQL, MinIO, and Meilisearch StatefulSets. All
+are reachable only through namespace-local Services. Storage buckets, product
+search indexes, platform connectivity, external routing, backups, and product
 database schema remain deferred.
 
 Create the local cluster and apply the development overlay with:
@@ -51,6 +51,12 @@ Verify Meilisearch readiness, indexing, and pod-replacement persistence with:
 
 ```bash
 bash scripts/verify-us-009.sh
+```
+
+Verify the Bazel-built Go API image and in-cluster health endpoint with:
+
+```bash
+bash scripts/verify-us-010.sh
 ```
 
 Infrastructure stories must add health, persistence, routing, and rollback

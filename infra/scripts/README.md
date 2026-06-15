@@ -17,6 +17,15 @@ infra/scripts/dev-cluster.sh delete
 Set `LUMIN_CLUSTER_NAME` only for isolated verification or parallel local
 clusters. The default cluster is `lumin-dev`.
 
+Build the Go API image matching the Docker host architecture and import it into
+the existing development cluster before applying the workload:
+
+```bash
+infra/scripts/dev-cluster.sh create
+infra/scripts/import-api-image.sh
+infra/scripts/dev-cluster.sh apply
+```
+
 Run the isolated NATS platform verification with:
 
 ```bash

@@ -5,4 +5,9 @@ filegroup(
     srcs = ["dev-cluster.sh"],
 )
 
+filegroup(
+    name = "import-api-image",
+    srcs = ["import-api-image.sh"],
+)
+
 exports_files(["README.md"])

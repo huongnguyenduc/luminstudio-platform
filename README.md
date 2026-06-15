@@ -12,10 +12,11 @@ progress: the Go API has an operational health endpoint, and the Rust worker
 has an executable startup/configuration target. The React + Vite Web Admin has
 an executable build/test target and a non-product shell. A repeatable local
 K3d cluster now hosts the labeled `dev` namespace and a healthy namespace-local
-NATS service plus persistent PostgreSQL, MinIO, and Meilisearch instances. 3D
-processing, product database schema, storage buckets, application connectivity,
-external development routes, and product workflows have not been implemented
-yet.
+NATS service plus persistent PostgreSQL, MinIO, and Meilisearch instances. The
+Bazel-built Go API image also runs behind a namespace-local Service with
+in-cluster health proof. 3D processing, product database schema, storage
+buckets, platform connectivity, external development routes, and product
+workflows have not been implemented yet.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -106,6 +107,12 @@ Meilisearch development deployment verification:
 bash scripts/verify-us-009.sh
 ```
 
-Bazel is the selected top-level build system. Go and Rust rules now provide the
-first executable service targets; remaining language rules and platform
-resources will be added by later Phase 1 stories.
+Go API image and K3d deployment verification:
+
+```bash
+bash scripts/verify-us-010.sh
+```
+
+Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI
+rules now provide executable component and API image targets; Flutter rules and
+remaining platform behavior will be added by later stories.
