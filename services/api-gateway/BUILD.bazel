@@ -1,0 +1,22 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+
+package(default_visibility = ["//visibility:public"])
+
+go_library(
+    name = "api_gateway_lib",
+    srcs = ["main.go"],
+    importpath = "lumin.studio/services/api-gateway",
+    visibility = ["//visibility:private"],
+    deps = ["//services/api-gateway/internal/health"],
+)
+
+go_binary(
+    name = "api-gateway",
+    embed = [":api_gateway_lib"],
+)
+
+go_test(
+    name = "api_gateway_test",
+    srcs = ["main_test.go"],
+    embed = [":api_gateway_lib"],
+)

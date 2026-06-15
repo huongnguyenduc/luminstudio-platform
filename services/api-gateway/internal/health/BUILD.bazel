@@ -1,0 +1,14 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "health",
+    srcs = ["handler.go"],
+    importpath = "lumin.studio/services/api-gateway/internal/health",
+    visibility = ["//services/api-gateway:__pkg__"],
+)
+
+go_test(
+    name = "health_test",
+    srcs = ["handler_test.go"],
+    embed = [":health"],
+)
