@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumin.studio/contracts/v1/common.schema.json",
+  "title": "Lumin Shared Common Types v1",
+  "type": "object",
+  "$defs": {
+    "ProductId": {
+      "type": "string",
+      "pattern": "^prod_[A-Za-z0-9][A-Za-z0-9_-]{7,63}$"
+    },
+    "ProcessingTaskId": {
+      "type": "string",
+      "pattern": "^task_[A-Za-z0-9][A-Za-z0-9_-]{7,63}$"
+    },
+    "CorrelationId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "IsoDateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "HexColor": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "MeshId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "AssetBucket": {
+      "type": "string",
+      "enum": [
+        "lumin-source-glb",
+        "lumin-optimized-glb",
+        "lumin-360-sprites"
+      ]
+    },
+    "ObjectKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+    },
+    "ObjectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bucket",
+        "key"
+      ],
+      "properties": {
+        "bucket": {
+          "$ref": "#/$defs/AssetBucket"
+        },
+        "key": {
+          "$ref": "#/$defs/ObjectKey"
+        },
+        "contentType": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "etag": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "MeshColorOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default",
+        "allowed"
+      ],
+      "properties": {
+        "default": {
+          "$ref": "#/$defs/HexColor"
+        },
+        "allowed": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/HexColor"
+          }
+        }
+      }
+    },
+    "MeshColorConfig": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/MeshColorOption"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/MeshId"
+      }
+    }
+  }
+}

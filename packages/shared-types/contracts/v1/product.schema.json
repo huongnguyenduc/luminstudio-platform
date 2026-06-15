@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumin.studio/contracts/v1/product.schema.json",
+  "title": "Lumin Product Administration Contract v1",
+  "type": "object",
+  "$defs": {
+    "InformationSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "collapsedByDefault": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "ProductDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "slug",
+        "description"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 180
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "informationSections": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InformationSection"
+          }
+        },
+        "meshColorConfig": {
+          "$ref": "common.schema.json#/$defs/MeshColorConfig"
+        },
+        "sourceAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        }
+      }
+    },
+    "ProductRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "description",
+        "createdAt",
+        "updatedAt",
+        "processingStatus"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 180
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "informationSections": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InformationSection"
+          }
+        },
+        "meshColorConfig": {
+          "$ref": "common.schema.json#/$defs/MeshColorConfig"
+        },
+        "sourceAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "createdAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        },
+        "updatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        },
+        "processingStatus": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "queued",
+            "processing",
+            "completed",
+            "failed"
+          ]
+        },
+        "optimizedAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "spriteAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        }
+      }
+    }
+  }
+}

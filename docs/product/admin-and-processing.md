@@ -30,6 +30,12 @@ Example shape:
 }
 ```
 
+The shared contract source now starts with JSON Schema files under
+`packages/shared-types/contracts/v1`. These schemas define the initial product
+draft and record shapes, object references for source GLB, optimized GLB, and
+360-degree sprite assets, and the mesh color configuration shape that later API
+stories must parse before persistence or event publication.
+
 ## Processing Pipeline
 
 1. The API publishes `3d.task.created` with a stable task and product identity.
@@ -47,8 +53,10 @@ The initial naming convention from the source spec is:
 - `[id]_low.glb`
 - `[id]_360_sprite.jpg`
 
-Object keys, retry semantics, idempotency, failure events, and dead-letter
-handling remain open decisions for the Phase 2 design story.
+Versioned event schema sources exist for `product.updated`, `3d.task.created`,
+and `3d.task.completed`. Object key policy beyond the initial source-spec naming
+convention, retry semantics, idempotency, failure events, and dead-letter
+handling remain open decisions for later Phase 2 implementation stories.
 
 ## Quality Requirements
 

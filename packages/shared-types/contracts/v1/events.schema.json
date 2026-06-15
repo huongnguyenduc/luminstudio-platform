@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumin.studio/contracts/v1/events.schema.json",
+  "title": "Lumin Product And Processing Events v1",
+  "type": "object",
+  "$defs": {
+    "EventEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "schemaVersion",
+        "occurredAt",
+        "correlationId",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "product.updated",
+            "3d.task.created",
+            "3d.task.completed"
+          ]
+        },
+        "schemaVersion": {
+          "type": "string",
+          "const": "v1"
+        },
+        "occurredAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        },
+        "correlationId": {
+          "$ref": "common.schema.json#/$defs/CorrelationId"
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "ProductUpdatedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "productId",
+        "changedAt"
+      ],
+      "properties": {
+        "productId": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "changedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        }
+      }
+    },
+    "ProductUpdatedEvent": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/EventEnvelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "product.updated"
+            },
+            "payload": {
+              "$ref": "#/$defs/ProductUpdatedPayload"
+            }
+          }
+        }
+      ]
+    },
+    "TaskCreatedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskId",
+        "productId",
+        "sourceAsset",
+        "meshColorConfig"
+      ],
+      "properties": {
+        "taskId": {
+          "$ref": "common.schema.json#/$defs/ProcessingTaskId"
+        },
+        "productId": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "sourceAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "meshColorConfig": {
+          "$ref": "common.schema.json#/$defs/MeshColorConfig"
+        }
+      }
+    },
+    "TaskCreatedEvent": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/EventEnvelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "3d.task.created"
+            },
+            "payload": {
+              "$ref": "#/$defs/TaskCreatedPayload"
+            }
+          }
+        }
+      ]
+    },
+    "TaskCompletedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskId",
+        "productId",
+        "optimizedAsset",
+        "spriteAsset"
+      ],
+      "properties": {
+        "taskId": {
+          "$ref": "common.schema.json#/$defs/ProcessingTaskId"
+        },
+        "productId": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "optimizedAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "spriteAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        }
+      }
+    },
+    "TaskCompletedEvent": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/EventEnvelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "3d.task.completed"
+            },
+            "payload": {
+              "$ref": "#/$defs/TaskCompletedPayload"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

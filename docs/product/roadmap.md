@@ -70,6 +70,14 @@ Goal: implement product administration, search synchronization, and processed
 - Epic `E06`: Event-driven Meilisearch synchronization.
 - Epic `E07`: Rust/C++ processing and completion flow.
 
+Selected work:
+
+- `US-015 Define Phase 2 Product, Asset, And Event Contracts` starts E04 with
+  versioned JSON Schema sources for initial product administration records,
+  MinIO asset references, mesh color configuration, and the first product and
+  processing events without adding runtime API, persistence, worker, search, or
+  UI behavior.
+
 ## Phase 3: Mobile Catalog And Search
 
 Goal: deliver persistent tab navigation, catalog browsing, 360 previews, and
