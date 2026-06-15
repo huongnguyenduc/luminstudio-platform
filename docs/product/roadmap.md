@@ -110,6 +110,13 @@ Selected work:
   processing status, and publishes `3d.task.created` without adding admin UI,
   worker processing, processing completion consumption, retry/outbox semantics,
   auth, or live K3d proof.
+- `US-023 Worker Task Created Source Download` starts E07 by parsing and
+  validating v1 `3d.task.created` events in the Rust worker, exposing the
+  `lumin.3d.task.created` subscription boundary, and handing the referenced
+  `lumin-source-glb` object to a source asset reader without adding
+  meshoptimizer, 360-degree rendering, processed asset uploads,
+  `3d.task.completed` publication, retry/outbox semantics, auth, UI, or live
+  K3d proof.
 
 ## Phase 3: Mobile Catalog And Search
 

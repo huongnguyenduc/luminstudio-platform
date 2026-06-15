@@ -32,6 +32,14 @@ rust.toolchain(
     versions = ["1.95.0"],
 )
 
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "//:Cargo.lock",
+    manifests = ["//services/worker-3d:Cargo.toml"],
+)
+use_repo(crate, "crates")
+
 node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
 node.toolchain(node_version = "22.20.0")
 

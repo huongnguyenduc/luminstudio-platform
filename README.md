@@ -33,7 +33,10 @@ asynchronous search synchronization. The first product search-sync consumer now
 handles `product.updated` events and upserts derived product documents into the
 Meilisearch `products` index. The Go API now exposes the first source GLB
 upload route, stores source assets in MinIO, queues product processing state,
-and publishes `3d.task.created` for later worker processing.
+and publishes `3d.task.created` for later worker processing. The Rust worker
+now parses and validates v1 `3d.task.created` events and hands the referenced
+source GLB object to a source asset reader before mesh optimization or
+rendering.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -200,6 +203,12 @@ Admin source GLB upload and task event verification:
 
 ```bash
 bash scripts/verify-us-022.sh
+```
+
+Worker task event and source download foundation verification:
+
+```bash
+bash scripts/verify-us-023.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

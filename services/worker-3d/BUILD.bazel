@@ -1,3 +1,4 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -5,8 +6,15 @@ package(default_visibility = ["//visibility:public"])
 rust_library(
     name = "worker_3d_lib",
     srcs = ["src/lib.rs"],
+    aliases = aliases(),
     crate_name = "worker_3d",
     edition = "2024",
+    deps = all_crate_deps(
+        normal = True,
+    ),
+    proc_macro_deps = all_crate_deps(
+        proc_macro = True,
+    ),
 )
 
 rust_binary(
@@ -18,5 +26,15 @@ rust_binary(
 
 rust_test(
     name = "worker_3d_test",
+    aliases = aliases(
+        normal_dev = True,
+        proc_macro_dev = True,
+    ),
     crate = ":worker_3d_lib",
+    deps = all_crate_deps(
+        normal_dev = True,
+    ),
+    proc_macro_deps = all_crate_deps(
+        proc_macro_dev = True,
+    ),
 )

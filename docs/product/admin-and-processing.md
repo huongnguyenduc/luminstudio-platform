@@ -82,6 +82,12 @@ source asset reference and `queued` processing status, publishes
 `product.updated`, and publishes `3d.task.created` for later worker
 processing.
 
+The Rust worker now parses and validates v1 `3d.task.created` events, exposes
+the `lumin.3d.task.created` subscription boundary, and requests the referenced
+source GLB object from a source asset reader. This covers the worker-side source
+intake handoff before mesh optimization, 360-degree rendering, processed asset
+upload, `3d.task.completed` publication, or API completion consumption.
+
 Authentication, authorization, product delete workflows, worker mesh
 optimization, 360-degree rendering, processing completion consumption,
 customer catalog/search HTTP routes, retry/outbox semantics, and dead-letter

@@ -87,7 +87,11 @@ upsert path with unit and Bazel proof, without adding live K3d platform proof
 or customer search routes. `US-022` adds the first admin source GLB upload API,
 MinIO source object write, queued product source state, and
 `3d.task.created` event publication with unit and Bazel proof, without adding
-live K3d platform proof or worker processing.
+live K3d platform proof or worker processing. `US-023` adds the Rust worker
+task intake foundation for `3d.task.created`: v1 event parsing, validation,
+the `lumin.3d.task.created` subscription boundary, and source asset reader
+handoff, without adding live K3d platform proof, mesh optimization, rendering,
+processed uploads, or completion publication.
 
 ## Boundary Rules
 
