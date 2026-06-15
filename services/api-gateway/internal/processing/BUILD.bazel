@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "processing",
+    srcs = ["completion.go"],
+    importpath = "lumin.studio/services/api-gateway/internal/processing",
+    visibility = ["//services/api-gateway:__pkg__"],
+    deps = ["//services/api-gateway/internal/product"],
+)
+
+go_test(
+    name = "processing_test",
+    srcs = ["completion_test.go"],
+    embed = [":processing"],
+    deps = ["//services/api-gateway/internal/product"],
+)

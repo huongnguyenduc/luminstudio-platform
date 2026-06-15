@@ -130,6 +130,10 @@ Selected work:
   mesh optimization, Blender rendering, processed MinIO uploads, and v1
   `3d.task.completed` publication without adding worker image packaging, live
   K3d deployment, API completion consumption, retries, auth, or UI.
+- `US-027 API Processing Completion Consumption` consumes valid v1
+  `3d.task.completed` events in the Go API and atomically stores processed asset
+  references plus completed processing state without adding worker packaging,
+  live K3d proof, retries, outbox/dead-letter behavior, auth, or UI.
 
 ## Phase 3: Mobile Catalog And Search
 

@@ -104,3 +104,33 @@ func TestNewQueueSourceAssetArgsEncodesQueuedSourceAsset(t *testing.T) {
 		t.Fatalf("source key = %q", got.Key)
 	}
 }
+
+func TestNewCompleteProcessingArgsEncodesProcessedAssets(t *testing.T) {
+	now := time.Date(2026, 6, 15, 16, 0, 0, 0, time.UTC)
+	optimized := ObjectRef{Bucket: "lumin-optimized-glb", Key: "prod_12345678_low.glb"}
+	sprite := ObjectRef{Bucket: "lumin-360-sprites", Key: "prod_12345678_360_sprite.jpg"}
+
+	args, err := NewCompleteProcessingArgs("prod_12345678", optimized, sprite, now)
+	if err != nil {
+		t.Fatalf("building completion args failed: %v", err)
+	}
+	if args.ProcessingStatus != ProcessingCompleted || args.UpdatedAt != now {
+		t.Fatalf("unexpected completion args: %#v", args)
+	}
+	var gotOptimized ObjectRef
+	if err := json.Unmarshal(args.OptimizedAsset, &gotOptimized); err != nil {
+		t.Fatalf("optimized asset was not JSON: %v", err)
+	}
+	if gotOptimized.Key != optimized.Key {
+		t.Fatalf("optimized key = %q", gotOptimized.Key)
+	}
+}
+
+func TestNewCompleteProcessingArgsRejectsWrongBuckets(t *testing.T) {
+	now := time.Now()
+	optimized := ObjectRef{Bucket: "lumin-source-glb", Key: "source.glb"}
+	sprite := ObjectRef{Bucket: "lumin-360-sprites", Key: "sprite.jpg"}
+	if _, err := NewCompleteProcessingArgs("prod_12345678", optimized, sprite, now); err == nil {
+		t.Fatal("wrong optimized bucket must fail")
+	}
+}

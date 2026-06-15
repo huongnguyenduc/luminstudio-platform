@@ -12,6 +12,7 @@ import (
 
 	"lumin.studio/services/api-gateway/internal/health"
 	"lumin.studio/services/api-gateway/internal/platform"
+	"lumin.studio/services/api-gateway/internal/processing"
 	"lumin.studio/services/api-gateway/internal/product"
 	"lumin.studio/services/api-gateway/internal/search"
 )
@@ -50,6 +51,13 @@ func run(getenv func(string) string) error {
 		err := search.NewNATSSubscriber(config.NATSURL, config.DependencyTimeout, searchSyncer).Run(context.Background())
 		if err != nil && !errors.Is(err, context.Canceled) {
 			slog.Error("product search sync stopped", "error", err)
+		}
+	}()
+	completionHandler := processing.NewCompletionHandler(productStore)
+	go func() {
+		err := processing.NewNATSSubscriber(config.NATSURL, config.DependencyTimeout, completionHandler).Run(context.Background())
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.Error("processing completion subscriber stopped", "error", err)
 		}
 	}()
 

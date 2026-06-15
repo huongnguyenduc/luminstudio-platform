@@ -45,8 +45,10 @@ pet-tag fixture proves deterministic 24-frame, 6-by-4 JPEG sprite generation
 with the locally installed compatible Blender build. The worker runtime now
 composes source download, mesh optimization, Blender rendering, processed
 MinIO uploads, and v1 `3d.task.completed` publication behind testable ports.
-Worker image packaging, live K3d deployment, API completion consumption, and
-retry/dead-letter behavior remain deferred.
+The Go API now consumes valid worker completion events and atomically records
+the optimized GLB, sprite sheet, and completed processing state in PostgreSQL.
+Worker image packaging, live K3d deployment, and retry/dead-letter behavior
+remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof

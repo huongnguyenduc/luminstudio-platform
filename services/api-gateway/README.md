@@ -25,9 +25,10 @@ upserts derived documents into the Meilisearch `products` index. Source GLB
 upload is now exposed at `POST /admin/products/{id}/source-glb`; the handler
 stores the source object in MinIO, updates the product source asset and queued
 processing status, publishes `product.updated`, and publishes
-`3d.task.created` for later worker processing. Customer search routes,
-retry/outbox semantics, processing completion, and worker processing remain
-deferred to later stories.
+`3d.task.created` for worker processing. The API also consumes valid
+`3d.task.completed` events, atomically stores both processed asset references,
+and marks the product processing state as completed. Customer search routes,
+retry/outbox semantics, and live worker deployment remain deferred.
 
 Run native tests:
 

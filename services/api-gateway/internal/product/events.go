@@ -15,6 +15,7 @@ import (
 const (
 	productUpdatedEventType = "product.updated"
 	taskCreatedEventType    = "3d.task.created"
+	taskCompletedEventType  = "3d.task.completed"
 	eventSchemaVersion      = "v1"
 	productUpdatedSubject   = "lumin.product.updated"
 	taskCreatedSubject      = "lumin.3d.task.created"
@@ -23,6 +24,7 @@ const (
 
 const ProductUpdatedSubject = productUpdatedSubject
 const ProcessingTaskCreatedSubject = taskCreatedSubject
+const ProcessingTaskCompletedSubject = "lumin.3d.task.completed"
 
 var errInvalidCorrelationID = errors.New("correlation id must match the v1 correlation id contract")
 
@@ -59,6 +61,50 @@ type TaskCreatedPayload struct {
 	ProductID       string          `json:"productId"`
 	SourceAsset     ObjectRef       `json:"sourceAsset"`
 	MeshColorConfig MeshColorConfig `json:"meshColorConfig"`
+}
+
+type TaskCompletedEvent struct {
+	ID            string               `json:"id"`
+	Type          string               `json:"type"`
+	SchemaVersion string               `json:"schemaVersion"`
+	OccurredAt    time.Time            `json:"occurredAt"`
+	CorrelationID string               `json:"correlationId"`
+	Payload       TaskCompletedPayload `json:"payload"`
+}
+
+type TaskCompletedPayload struct {
+	TaskID         string    `json:"taskId"`
+	ProductID      string    `json:"productId"`
+	OptimizedAsset ObjectRef `json:"optimizedAsset"`
+	SpriteAsset    ObjectRef `json:"spriteAsset"`
+}
+
+func (event TaskCompletedEvent) Validate() error {
+	if !validEventID(event.ID) || event.Type != taskCompletedEventType || event.SchemaVersion != eventSchemaVersion {
+		return errors.New("event must be a v1 3d.task.completed envelope")
+	}
+	if event.OccurredAt.IsZero() || !validCorrelationID(event.CorrelationID) {
+		return errors.New("3d.task.completed event is missing required v1 envelope fields")
+	}
+	if !taskIDPattern.MatchString(event.Payload.TaskID) {
+		return errors.New("task id must match the v1 processing task id contract")
+	}
+	if !productIDPattern.MatchString(event.Payload.ProductID) {
+		return errors.New("product id must match the v1 product id contract")
+	}
+	if err := event.Payload.OptimizedAsset.validate(); err != nil {
+		return fmt.Errorf("optimizedAsset: %w", err)
+	}
+	if event.Payload.OptimizedAsset.Bucket != "lumin-optimized-glb" {
+		return errors.New("optimizedAsset must use the lumin-optimized-glb bucket")
+	}
+	if err := event.Payload.SpriteAsset.validate(); err != nil {
+		return fmt.Errorf("spriteAsset: %w", err)
+	}
+	if event.Payload.SpriteAsset.Bucket != "lumin-360-sprites" {
+		return errors.New("spriteAsset must use the lumin-360-sprites bucket")
+	}
+	return nil
 }
 
 func NewProductUpdatedEvent(eventID, correlationID string, record ProductRecord) (ProductUpdatedEvent, error) {

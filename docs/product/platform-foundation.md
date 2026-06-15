@@ -107,6 +107,10 @@ mesh optimization, Blender rendering, MinIO processed asset uploads, and
 `3d.task.completed` publication with unit and Bazel proof, without adding
 worker image packaging, live K3d deployment, retries, or API completion
 consumption.
+`US-027` adds the API completion consumer, which validates
+`3d.task.completed` and atomically records both processed asset references plus
+completed product state without adding live K3d proof or retry/dead-letter
+semantics.
 
 ## Boundary Rules
 

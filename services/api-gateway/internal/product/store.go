@@ -50,6 +50,18 @@ RETURNING id, slug, name, description, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
   sprite_asset`
 
+const completeProcessingSQL = `
+UPDATE products
+SET optimized_asset = $2,
+  sprite_asset = $3,
+  processing_status = $4,
+  updated_at = $5
+WHERE id = $1
+  AND updated_at <= $5
+RETURNING id, slug, name, description, information_sections, mesh_color_config,
+  source_asset, created_at, updated_at, processing_status, optimized_asset,
+  sprite_asset`
+
 const selectProductColumns = `
 SELECT id, slug, name, description, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
@@ -108,6 +120,14 @@ type queueSourceAssetArgs struct {
 	UpdatedAt        time.Time
 }
 
+type completeProcessingArgs struct {
+	ID               string
+	OptimizedAsset   []byte
+	SpriteAsset      []byte
+	ProcessingStatus ProcessingStatus
+	UpdatedAt        time.Time
+}
+
 func NewInsertProductArgs(id string, draft ProductDraft, now time.Time) (insertProductArgs, error) {
 	if !productIDPattern.MatchString(id) {
 		return insertProductArgs{}, fmt.Errorf("id must match the v1 product id contract")
@@ -156,6 +176,42 @@ func NewQueueSourceAssetArgs(id string, sourceAsset ObjectRef, now time.Time) (q
 		ID:               id,
 		SourceAsset:      encodedSourceAsset,
 		ProcessingStatus: ProcessingQueued,
+		UpdatedAt:        now,
+	}, nil
+}
+
+func NewCompleteProcessingArgs(id string, optimizedAsset, spriteAsset ObjectRef, now time.Time) (completeProcessingArgs, error) {
+	if !productIDPattern.MatchString(id) {
+		return completeProcessingArgs{}, fmt.Errorf("id must match the v1 product id contract")
+	}
+	if now.IsZero() {
+		return completeProcessingArgs{}, errors.New("updatedAt is required")
+	}
+	if err := optimizedAsset.validate(); err != nil {
+		return completeProcessingArgs{}, fmt.Errorf("optimizedAsset: %w", err)
+	}
+	if optimizedAsset.Bucket != "lumin-optimized-glb" {
+		return completeProcessingArgs{}, errors.New("optimizedAsset must use the lumin-optimized-glb bucket")
+	}
+	if err := spriteAsset.validate(); err != nil {
+		return completeProcessingArgs{}, fmt.Errorf("spriteAsset: %w", err)
+	}
+	if spriteAsset.Bucket != "lumin-360-sprites" {
+		return completeProcessingArgs{}, errors.New("spriteAsset must use the lumin-360-sprites bucket")
+	}
+	optimizedJSON, err := encodeJSON(&optimizedAsset)
+	if err != nil {
+		return completeProcessingArgs{}, fmt.Errorf("encode optimized asset: %w", err)
+	}
+	spriteJSON, err := encodeJSON(&spriteAsset)
+	if err != nil {
+		return completeProcessingArgs{}, fmt.Errorf("encode sprite asset: %w", err)
+	}
+	return completeProcessingArgs{
+		ID:               id,
+		OptimizedAsset:   optimizedJSON,
+		SpriteAsset:      spriteJSON,
+		ProcessingStatus: ProcessingCompleted,
 		UpdatedAt:        now,
 	}, nil
 }
@@ -252,6 +308,27 @@ func (store Store) QueueSourceAsset(ctx context.Context, id string, sourceAsset 
 		args.UpdatedAt,
 	)
 	record, err := scanProduct(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ProductRecord{}, ErrProductNotFound
+		}
+		return ProductRecord{}, err
+	}
+	return record, record.Validate()
+}
+
+func (store Store) CompleteProcessing(ctx context.Context, id string, optimizedAsset, spriteAsset ObjectRef, now time.Time) (ProductRecord, error) {
+	args, err := NewCompleteProcessingArgs(id, optimizedAsset, spriteAsset, now)
+	if err != nil {
+		return ProductRecord{}, err
+	}
+	record, err := scanProduct(store.db.QueryRow(ctx, completeProcessingSQL,
+		args.ID,
+		args.OptimizedAsset,
+		args.SpriteAsset,
+		args.ProcessingStatus,
+		args.UpdatedAt,
+	))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ProductRecord{}, ErrProductNotFound

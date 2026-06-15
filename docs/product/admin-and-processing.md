@@ -82,11 +82,11 @@ source asset reference and `queued` processing status, publishes
 `product.updated`, and publishes `3d.task.created` for later worker
 processing.
 
-The Rust worker now parses and validates v1 `3d.task.created` events, exposes
-the `lumin.3d.task.created` subscription boundary, and requests the referenced
-source GLB object from a source asset reader. This covers the worker-side source
-intake handoff before mesh optimization, 360-degree rendering, processed asset
-upload, `3d.task.completed` publication, or API completion consumption.
+The Rust worker parses and validates v1 `3d.task.created` events, exposes the
+`lumin.3d.task.created` subscription boundary, and requests the referenced
+source GLB object from a source asset reader. Later worker stories compose this
+intake with mesh optimization, 360-degree rendering, processed asset upload,
+and `3d.task.completed` publication.
 
 The worker now has the first mesh optimization implementation through the
 upstream-recommended Rust `meshopt` crate. Supported GLB 2.0 assets with one
@@ -106,12 +106,19 @@ The runtime worker now composes source download, mesh optimization, Blender
 rendering, and uploads processed assets to MinIO. It writes optimized GLBs to
 `lumin-optimized-glb`, writes sprite sheets to `lumin-360-sprites`, and
 publishes a v1 `3d.task.completed` event only after both uploads succeed.
-Worker image packaging, live K3d deployment, API completion consumption, and
-retry/dead-letter behavior remain deferred.
+Worker image packaging, live K3d deployment, and retry/dead-letter behavior
+remain deferred.
 
-Authentication, authorization, product delete workflows, processing completion
-consumption, customer catalog/search HTTP routes, retry/outbox semantics, and
-dead-letter handling remain deferred.
+The Go API now consumes valid v1 `3d.task.completed` events through a dedicated
+NATS queue group. It strictly validates the completion envelope and processed
+object references, then atomically stores the optimized GLB and sprite assets
+and marks the authoritative PostgreSQL product record as `completed`. Worker
+image packaging, live K3d deployment, retry/outbox semantics, failure events,
+and dead-letter behavior remain deferred.
+
+Authentication, authorization, product delete workflows, customer
+catalog/search HTTP routes, retry/outbox semantics, and dead-letter handling
+remain deferred.
 
 ## Processing Pipeline
 
