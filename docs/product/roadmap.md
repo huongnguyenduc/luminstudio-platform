@@ -32,6 +32,9 @@ Selected work:
 - `US-005 Create the K3d development cluster lifecycle` adds repeatable local
   cluster creation, overlay application, status, and deletion without adding
   platform workloads.
+- `US-006 Deploy NATS in the dev cluster` is selected to add the first healthy,
+  namespace-local platform workload without application connectivity or event
+  contracts.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 
