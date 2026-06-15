@@ -14,6 +14,15 @@ The command runs `bazel query //...` when Bazel is available and reports a
 clean skip when it is not installed. This is structural proof only; it does not
 claim component build targets or runtime services exist.
 
+## Phase 1 Infrastructure Verification
+
+Verify the persistent Meilisearch deployment, in-cluster API access, and
+pod-replacement persistence in an isolated K3d cluster:
+
+```bash
+bash scripts/verify-us-009.sh
+```
+
 ## Harness CLI
 
 The Rust Harness CLI is the primary interface for the durable layer. Installed

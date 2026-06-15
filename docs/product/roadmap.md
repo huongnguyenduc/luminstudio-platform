@@ -40,6 +40,9 @@ Selected work:
   connectivity.
 - `US-008 Deploy MinIO in the dev cluster` adds the persistent object storage
   service without buckets, external routing, or API connectivity.
+- `US-009 Deploy Meilisearch in the dev cluster` adds the persistent derived
+  search service without product indexes, external routing, synchronization,
+  or API connectivity.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 

@@ -60,9 +60,11 @@ NATS server behind a namespace-local Service and proves its monitoring health
 endpoint from inside the cluster. `US-007` adds a persistent PostgreSQL
 StatefulSet and proves that a written value survives pod replacement. `US-008`
 adds persistent MinIO object storage and proves that a written object survives
-pod replacement. These stories do not satisfy the complete Phase 1 acceptance
-contract above; Meilisearch, storage buckets, external development routes,
-application connectivity, and publish/subscribe proof remain outstanding.
+pod replacement. `US-009` adds persistent Meilisearch and proves that an
+indexed document survives pod replacement. These stories do not satisfy the
+complete Phase 1 acceptance contract above; storage buckets, external
+development routes, application connectivity, and publish/subscribe proof
+remain outstanding.
 
 ## Boundary Rules
 
