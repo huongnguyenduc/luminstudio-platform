@@ -27,6 +27,8 @@ Selected work:
   worker target without messaging or 3D dependencies.
 - `US-003 Build the Web Admin shell` adds the executable React + Vite target
   without introducing Phase 2 administration workflows.
+- `US-004 Create the K3d dev namespace and Kustomize base` starts E02 with a
+  renderable deployment boundary but no platform workloads.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 

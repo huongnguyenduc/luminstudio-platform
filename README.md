@@ -66,6 +66,12 @@ Web Admin bootstrap verification:
 bash scripts/verify-us-003.sh
 ```
 
+Kustomize development namespace verification:
+
+```bash
+bash scripts/verify-us-004.sh
+```
+
 Bazel is the selected top-level build system. Go and Rust rules now provide the
 first executable service targets; remaining language rules and platform
 resources will be added by later Phase 1 stories.
