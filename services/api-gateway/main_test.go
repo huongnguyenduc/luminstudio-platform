@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"lumin.studio/services/api-gateway/internal/product"
+	"lumin.studio/services/api-gateway/internal/search"
 )
 
 type readyStub struct {
@@ -58,11 +59,35 @@ func routeProductRecord(now time.Time) product.ProductRecord {
 	}
 }
 
+type productSearcherRouteStub struct{}
+
+func (productSearcherRouteStub) SearchProducts(_ context.Context, query search.ProductSearchQuery) (search.ProductSearchResult, error) {
+	return search.ProductSearchResult{
+		Total: 1,
+		Hits: []search.ProductDocument{{
+			ID:               "prod_12345678",
+			Name:             "Arc Chair",
+			Slug:             "arc-chair",
+			Description:      "Configurable chair.",
+			ProcessingStatus: product.ProcessingCompleted,
+			UpdatedAt:        time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC),
+		}},
+	}, nil
+}
+
+func testRoutes() http.Handler {
+	return routes(
+		readyStub{},
+		product.NewHandler(productCreatorStub{}),
+		search.NewHandler(productSearcherRouteStub{}),
+	)
+}
+
 func TestRoutesExposeHealth(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 
-	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+	testRoutes().ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
@@ -73,7 +98,7 @@ func TestRoutesExposeReadiness(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/readyz", nil)
 
-	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+	testRoutes().ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
@@ -85,7 +110,7 @@ func TestRoutesExposeAdminProductCreate(t *testing.T) {
 	body := `{"name":"Arc Chair","slug":"arc-chair","description":"Configurable chair.","informationSections":[]}`
 	request := httptest.NewRequest(http.MethodPost, "/admin/products", strings.NewReader(body))
 
-	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+	testRoutes().ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusCreated, recorder.Body.String())
@@ -96,7 +121,7 @@ func TestRoutesExposeAdminProductList(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/admin/products", nil)
 
-	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+	testRoutes().ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
@@ -107,7 +132,7 @@ func TestRoutesExposeAdminProductGet(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/admin/products/prod_12345678", nil)
 
-	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+	testRoutes().ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
@@ -119,7 +144,7 @@ func TestRoutesExposeAdminProductUpdate(t *testing.T) {
 	body := `{"name":"Arc Chair","slug":"arc-chair","description":"Configurable chair.","informationSections":[]}`
 	request := httptest.NewRequest(http.MethodPut, "/admin/products/prod_12345678", strings.NewReader(body))
 
-	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+	testRoutes().ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
@@ -137,10 +162,32 @@ func TestRoutesExposeAdminProductSourceUpload(t *testing.T) {
 		WithSourceAssetStore(sourceAssetStoreRouteStub{ref: sourceRef}).
 		WithEventPublisher(eventPublisherRouteStub{})
 
-	routes(readyStub{}, handler).ServeHTTP(recorder, request)
+	routes(readyStub{}, handler, search.NewHandler(productSearcherRouteStub{})).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusAccepted {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusAccepted, recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeCatalogProducts(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products", nil)
+
+	testRoutes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeCatalogSearch(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/search?q=chair", nil)
+
+	testRoutes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
 	}
 }
 

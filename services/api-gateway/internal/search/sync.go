@@ -99,6 +99,7 @@ type ProductDocument struct {
 	Description      string                   `json:"description"`
 	InformationText  string                   `json:"informationText,omitempty"`
 	ProcessingStatus product.ProcessingStatus `json:"processingStatus"`
+	SpriteAsset      *product.ObjectRef       `json:"spriteAsset,omitempty"`
 	UpdatedAt        time.Time                `json:"updatedAt"`
 }
 
@@ -114,6 +115,7 @@ func NewProductDocument(record product.ProductRecord) ProductDocument {
 		Description:      record.Description,
 		InformationText:  strings.Join(sectionBodies, "\n"),
 		ProcessingStatus: record.ProcessingStatus,
+		SpriteAsset:      record.SpriteAsset,
 		UpdatedAt:        record.UpdatedAt,
 	}
 }

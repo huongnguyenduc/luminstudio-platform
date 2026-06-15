@@ -120,9 +120,16 @@ development smoke now proves that one uploaded GLB can move from `queued` to
 boundaries. Retry/outbox semantics, failure events, production image hardening,
 and dead-letter behavior remain deferred.
 
+The Go API now exposes the first customer-facing catalog/search boundary:
+`GET /catalog/products` and `GET /catalog/search?q=...` query the derived
+Meilisearch `products` index from inside the API gateway and return customer
+catalog item fields plus optional sprite asset references. Clients remain behind
+the API boundary and do not connect directly to Meilisearch, PostgreSQL, MinIO,
+or NATS.
+
 Authentication, authorization, product delete workflows, customer
-catalog/search HTTP routes, retry/outbox semantics, and dead-letter handling
-remain deferred.
+category taxonomy, sorting, signed object URLs, retry/outbox semantics, and
+dead-letter handling remain deferred.
 
 ## Processing Pipeline
 

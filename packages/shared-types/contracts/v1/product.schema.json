@@ -134,6 +134,89 @@
           "$ref": "common.schema.json#/$defs/ObjectRef"
         }
       }
+    },
+    "CatalogItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "description",
+        "processingStatus",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 180
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "processingStatus": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "queued",
+            "processing",
+            "completed",
+            "failed"
+          ]
+        },
+        "spriteAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "updatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        }
+      }
+    },
+    "CatalogSearchResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "limit",
+        "offset"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogItem"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "query": {
+          "type": "string",
+          "maxLength": 160
+        }
+      }
     }
   }
 }

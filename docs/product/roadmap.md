@@ -150,6 +150,14 @@ typo-tolerant search.
 - Epic `E09`: Catalog/category pagination and preview behavior.
 - Epic `E10`: Mobile search integration.
 
+Selected work:
+
+- `US-029 Customer Catalog Search HTTP API` starts Phase 3 with
+  customer-facing `GET /catalog/products` and `GET /catalog/search?q=...`
+  routes through the Go API, backed by the derived Meilisearch `products` index,
+  without adding Flutter UI, category taxonomy, sorting, signed object URLs,
+  product detail, auth, retry/outbox behavior, or live K3d proof.
+
 ## Phase 4: 3D Detail And Cart
 
 Goal: adapt 3D delivery to device capability and support configurable products

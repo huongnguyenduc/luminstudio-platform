@@ -27,8 +27,10 @@ stores the source object in MinIO, updates the product source asset and queued
 processing status, publishes `product.updated`, and publishes
 `3d.task.created` for worker processing. The API also consumes valid
 `3d.task.completed` events, atomically stores both processed asset references,
-and marks the product processing state as completed. Customer search routes,
-retry/outbox semantics, and live worker deployment remain deferred.
+and marks the product processing state as completed. Customer-facing
+`GET /catalog/products` and `GET /catalog/search?q=...` routes now query the
+derived Meilisearch `products` index through the API gateway and return v1
+catalog card response shapes. Retry/outbox semantics remain deferred.
 
 Run native tests:
 
@@ -95,4 +97,10 @@ root:
 
 ```bash
 bash scripts/verify-us-022.sh
+```
+
+Verify customer catalog/search API routes from the repository root:
+
+```bash
+bash scripts/verify-us-029.sh
 ```

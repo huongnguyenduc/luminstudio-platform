@@ -50,7 +50,11 @@ The Rust worker now has a local development container image and K3d Deployment,
 and an isolated live smoke proves source upload through the Go API, NATS task
 delivery, worker processing, MinIO processed uploads, completion publication,
 and API completion consumption. Production worker image hardening and
-retry/dead-letter behavior remain deferred.
+retry/dead-letter behavior remain deferred. The first Phase 3 customer-facing
+catalog/search API routes now expose `GET /catalog/products` and
+`GET /catalog/search?q=...` through the Go API gateway, backed by the derived
+Meilisearch `products` index. Flutter UI, category taxonomy, product detail,
+signed object URLs, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -254,6 +258,12 @@ Worker K3d deployment and live processing smoke verification:
 
 ```bash
 bash scripts/verify-us-028.sh
+```
+
+Customer catalog/search API verification:
+
+```bash
+bash scripts/verify-us-029.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

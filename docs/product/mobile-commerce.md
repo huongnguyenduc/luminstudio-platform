@@ -29,8 +29,12 @@ defined before this becomes release proof.
 
 The backend now maintains the first derived Meilisearch `products` index from
 admin product mutations through `product.updated` events. Customer-facing
-catalog and search HTTP routes remain deferred until Phase 3 stories select
-the mobile search surface.
+catalog and search HTTP routes are selected as the first Phase 3 slice:
+`GET /catalog/products` returns paginated product cards, and
+`GET /catalog/search?q=...` returns typo-tolerant search results through the Go
+API boundary. Both routes query Meilisearch from the API gateway and return the
+same v1 catalog search response shape, including the 360-degree sprite asset
+reference when the processed product document has one.
 
 ## Product Detail And Device Tier
 

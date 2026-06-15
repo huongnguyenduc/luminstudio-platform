@@ -117,6 +117,11 @@ worker processing, MinIO processed uploads, completion publication, and API
 completion consumption without adding production image hardening,
 retry/dead-letter behavior, auth, UI, mobile, or customer catalog/search
 routes.
+`US-029` starts Phase 3 by exposing customer catalog/search HTTP routes through
+the Go API gateway. The routes query the derived Meilisearch `products` index
+and return v1 customer catalog item response shapes without adding Flutter UI,
+category taxonomy, sorting, signed object URLs, product detail, auth,
+retry/dead-letter behavior, or live K3d proof.
 
 ## Boundary Rules
 

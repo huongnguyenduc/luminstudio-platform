@@ -84,5 +84,6 @@ go_test(
     embed = [":api_gateway_lib"],
     deps = [
         "//services/api-gateway/internal/product",
+        "//services/api-gateway/internal/search",
     ],
 )
