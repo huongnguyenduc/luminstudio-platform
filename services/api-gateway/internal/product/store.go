@@ -26,6 +26,20 @@ RETURNING id, slug, name, description, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
   sprite_asset`
 
+const updateProductSQL = `
+UPDATE products
+SET slug = $2,
+  name = $3,
+  description = $4,
+  information_sections = $5,
+  mesh_color_config = $6,
+  source_asset = $7,
+  updated_at = $8
+WHERE id = $1
+RETURNING id, slug, name, description, information_sections, mesh_color_config,
+  source_asset, created_at, updated_at, processing_status, optimized_asset,
+  sprite_asset`
+
 const selectProductColumns = `
 SELECT id, slug, name, description, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
@@ -66,6 +80,17 @@ type insertProductArgs struct {
 	UpdatedAt           time.Time
 }
 
+type updateProductArgs struct {
+	ID                  string
+	Slug                string
+	Name                string
+	Description         string
+	InformationSections []byte
+	MeshColorConfig     []byte
+	SourceAsset         []byte
+	UpdatedAt           time.Time
+}
+
 func NewInsertProductArgs(id string, draft ProductDraft, now time.Time) (insertProductArgs, error) {
 	if !productIDPattern.MatchString(id) {
 		return insertProductArgs{}, fmt.Errorf("id must match the v1 product id contract")
@@ -99,6 +124,37 @@ func NewInsertProductArgs(id string, draft ProductDraft, now time.Time) (insertP
 	}, nil
 }
 
+func NewUpdateProductArgs(id string, draft ProductDraft, now time.Time) (updateProductArgs, error) {
+	if !productIDPattern.MatchString(id) {
+		return updateProductArgs{}, fmt.Errorf("id must match the v1 product id contract")
+	}
+	if err := draft.Validate(); err != nil {
+		return updateProductArgs{}, err
+	}
+	sections, err := encodeJSON(draft.InformationSections)
+	if err != nil {
+		return updateProductArgs{}, fmt.Errorf("encode information sections: %w", err)
+	}
+	meshConfig, err := encodeJSON(draft.MeshColorConfig)
+	if err != nil {
+		return updateProductArgs{}, fmt.Errorf("encode mesh color config: %w", err)
+	}
+	sourceAsset, err := encodeJSON(draft.SourceAsset)
+	if err != nil {
+		return updateProductArgs{}, fmt.Errorf("encode source asset: %w", err)
+	}
+	return updateProductArgs{
+		ID:                  id,
+		Slug:                draft.Slug,
+		Name:                draft.Name,
+		Description:         draft.Description,
+		InformationSections: sections,
+		MeshColorConfig:     meshConfig,
+		SourceAsset:         sourceAsset,
+		UpdatedAt:           now,
+	}, nil
+}
+
 func (store Store) InsertProduct(ctx context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error) {
 	args, err := NewInsertProductArgs(id, draft, now)
 	if err != nil {
@@ -118,6 +174,31 @@ func (store Store) InsertProduct(ctx context.Context, id string, draft ProductDr
 	)
 	record, err := scanProduct(row)
 	if err != nil {
+		return ProductRecord{}, err
+	}
+	return record, record.Validate()
+}
+
+func (store Store) UpdateProduct(ctx context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error) {
+	args, err := NewUpdateProductArgs(id, draft, now)
+	if err != nil {
+		return ProductRecord{}, err
+	}
+	row := store.db.QueryRow(ctx, updateProductSQL,
+		args.ID,
+		args.Slug,
+		args.Name,
+		args.Description,
+		args.InformationSections,
+		args.MeshColorConfig,
+		args.SourceAsset,
+		args.UpdatedAt,
+	)
+	record, err := scanProduct(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ProductRecord{}, ErrProductNotFound
+		}
 		return ProductRecord{}, err
 	}
 	return record, record.Validate()

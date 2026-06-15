@@ -18,6 +18,10 @@ type Creator interface {
 	InsertProduct(ctx context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error)
 }
 
+type Updater interface {
+	UpdateProduct(ctx context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error)
+}
+
 type Reader interface {
 	GetProduct(ctx context.Context, id string) (ProductRecord, error)
 	ListProducts(ctx context.Context) ([]ProductRecord, error)
@@ -25,6 +29,7 @@ type Reader interface {
 
 type Repository interface {
 	Creator
+	Updater
 	Reader
 }
 
@@ -100,6 +105,46 @@ func (handler Handler) GetProduct(response http.ResponseWriter, request *http.Re
 			return
 		}
 		writeError(response, http.StatusInternalServerError, "could not read product")
+		return
+	}
+
+	writeJSON(response, http.StatusOK, record)
+}
+
+func (handler Handler) UpdateProduct(response http.ResponseWriter, request *http.Request) {
+	if handler.repository == nil {
+		writeError(response, http.StatusServiceUnavailable, "product persistence is not configured")
+		return
+	}
+
+	id := request.PathValue("id")
+	if !productIDPattern.MatchString(id) {
+		writeError(response, http.StatusBadRequest, "id must match the v1 product id contract")
+		return
+	}
+	var draft ProductDraft
+	decoder := json.NewDecoder(http.MaxBytesReader(response, request.Body, maxProductDraftBytes))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&draft); err != nil {
+		writeError(response, http.StatusBadRequest, "request body must be a valid product draft")
+		return
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		writeError(response, http.StatusBadRequest, "request body must contain one JSON object")
+		return
+	}
+	if err := draft.Validate(); err != nil {
+		writeError(response, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	record, err := handler.repository.UpdateProduct(request.Context(), id, draft, handler.now())
+	if err != nil {
+		if errors.Is(err, ErrProductNotFound) {
+			writeError(response, http.StatusNotFound, "product not found")
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not update product")
 		return
 	}
 

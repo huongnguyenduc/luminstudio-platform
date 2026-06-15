@@ -15,9 +15,10 @@ schema in `migrations`. The first runtime product administration route is
 `POST /admin/products`, which validates a v1 product draft, generates the
 server-side product identity, persists through the product store, and returns a
 created product record. Admin read routes now expose `GET /admin/products` and
-`GET /admin/products/{id}` from PostgreSQL-backed product storage. Uploads,
-NATS publication, search synchronization, and worker processing remain deferred
-to later stories.
+`GET /admin/products/{id}` from PostgreSQL-backed product storage. Admin update
+behavior now exposes `PUT /admin/products/{id}` as a full-replacement update
+that preserves server-owned product fields. Uploads, NATS publication, search
+synchronization, and worker processing remain deferred to later stories.
 
 Run native tests:
 
@@ -59,4 +60,10 @@ Verify the admin product read HTTP API from the repository root:
 
 ```bash
 bash scripts/verify-us-018.sh
+```
+
+Verify the admin product update HTTP API from the repository root:
+
+```bash
+bash scripts/verify-us-019.sh
 ```

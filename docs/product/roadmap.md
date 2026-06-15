@@ -91,6 +91,10 @@ Selected work:
   `GET /admin/products/{id}` through the Go API so admin clients can read
   persisted records from PostgreSQL without adding updates, uploads, events,
   search synchronization, worker processing, auth, or UI behavior.
+- `US-019 Admin Product Update HTTP API` exposes `PUT /admin/products/{id}` as
+  a full-replacement update for persisted product drafts without adding delete
+  workflows, uploads, events, search synchronization, worker processing, auth,
+  or UI behavior.
 
 ## Phase 3: Mobile Catalog And Search
 

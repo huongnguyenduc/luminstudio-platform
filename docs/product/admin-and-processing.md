@@ -55,9 +55,15 @@ The Go API also exposes product read routes for the admin surface:
 identity. These read routes use PostgreSQL as the source of truth and do not
 read from Meilisearch, MinIO, NATS, or the worker.
 
-Authentication, authorization, product update/delete workflows, source GLB
-uploads, event publication, search synchronization, and worker processing
-remain deferred.
+The Go API also exposes full-replacement product updates through
+`PUT /admin/products/{id}`. The endpoint accepts the same v1 product draft shape
+as creation, validates the path identity before persistence access, updates the
+PostgreSQL product row, and preserves server-owned identity, creation time,
+processing status, and processed asset references.
+
+Authentication, authorization, product delete workflows, source GLB uploads,
+event publication, search synchronization, and worker processing remain
+deferred.
 
 ## Processing Pipeline
 

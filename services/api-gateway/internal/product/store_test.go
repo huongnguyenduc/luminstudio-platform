@@ -44,3 +44,35 @@ func TestNewInsertProductArgsRejectsInvalidID(t *testing.T) {
 		t.Fatal("expected invalid id to be rejected")
 	}
 }
+
+func TestNewUpdateProductArgsEncodesValidatedDraft(t *testing.T) {
+	now := time.Date(2026, 6, 15, 13, 0, 0, 0, time.UTC)
+	args, err := NewUpdateProductArgs("prod_12345678", validDraft(), now)
+	if err != nil {
+		t.Fatalf("building update args failed: %v", err)
+	}
+	if args.ID != "prod_12345678" {
+		t.Fatalf("id = %q", args.ID)
+	}
+	if args.UpdatedAt != now {
+		t.Fatalf("updated at = %s", args.UpdatedAt)
+	}
+	var sections []InformationSection
+	if err := json.Unmarshal(args.InformationSections, &sections); err != nil {
+		t.Fatalf("information sections were not JSON: %v", err)
+	}
+	if len(sections) != 1 || sections[0].Title != "Materials" {
+		t.Fatalf("unexpected information sections: %#v", sections)
+	}
+}
+
+func TestNewUpdateProductArgsRejectsInvalidInput(t *testing.T) {
+	if _, err := NewUpdateProductArgs("bad", validDraft(), time.Now()); err == nil {
+		t.Fatal("expected invalid id to be rejected")
+	}
+	draft := validDraft()
+	draft.Slug = "Bad Slug"
+	if _, err := NewUpdateProductArgs("prod_12345678", draft, time.Now()); err == nil {
+		t.Fatal("expected invalid draft to be rejected")
+	}
+}

@@ -25,6 +25,10 @@ func (productCreatorStub) InsertProduct(_ context.Context, _ string, _ product.P
 	return routeProductRecord(now), nil
 }
 
+func (productCreatorStub) UpdateProduct(_ context.Context, _ string, _ product.ProductDraft, now time.Time) (product.ProductRecord, error) {
+	return routeProductRecord(now), nil
+}
+
 func (productCreatorStub) GetProduct(_ context.Context, _ string) (product.ProductRecord, error) {
 	return routeProductRecord(time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)), nil
 }
@@ -93,6 +97,18 @@ func TestRoutesExposeAdminProductList(t *testing.T) {
 func TestRoutesExposeAdminProductGet(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/admin/products/prod_12345678", nil)
+
+	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeAdminProductUpdate(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	body := `{"name":"Arc Chair","slug":"arc-chair","description":"Configurable chair.","informationSections":[]}`
+	request := httptest.NewRequest(http.MethodPut, "/admin/products/prod_12345678", strings.NewReader(body))
 
 	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
 

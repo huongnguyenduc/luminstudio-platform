@@ -30,6 +30,14 @@ func (stub *creatorStub) InsertProduct(_ context.Context, id string, draft Produ
 	return stub.record, stub.err
 }
 
+func (stub *creatorStub) UpdateProduct(_ context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error) {
+	stub.called = true
+	stub.requestedID = id
+	stub.draft = draft
+	stub.now = now
+	return stub.record, stub.err
+}
+
 func (stub *creatorStub) GetProduct(_ context.Context, id string) (ProductRecord, error) {
 	stub.called = true
 	stub.requestedID = id
@@ -174,6 +182,104 @@ func TestGetProductReturnsNotFound(t *testing.T) {
 	request.SetPathValue("id", "prod_missing1")
 
 	handler.GetProduct(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)
+	}
+}
+
+func TestUpdateProductPersistsValidatedDraft(t *testing.T) {
+	now := time.Date(2026, 6, 15, 13, 0, 0, 0, time.UTC)
+	record := validRecord(now)
+	repository := &creatorStub{record: record}
+	handler := NewHandler(repository)
+	handler.now = func() time.Time { return now }
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/admin/products/prod_12345678", strings.NewReader(validDraftJSON(t)))
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.UpdateProduct(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if repository.requestedID != "prod_12345678" {
+		t.Fatalf("requested id = %q", repository.requestedID)
+	}
+	if repository.draft.Slug != "arc-chair" {
+		t.Fatalf("slug = %q", repository.draft.Slug)
+	}
+	if !repository.now.Equal(now) {
+		t.Fatalf("now = %s", repository.now)
+	}
+	var got ProductRecord
+	if err := json.Unmarshal(recorder.Body.Bytes(), &got); err != nil {
+		t.Fatalf("response was not product JSON: %v", err)
+	}
+	if got.ID != "prod_12345678" {
+		t.Fatalf("id = %q", got.ID)
+	}
+}
+
+func TestUpdateProductRejectsInvalidID(t *testing.T) {
+	repository := &creatorStub{}
+	handler := NewHandler(repository)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/admin/products/bad", strings.NewReader(validDraftJSON(t)))
+	request.SetPathValue("id", "bad")
+
+	handler.UpdateProduct(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+	if repository.called {
+		t.Fatal("invalid id must not reach persistence")
+	}
+}
+
+func TestUpdateProductRejectsInvalidDraft(t *testing.T) {
+	repository := &creatorStub{}
+	handler := NewHandler(repository)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/admin/products/prod_12345678", strings.NewReader(`{"name":""}`))
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.UpdateProduct(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+	if repository.called {
+		t.Fatal("invalid draft must not reach persistence")
+	}
+}
+
+func TestUpdateProductRejectsTrailingJSON(t *testing.T) {
+	handler := NewHandler(&creatorStub{})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/admin/products/prod_12345678", strings.NewReader(validDraftJSON(t)+"{}"))
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.UpdateProduct(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+}
+
+func TestUpdateProductReturnsNotFound(t *testing.T) {
+	handler := NewHandler(&creatorStub{err: ErrProductNotFound})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/admin/products/prod_missing1", strings.NewReader(validDraftJSON(t)))
+	request.SetPathValue("id", "prod_missing1")
+
+	handler.UpdateProduct(recorder, request)
 
 	if recorder.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)
