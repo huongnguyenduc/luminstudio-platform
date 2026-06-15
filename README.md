@@ -16,9 +16,11 @@ NATS service plus persistent PostgreSQL, MinIO, and Meilisearch instances. The
 Bazel-built Go API image runs behind a namespace-local Service and exposes
 separate liveness and platform-readiness endpoints that prove connectivity to
 all four services. A repeatable in-cluster NATS publish/subscribe smoke command
-also proves message transport through the namespace-local Service. 3D
-processing, product database schema, storage buckets, external development
-routes, and product workflows have not been implemented yet.
+also proves message transport through the namespace-local Service. MinIO
+development buckets for source GLB, optimized GLB, and 360-degree sprite assets
+are bootstrapped idempotently in the dev namespace. 3D processing, product
+database schema, external development routes, and product workflows have not
+been implemented yet.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -125,6 +127,12 @@ NATS publish/subscribe smoke verification:
 
 ```bash
 bash scripts/verify-us-012.sh
+```
+
+MinIO development bucket verification:
+
+```bash
+bash scripts/verify-us-013.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

@@ -9,6 +9,7 @@ resources:
   - minio-secret.yaml
   - minio-service.yaml
   - minio-statefulset.yaml
+  - minio-buckets-job.yaml
   - nats-deployment.yaml
   - nats-service.yaml
   - postgres-secret.yaml

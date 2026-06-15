@@ -53,6 +53,9 @@ Selected work:
   and receive a smoke payload through the namespace-local NATS Service without
   adding product event schemas, JetStream persistence, worker behavior, or API
   publication.
+- `US-013 Create MinIO development buckets` adds idempotent source and
+  processed asset buckets without product upload API behavior, object key
+  policy, worker behavior, or external routing.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 
