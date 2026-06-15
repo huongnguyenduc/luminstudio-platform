@@ -1,0 +1,13 @@
+[package]
+name = "worker-3d"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "worker_3d"
+path = "src/lib.rs"
+
+[[bin]]
+name = "worker-3d"
+path = "src/main.rs"

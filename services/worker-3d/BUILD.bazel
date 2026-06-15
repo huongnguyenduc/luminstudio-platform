@@ -1,4 +1,22 @@
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["README.md"])
+rust_library(
+    name = "worker_3d_lib",
+    srcs = ["src/lib.rs"],
+    crate_name = "worker_3d",
+    edition = "2024",
+)
 
+rust_binary(
+    name = "worker-3d",
+    srcs = ["src/main.rs"],
+    edition = "2024",
+    deps = [":worker_3d_lib"],
+)
+
+rust_test(
+    name = "worker_3d_test",
+    crate = ":worker_3d_lib",
+)

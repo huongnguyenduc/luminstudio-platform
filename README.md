@@ -8,9 +8,9 @@ object storage, event delivery, and search.
 ## Current Status
 
 Phase 0 established the product contract and monorepo foundation. Phase 1 is in
-progress: the Go API now has the first executable Bazel target and operational
-health endpoint. External service deployments and product workflows have not
-been implemented yet.
+progress: the Go API has an operational health endpoint, and the Rust worker
+has an executable startup/configuration target. External service deployments,
+3D processing, and product workflows have not been implemented yet.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -52,6 +52,12 @@ First Phase 1 component verification:
 bash scripts/verify-us-001.sh
 ```
 
-Bazel is the selected top-level build system. `MODULE.bazel` and package
-boundaries exist now; language-specific rules and build targets will be added
-by Phase 1 stories when the component toolchains are introduced.
+Rust worker bootstrap verification:
+
+```bash
+bash scripts/verify-us-002.sh
+```
+
+Bazel is the selected top-level build system. Go and Rust rules now provide the
+first executable service targets; remaining language rules and platform
+resources will be added by later Phase 1 stories.
