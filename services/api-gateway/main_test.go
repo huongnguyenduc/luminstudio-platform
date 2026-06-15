@@ -4,7 +4,11 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
+
+	"lumin.studio/services/api-gateway/internal/product"
 )
 
 type readyStub struct {
@@ -15,11 +19,25 @@ func (stub readyStub) Check(context.Context) error {
 	return stub.err
 }
 
+type productCreatorStub struct{}
+
+func (productCreatorStub) InsertProduct(_ context.Context, _ string, _ product.ProductDraft, now time.Time) (product.ProductRecord, error) {
+	return product.ProductRecord{
+		ID:               "prod_12345678",
+		Name:             "Arc Chair",
+		Slug:             "arc-chair",
+		Description:      "Configurable chair.",
+		CreatedAt:        now,
+		UpdatedAt:        now,
+		ProcessingStatus: product.ProcessingNotStarted,
+	}, nil
+}
+
 func TestRoutesExposeHealth(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 
-	routes(readyStub{}).ServeHTTP(recorder, request)
+	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
@@ -30,10 +48,22 @@ func TestRoutesExposeReadiness(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/readyz", nil)
 
-	routes(readyStub{}).ServeHTTP(recorder, request)
+	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+}
+
+func TestRoutesExposeAdminProductCreate(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	body := `{"name":"Arc Chair","slug":"arc-chair","description":"Configurable chair.","informationSections":[]}`
+	request := httptest.NewRequest(http.MethodPost, "/admin/products", strings.NewReader(body))
+
+	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusCreated, recorder.Body.String())
 	}
 }
 

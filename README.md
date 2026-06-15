@@ -22,7 +22,9 @@ are bootstrapped idempotently in the dev namespace, and Traefik host routes
 expose MinIO administration plus Meilisearch inspection for local development.
 3D processing and product workflows have not been implemented yet. The first
 Phase 2 shared product, asset, and event contracts plus the Go API product
-validation and PostgreSQL product schema foundation are implemented.
+validation and PostgreSQL product schema foundation are implemented. The Go
+API now exposes the first runtime admin product creation route,
+`POST /admin/products`, backed by the product store.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -153,6 +155,12 @@ Product persistence foundation verification:
 
 ```bash
 bash scripts/verify-us-016.sh
+```
+
+Admin product HTTP API verification:
+
+```bash
+bash scripts/verify-us-017.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

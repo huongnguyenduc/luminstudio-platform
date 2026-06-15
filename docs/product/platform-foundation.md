@@ -76,7 +76,10 @@ for source GLB assets, optimized GLB assets, and 360-degree sprite assets.
 Meilisearch inspection. `US-015` adds Phase 2 shared product, asset, and event
 contract schemas. `US-016` adds the first Go API product validation and
 PostgreSQL product schema foundation without applying it to the live K3d
-database yet.
+database yet. `US-017` adds the first runtime admin product creation route on
+the Go API with unit and Bazel proof, without adding live K3d platform proof,
+uploads, event publication, search synchronization, worker behavior, auth, or
+UI.
 
 ## Boundary Rules
 

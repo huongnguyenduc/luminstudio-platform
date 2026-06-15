@@ -43,6 +43,14 @@ dynamic information sections, mesh color configuration, source asset
 references, and processing status before later stories expose runtime HTTP
 routes or event publication.
 
+The Go API now exposes the first runtime product administration route:
+`POST /admin/products`. The endpoint accepts the v1 product draft JSON shape,
+validates the draft at the HTTP boundary, creates the server-side product
+identity, persists through the product store, and returns the created product
+record. Authentication, authorization, product update/delete workflows, source
+GLB uploads, event publication, search synchronization, and worker processing
+remain deferred.
+
 ## Processing Pipeline
 
 1. The API publishes `3d.task.created` with a stable task and product identity.

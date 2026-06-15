@@ -11,6 +11,7 @@ import (
 
 	"lumin.studio/services/api-gateway/internal/health"
 	"lumin.studio/services/api-gateway/internal/platform"
+	"lumin.studio/services/api-gateway/internal/product"
 )
 
 const defaultPort = 8080
@@ -40,7 +41,7 @@ func run(getenv func(string) string) error {
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
-		Handler:           routes(checker),
+		Handler:           routes(checker, product.NewHandler(product.NewStore(checker.Postgres()))),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -51,10 +52,11 @@ func run(getenv func(string) string) error {
 	return nil
 }
 
-func routes(readiness health.Readiness) http.Handler {
+func routes(readiness health.Readiness, productHandler product.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", health.Handler)
 	mux.Handle("GET /readyz", health.ReadinessHandler(readiness))
+	mux.HandleFunc("POST /admin/products", productHandler.CreateProduct)
 	return mux
 }
 

@@ -58,6 +58,10 @@ func (checker *Checker) Close() {
 	checker.postgres.Close()
 }
 
+func (checker *Checker) Postgres() *pgxpool.Pool {
+	return checker.postgres
+}
+
 func (checker *Checker) Check(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, checker.timeout)
 	defer cancel()

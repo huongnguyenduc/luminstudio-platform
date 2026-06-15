@@ -82,6 +82,11 @@ Selected work:
   dynamic information sections, mesh color configuration, asset references, and
   processing status without adding HTTP routes, uploads, events, search, worker,
   or UI behavior.
+- `US-017 Admin Product HTTP API` exposes `POST /admin/products` through the Go
+  API, validates the v1 product draft shape at the HTTP boundary, generates a
+  server-side product identity, and persists through the product store without
+  adding uploads, events, search synchronization, worker processing, auth, or
+  UI behavior.
 
 ## Phase 3: Mobile Catalog And Search
 
