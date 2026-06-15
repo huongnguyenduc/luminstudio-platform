@@ -87,6 +87,10 @@ Selected work:
   server-side product identity, and persists through the product store without
   adding uploads, events, search synchronization, worker processing, auth, or
   UI behavior.
+- `US-018 Admin Product Read HTTP API` exposes `GET /admin/products` and
+  `GET /admin/products/{id}` through the Go API so admin clients can read
+  persisted records from PostgreSQL without adding updates, uploads, events,
+  search synchronization, worker processing, auth, or UI behavior.
 
 ## Phase 3: Mobile Catalog And Search
 

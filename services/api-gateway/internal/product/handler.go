@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,22 +18,32 @@ type Creator interface {
 	InsertProduct(ctx context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error)
 }
 
-type Handler struct {
-	creator Creator
-	now     func() time.Time
-	newID   func() (string, error)
+type Reader interface {
+	GetProduct(ctx context.Context, id string) (ProductRecord, error)
+	ListProducts(ctx context.Context) ([]ProductRecord, error)
 }
 
-func NewHandler(creator Creator) Handler {
+type Repository interface {
+	Creator
+	Reader
+}
+
+type Handler struct {
+	repository Repository
+	now        func() time.Time
+	newID      func() (string, error)
+}
+
+func NewHandler(repository Repository) Handler {
 	return Handler{
-		creator: creator,
-		now:     func() time.Time { return time.Now().UTC() },
-		newID:   NewID,
+		repository: repository,
+		now:        func() time.Time { return time.Now().UTC() },
+		newID:      NewID,
 	}
 }
 
 func (handler Handler) CreateProduct(response http.ResponseWriter, request *http.Request) {
-	if handler.creator == nil {
+	if handler.repository == nil {
 		writeError(response, http.StatusServiceUnavailable, "product persistence is not configured")
 		return
 	}
@@ -58,7 +69,7 @@ func (handler Handler) CreateProduct(response http.ResponseWriter, request *http
 		writeError(response, http.StatusInternalServerError, "could not allocate product id")
 		return
 	}
-	record, err := handler.creator.InsertProduct(request.Context(), id, draft, handler.now())
+	record, err := handler.repository.InsertProduct(request.Context(), id, draft, handler.now())
 	if err != nil {
 		writeError(response, http.StatusInternalServerError, "could not create product")
 		return
@@ -71,6 +82,45 @@ func (handler Handler) CreateProduct(response http.ResponseWriter, request *http
 	}
 }
 
+func (handler Handler) GetProduct(response http.ResponseWriter, request *http.Request) {
+	if handler.repository == nil {
+		writeError(response, http.StatusServiceUnavailable, "product persistence is not configured")
+		return
+	}
+
+	id := request.PathValue("id")
+	if !productIDPattern.MatchString(id) {
+		writeError(response, http.StatusBadRequest, "id must match the v1 product id contract")
+		return
+	}
+	record, err := handler.repository.GetProduct(request.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrProductNotFound) {
+			writeError(response, http.StatusNotFound, "product not found")
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not read product")
+		return
+	}
+
+	writeJSON(response, http.StatusOK, record)
+}
+
+func (handler Handler) ListProducts(response http.ResponseWriter, request *http.Request) {
+	if handler.repository == nil {
+		writeError(response, http.StatusServiceUnavailable, "product persistence is not configured")
+		return
+	}
+
+	records, err := handler.repository.ListProducts(request.Context())
+	if err != nil {
+		writeError(response, http.StatusInternalServerError, "could not list products")
+		return
+	}
+
+	writeJSON(response, http.StatusOK, records)
+}
+
 func NewID() (string, error) {
 	var bytes [18]byte
 	if _, err := rand.Read(bytes[:]); err != nil {
@@ -78,6 +128,14 @@ func NewID() (string, error) {
 	}
 	encoded := base64.RawURLEncoding.EncodeToString(bytes[:])
 	return "prod_" + encoded, nil
+}
+
+func writeJSON(response http.ResponseWriter, status int, payload any) {
+	response.Header().Set("Content-Type", "application/json")
+	response.WriteHeader(status)
+	if err := json.NewEncoder(response).Encode(payload); err != nil {
+		http.Error(response, "could not encode response", http.StatusInternalServerError)
+	}
 }
 
 func writeError(response http.ResponseWriter, status int, message string) {

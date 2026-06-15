@@ -12,12 +12,14 @@ import (
 )
 
 type creatorStub struct {
-	record ProductRecord
-	err    error
-	called bool
-	id     string
-	draft  ProductDraft
-	now    time.Time
+	record      ProductRecord
+	records     []ProductRecord
+	err         error
+	called      bool
+	id          string
+	draft       ProductDraft
+	now         time.Time
+	requestedID string
 }
 
 func (stub *creatorStub) InsertProduct(_ context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error) {
@@ -26,6 +28,17 @@ func (stub *creatorStub) InsertProduct(_ context.Context, id string, draft Produ
 	stub.draft = draft
 	stub.now = now
 	return stub.record, stub.err
+}
+
+func (stub *creatorStub) GetProduct(_ context.Context, id string) (ProductRecord, error) {
+	stub.called = true
+	stub.requestedID = id
+	return stub.record, stub.err
+}
+
+func (stub *creatorStub) ListProducts(_ context.Context) ([]ProductRecord, error) {
+	stub.called = true
+	return stub.records, stub.err
 }
 
 func TestCreateProductPersistsValidatedDraft(t *testing.T) {
@@ -106,6 +119,85 @@ func TestCreateProductReportsPersistenceFailure(t *testing.T) {
 
 	if recorder.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestGetProductReturnsRecord(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	repository := &creatorStub{record: validRecord(now)}
+	handler := NewHandler(repository)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/products/prod_12345678", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetProduct(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if repository.requestedID != "prod_12345678" {
+		t.Fatalf("requested id = %q", repository.requestedID)
+	}
+	var got ProductRecord
+	if err := json.Unmarshal(recorder.Body.Bytes(), &got); err != nil {
+		t.Fatalf("response was not product JSON: %v", err)
+	}
+	if got.ID != "prod_12345678" {
+		t.Fatalf("id = %q", got.ID)
+	}
+}
+
+func TestGetProductRejectsInvalidID(t *testing.T) {
+	repository := &creatorStub{}
+	handler := NewHandler(repository)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/products/bad", nil)
+	request.SetPathValue("id", "bad")
+
+	handler.GetProduct(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+	if repository.called {
+		t.Fatal("invalid id must not reach persistence")
+	}
+}
+
+func TestGetProductReturnsNotFound(t *testing.T) {
+	handler := NewHandler(&creatorStub{err: ErrProductNotFound})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/products/prod_missing1", nil)
+	request.SetPathValue("id", "prod_missing1")
+
+	handler.GetProduct(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)
+	}
+}
+
+func TestListProductsReturnsRecords(t *testing.T) {
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	handler := NewHandler(&creatorStub{records: []ProductRecord{validRecord(now)}})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/products", nil)
+
+	handler.ListProducts(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	var got []ProductRecord
+	if err := json.Unmarshal(recorder.Body.Bytes(), &got); err != nil {
+		t.Fatalf("response was not product list JSON: %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "prod_12345678" {
+		t.Fatalf("unexpected products: %#v", got)
 	}
 }
 

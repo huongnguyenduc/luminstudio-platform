@@ -47,8 +47,16 @@ The Go API now exposes the first runtime product administration route:
 `POST /admin/products`. The endpoint accepts the v1 product draft JSON shape,
 validates the draft at the HTTP boundary, creates the server-side product
 identity, persists through the product store, and returns the created product
-record. Authentication, authorization, product update/delete workflows, source
-GLB uploads, event publication, search synchronization, and worker processing
+record.
+
+The Go API also exposes product read routes for the admin surface:
+`GET /admin/products` returns persisted product records and
+`GET /admin/products/{id}` returns one persisted product record by v1 product
+identity. These read routes use PostgreSQL as the source of truth and do not
+read from Meilisearch, MinIO, NATS, or the worker.
+
+Authentication, authorization, product update/delete workflows, source GLB
+uploads, event publication, search synchronization, and worker processing
 remain deferred.
 
 ## Processing Pipeline

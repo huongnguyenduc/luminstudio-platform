@@ -14,8 +14,10 @@ record validation in `internal/product` plus the initial PostgreSQL `products`
 schema in `migrations`. The first runtime product administration route is
 `POST /admin/products`, which validates a v1 product draft, generates the
 server-side product identity, persists through the product store, and returns a
-created product record. Uploads, NATS publication, search synchronization, and
-worker processing remain deferred to later stories.
+created product record. Admin read routes now expose `GET /admin/products` and
+`GET /admin/products/{id}` from PostgreSQL-backed product storage. Uploads,
+NATS publication, search synchronization, and worker processing remain deferred
+to later stories.
 
 Run native tests:
 
@@ -51,4 +53,10 @@ Verify the admin product HTTP API from the repository root:
 
 ```bash
 bash scripts/verify-us-017.sh
+```
+
+Verify the admin product read HTTP API from the repository root:
+
+```bash
+bash scripts/verify-us-018.sh
 ```

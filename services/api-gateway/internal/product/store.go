@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -25,7 +26,22 @@ RETURNING id, slug, name, description, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
   sprite_asset`
 
+const selectProductColumns = `
+SELECT id, slug, name, description, information_sections, mesh_color_config,
+  source_asset, created_at, updated_at, processing_status, optimized_asset,
+  sprite_asset
+FROM products`
+
+const getProductSQL = selectProductColumns + `
+WHERE id = $1`
+
+const listProductsSQL = selectProductColumns + `
+ORDER BY updated_at DESC, id ASC`
+
+var ErrProductNotFound = errors.New("product not found")
+
 type queryer interface {
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
@@ -105,6 +121,47 @@ func (store Store) InsertProduct(ctx context.Context, id string, draft ProductDr
 		return ProductRecord{}, err
 	}
 	return record, record.Validate()
+}
+
+func (store Store) GetProduct(ctx context.Context, id string) (ProductRecord, error) {
+	if !productIDPattern.MatchString(id) {
+		return ProductRecord{}, fmt.Errorf("id must match the v1 product id contract")
+	}
+	record, err := scanProduct(store.db.QueryRow(ctx, getProductSQL, id))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ProductRecord{}, ErrProductNotFound
+		}
+		return ProductRecord{}, err
+	}
+	return record, record.Validate()
+}
+
+func (store Store) ListProducts(ctx context.Context) ([]ProductRecord, error) {
+	rows, err := store.db.Query(ctx, listProductsSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var records []ProductRecord
+	for rows.Next() {
+		record, err := scanProduct(rows)
+		if err != nil {
+			return nil, err
+		}
+		if err := record.Validate(); err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if records == nil {
+		return []ProductRecord{}, nil
+	}
+	return records, nil
 }
 
 type productRow interface {

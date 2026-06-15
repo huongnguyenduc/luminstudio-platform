@@ -22,6 +22,18 @@ func (stub readyStub) Check(context.Context) error {
 type productCreatorStub struct{}
 
 func (productCreatorStub) InsertProduct(_ context.Context, _ string, _ product.ProductDraft, now time.Time) (product.ProductRecord, error) {
+	return routeProductRecord(now), nil
+}
+
+func (productCreatorStub) GetProduct(_ context.Context, _ string) (product.ProductRecord, error) {
+	return routeProductRecord(time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)), nil
+}
+
+func (productCreatorStub) ListProducts(_ context.Context) ([]product.ProductRecord, error) {
+	return []product.ProductRecord{routeProductRecord(time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC))}, nil
+}
+
+func routeProductRecord(now time.Time) product.ProductRecord {
 	return product.ProductRecord{
 		ID:               "prod_12345678",
 		Name:             "Arc Chair",
@@ -30,7 +42,7 @@ func (productCreatorStub) InsertProduct(_ context.Context, _ string, _ product.P
 		CreatedAt:        now,
 		UpdatedAt:        now,
 		ProcessingStatus: product.ProcessingNotStarted,
-	}, nil
+	}
 }
 
 func TestRoutesExposeHealth(t *testing.T) {
@@ -64,6 +76,28 @@ func TestRoutesExposeAdminProductCreate(t *testing.T) {
 
 	if recorder.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusCreated, recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeAdminProductList(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/products", nil)
+
+	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeAdminProductGet(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/products/prod_12345678", nil)
+
+	routes(readyStub{}, product.NewHandler(productCreatorStub{})).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
 	}
 }
 

@@ -57,6 +57,8 @@ func routes(readiness health.Readiness, productHandler product.Handler) http.Han
 	mux.HandleFunc("GET /healthz", health.Handler)
 	mux.Handle("GET /readyz", health.ReadinessHandler(readiness))
 	mux.HandleFunc("POST /admin/products", productHandler.CreateProduct)
+	mux.HandleFunc("GET /admin/products", productHandler.ListProducts)
+	mux.HandleFunc("GET /admin/products/{id}", productHandler.GetProduct)
 	return mux
 }
 

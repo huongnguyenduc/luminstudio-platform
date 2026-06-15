@@ -24,7 +24,9 @@ expose MinIO administration plus Meilisearch inspection for local development.
 Phase 2 shared product, asset, and event contracts plus the Go API product
 validation and PostgreSQL product schema foundation are implemented. The Go
 API now exposes the first runtime admin product creation route,
-`POST /admin/products`, backed by the product store.
+`POST /admin/products`, backed by the product store. Admin product read routes
+now expose persisted records through `GET /admin/products` and
+`GET /admin/products/{id}`.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -161,6 +163,12 @@ Admin product HTTP API verification:
 
 ```bash
 bash scripts/verify-us-017.sh
+```
+
+Admin product read API verification:
+
+```bash
+bash scripts/verify-us-018.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI
