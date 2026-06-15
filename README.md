@@ -42,9 +42,11 @@ preserving scene, node, and material metadata. The supplied pet-tag fixture
 provides repeatable native and Bazel proof for this mesh optimization boundary.
 Blender 4.5 LTS is now the selected headless 360-degree renderer, and the
 pet-tag fixture proves deterministic 24-frame, 6-by-4 JPEG sprite generation
-with the locally installed compatible Blender build. Worker image packaging,
-processed asset upload, runtime task wiring, and completion events remain
-deferred.
+with the locally installed compatible Blender build. The worker runtime now
+composes source download, mesh optimization, Blender rendering, processed
+MinIO uploads, and v1 `3d.task.completed` publication behind testable ports.
+Worker image packaging, live K3d deployment, API completion consumption, and
+retry/dead-letter behavior remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -230,6 +232,12 @@ bash scripts/verify-us-024.sh
 
 ```bash
 bash scripts/verify-us-025.sh
+```
+
+Worker runtime processing and output upload verification:
+
+```bash
+bash scripts/verify-us-026.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

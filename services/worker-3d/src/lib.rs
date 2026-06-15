@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fmt;
@@ -7,6 +7,8 @@ use std::net::TcpStream;
 use std::time::Duration;
 
 pub mod glb_optimizer;
+pub mod processing_pipeline;
+pub mod runtime;
 pub mod sprite_renderer;
 
 const DEFAULT_CONCURRENCY: usize = 1;
@@ -86,7 +88,7 @@ pub struct TaskCreatedPayload {
     pub mesh_color_config: MeshColorConfig,
 }
 
-#[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ObjectRef {
     pub bucket: String,

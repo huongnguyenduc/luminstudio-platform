@@ -102,8 +102,12 @@ The worker uses Blender's headless CLI and Python API as the selected
 camera orbit and lighting setup, 24 frames at 160-by-160 pixels, and a 6-by-4
 JPEG sprite sheet named `[productId]_360_sprite.jpg`. Determinism is scoped to
 the same Blender build, platform, script, input, and render configuration.
-Worker image packaging, runtime task wiring, output upload, and completion
-publication remain deferred.
+The runtime worker now composes source download, mesh optimization, Blender
+rendering, and uploads processed assets to MinIO. It writes optimized GLBs to
+`lumin-optimized-glb`, writes sprite sheets to `lumin-360-sprites`, and
+publishes a v1 `3d.task.completed` event only after both uploads succeed.
+Worker image packaging, live K3d deployment, API completion consumption, and
+retry/dead-letter behavior remain deferred.
 
 Authentication, authorization, product delete workflows, processing completion
 consumption, customer catalog/search HTTP routes, retry/outbox semantics, and

@@ -8,6 +8,8 @@ rust_library(
     srcs = [
         "src/glb_optimizer.rs",
         "src/lib.rs",
+        "src/processing_pipeline.rs",
+        "src/runtime.rs",
         "src/sprite_renderer.rs",
     ],
     aliases = aliases(),

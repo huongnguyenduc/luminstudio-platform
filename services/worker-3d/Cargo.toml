@@ -6,8 +6,11 @@ publish = false
 
 [dependencies]
 meshopt = "0.6.2"
+minio = { version = "=0.4.0", default-features = false, features = ["default-crypto"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
+time = { version = "=0.3.49", features = ["formatting"] }
+tokio = { version = "=1.52.3", features = ["rt-multi-thread"] }
 
 [lib]
 name = "worker_3d"

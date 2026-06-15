@@ -80,8 +80,8 @@ grep -q 'all_crate_deps' <<<"$worker_build_text"
 grep -q 'crate.from_cargo' <<<"$module_text"
 
 if grep -Eqi 'meshoptimizer|3d\.task\.completed|TaskCompleted|lumin-optimized-glb|lumin-360-sprites|PutObject|POST /|GET /catalog|GET /search|VisibilityDetector|flutter|BLoC|payment|checkout|event_outbox|CREATE TABLE.*outbox' \
-  services/worker-3d/src/*.rs services/worker-3d/Cargo.toml; then
-  echo "US-023 must not add mesh optimization, completion publication, processed uploads, UI, checkout, outbox, or customer routes" >&2
+  services/worker-3d/src/lib.rs services/worker-3d/Cargo.toml; then
+  echo "US-023 source intake boundary must not contain later processing, UI, checkout, outbox, or customer route behavior" >&2
   exit 1
 fi
 

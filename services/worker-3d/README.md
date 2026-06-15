@@ -13,9 +13,11 @@ pinned Rust `meshopt` crate to simplify supported GLB 2.0 indexed triangle
 primitives and rebuild a smaller valid asset while preserving scene, node, and
 material metadata. The next rendering boundary selects Blender 4.5 LTS
 headless automation and defines a deterministic 24-frame, 6-by-4 JPEG sprite
-sheet. It does not yet package Blender in the worker image, upload processed
-assets, publish completion events, wire runtime task processing, or add live
-K3d worker proof.
+sheet. The runtime processing boundary now reads source objects through the
+official MinIO Rust SDK, runs optimization and Blender rendering, uploads the
+optimized GLB and sprite sheet, and publishes `3d.task.completed` through core
+NATS. It does not yet package Blender in the worker image, deploy the worker to
+K3d, consume completion in the Go API, or add retry/dead-letter behavior.
 
 Run native tests:
 
@@ -51,4 +53,11 @@ Run the 360-degree sprite rendering verification from the repository root:
 
 ```bash
 bash scripts/verify-us-025.sh
+```
+
+Run the runtime processing and output upload verification from the repository
+root:
+
+```bash
+bash scripts/verify-us-026.sh
 ```

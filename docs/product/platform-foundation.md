@@ -102,6 +102,11 @@ wiring.
 fixed 24-frame JPEG sprite sheet against the supplied GLB fixture without
 adding worker image packaging, storage upload, completion events, runtime task
 wiring, or live K3d proof.
+`US-026` wires the worker runtime processing boundary through source download,
+mesh optimization, Blender rendering, MinIO processed asset uploads, and
+`3d.task.completed` publication with unit and Bazel proof, without adding
+worker image packaging, live K3d deployment, retries, or API completion
+consumption.
 
 ## Boundary Rules
 

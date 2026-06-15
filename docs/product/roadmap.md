@@ -126,6 +126,10 @@ Selected work:
   automation and proves a deterministic 24-frame, 6-by-4 JPEG sprite sheet
   against the supplied GLB fixture without adding worker image packaging,
   MinIO upload, runtime task wiring, completion publication, auth, or UI.
+- `US-026 Worker Runtime Processing And Output Upload` composes source download,
+  mesh optimization, Blender rendering, processed MinIO uploads, and v1
+  `3d.task.completed` publication without adding worker image packaging, live
+  K3d deployment, API completion consumption, retries, auth, or UI.
 
 ## Phase 3: Mobile Catalog And Search
 
