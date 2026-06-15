@@ -36,6 +36,13 @@ draft and record shapes, object references for source GLB, optimized GLB, and
 360-degree sprite assets, and the mesh color configuration shape that later API
 stories must parse before persistence or event publication.
 
+The Go API now has an initial product persistence foundation under
+`services/api-gateway/internal/product` plus a PostgreSQL `products` schema under
+`services/api-gateway/migrations`. The foundation validates product drafts,
+dynamic information sections, mesh color configuration, source asset
+references, and processing status before later stories expose runtime HTTP
+routes or event publication.
+
 ## Processing Pipeline
 
 1. The API publishes `3d.task.created` with a stable task and product identity.

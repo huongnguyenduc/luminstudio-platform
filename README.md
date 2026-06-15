@@ -20,8 +20,9 @@ also proves message transport through the namespace-local Service. MinIO
 development buckets for source GLB, optimized GLB, and 360-degree sprite assets
 are bootstrapped idempotently in the dev namespace, and Traefik host routes
 expose MinIO administration plus Meilisearch inspection for local development.
-3D processing, product database schema, and product workflows have not been
-implemented yet.
+3D processing and product workflows have not been implemented yet. The first
+Phase 2 shared product, asset, and event contracts plus the Go API product
+validation and PostgreSQL product schema foundation are implemented.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -140,6 +141,18 @@ Local development route verification:
 
 ```bash
 bash scripts/verify-us-014.sh
+```
+
+Phase 2 product contract verification:
+
+```bash
+bash scripts/verify-us-015.sh
+```
+
+Product persistence foundation verification:
+
+```bash
+bash scripts/verify-us-016.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

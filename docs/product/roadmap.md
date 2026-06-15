@@ -77,6 +77,11 @@ Selected work:
   MinIO asset references, mesh color configuration, and the first product and
   processing events without adding runtime API, persistence, worker, search, or
   UI behavior.
+- `US-016 Product Persistence Foundation` adds the first Go API product domain
+  validation package and PostgreSQL `products` schema for product records,
+  dynamic information sections, mesh color configuration, asset references, and
+  processing status without adding HTTP routes, uploads, events, search, worker,
+  or UI behavior.
 
 ## Phase 3: Mobile Catalog And Search
 

@@ -73,7 +73,10 @@ Meilisearch, including failure propagation during a controlled NATS outage.
 the namespace-local Service. `US-013` adds idempotent MinIO development buckets
 for source GLB assets, optimized GLB assets, and 360-degree sprite assets.
 `US-014` adds local Traefik host routes for MinIO administration and
-Meilisearch inspection.
+Meilisearch inspection. `US-015` adds Phase 2 shared product, asset, and event
+contract schemas. `US-016` adds the first Go API product validation and
+PostgreSQL product schema foundation without applying it to the live K3d
+database yet.
 
 ## Boundary Rules
 

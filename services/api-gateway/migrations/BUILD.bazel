@@ -1,0 +1,5 @@
+filegroup(
+    name = "migrations",
+    srcs = ["001_create_products.sql"],
+    visibility = ["//visibility:public"],
+)
