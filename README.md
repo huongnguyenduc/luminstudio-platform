@@ -35,6 +35,7 @@ packages/
 infra/
   k8s/                  Kustomize resources for the dev cluster
   scripts/              Deployment and operational scripts
+.agents/skills/         Optional UI design and image-direction skills
 ```
 
 ## Start Here

@@ -129,7 +129,14 @@ one; coin new ones in kebab-case:
 ```
 impact-analysis · deploy-verification · coverage · security-scan
 performance-benchmark · documentation-lookup
+web-ui-design · mobile-ui-design · mobile-ui-implementation · ui-redesign · web-ui-concept
+web-image-to-code · brand-design · design-system-generation
+output-completeness
 ```
+
+Project-specific routing and compatibility rules for the installed UI skill
+providers live in `docs/UI_SKILLS.md`. Query by capability before reading a
+provider so agents load only the skill context needed for the current task.
 
 ## Inspecting The Registry
 

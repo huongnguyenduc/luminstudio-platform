@@ -12,6 +12,19 @@
 - Phase 0 is structural only. Do not claim component builds, K3d services, or
   end-to-end flows work until a story adds and verifies them.
 
+## UI Design Skills
+
+- Before designing or implementing user-visible web or mobile UI, read
+  `docs/UI_SKILLS.md` and query the relevant Harness capability.
+- Select the smallest skill set that matches the task. Read each selected
+  `SKILL.md` completely before using it; do not combine competing visual-style
+  skills unless the story explicitly calls for exploration.
+- UI skills guide visual direction and implementation quality. They do not
+  override `docs/product/`, story acceptance criteria, accessibility,
+  architecture boundaries, or the existing web/Flutter stack.
+- Verify rendered UI at the viewports and interaction states required by the
+  story. Image-generation output is design reference, not implementation proof.
+
 <!-- HARNESS:BEGIN -->
 ## Harness
 
