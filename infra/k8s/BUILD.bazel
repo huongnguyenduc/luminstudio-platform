@@ -8,4 +8,9 @@ filegroup(
     ]),
 )
 
+filegroup(
+    name = "dev-cluster-config",
+    srcs = ["k3d/dev.yaml"],
+)
+
 exports_files(["README.md"])

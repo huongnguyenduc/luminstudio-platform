@@ -54,8 +54,9 @@ Current proof is intentionally incremental: `US-001` covers the Go API build,
 tests, and operational health endpoint; `US-002` covers the Rust worker build,
 tests, and startup/configuration boundary; `US-003` covers the Web Admin build,
 tests, and non-product shell; `US-004` introduces the renderable Kustomize
-boundary for the `dev` namespace. They do not satisfy the complete Phase 1
-acceptance contract above, and no platform service is deployed yet.
+boundary for the `dev` namespace; and `US-005` adds a repeatable local K3d
+cluster lifecycle with live namespace proof. They do not satisfy the complete
+Phase 1 acceptance contract above, and no platform service is deployed yet.
 
 ## Boundary Rules
 

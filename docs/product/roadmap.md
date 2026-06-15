@@ -29,6 +29,9 @@ Selected work:
   without introducing Phase 2 administration workflows.
 - `US-004 Create the K3d dev namespace and Kustomize base` starts E02 with a
   renderable deployment boundary but no platform workloads.
+- `US-005 Create the K3d development cluster lifecycle` adds repeatable local
+  cluster creation, overlay application, status, and deletion without adding
+  platform workloads.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 

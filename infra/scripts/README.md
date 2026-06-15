@@ -6,3 +6,13 @@ service smoke checks, backup/restore, and operational verification.
 Scripts must be idempotent where practical and must fail clearly rather than
 silently accepting a partial cluster state.
 
+Manage the local K3d development cluster with:
+
+```bash
+infra/scripts/dev-cluster.sh up
+infra/scripts/dev-cluster.sh status
+infra/scripts/dev-cluster.sh delete
+```
+
+Set `LUMIN_CLUSTER_NAME` only for isolated verification or parallel local
+clusters. The default cluster is `lumin-dev`.
