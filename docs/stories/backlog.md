@@ -6,7 +6,7 @@ boundaries derived from `docs/product/roadmap.md`.
 | Epic | Description | Status |
 | --- | --- | --- |
 | E00 | Product contract and monorepo foundation | implemented |
-| E01 | Bazel toolchains and component builds | active; US-001 and US-002 implemented |
+| E01 | Bazel toolchains and component builds | active; US-001, US-002, and US-003 implemented |
 | E02 | K3d dev infrastructure | unsliced |
 | E03 | API connectivity and NATS smoke flow | unsliced |
 | E04-E07 | Admin, API, search sync, and 3D processing | unsliced |

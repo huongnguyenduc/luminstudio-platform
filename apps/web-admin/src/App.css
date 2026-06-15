@@ -1,0 +1,27 @@
+.status {
+  max-width: 42rem;
+}
+
+.brand {
+  margin: 0 0 1rem;
+  color: #6c63ff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status h1 {
+  margin: 0;
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+}
+
+.status p:last-child {
+  max-width: 36rem;
+  margin: 1.5rem 0 0;
+  color: #a9a9b5;
+  font-size: 1.125rem;
+  line-height: 1.65;
+}

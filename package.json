@@ -1,0 +1,5 @@
+{
+  "name": "lumin-studio",
+  "private": true,
+  "packageManager": "pnpm@10.17.0"
+}

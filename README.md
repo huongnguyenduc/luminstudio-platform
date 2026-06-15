@@ -9,8 +9,10 @@ object storage, event delivery, and search.
 
 Phase 0 established the product contract and monorepo foundation. Phase 1 is in
 progress: the Go API has an operational health endpoint, and the Rust worker
-has an executable startup/configuration target. External service deployments,
-3D processing, and product workflows have not been implemented yet.
+has an executable startup/configuration target. The React + Vite Web Admin has
+an executable build/test target and a non-product shell. External service
+deployments, 3D processing, and product workflows have not been implemented
+yet.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -56,6 +58,12 @@ Rust worker bootstrap verification:
 
 ```bash
 bash scripts/verify-us-002.sh
+```
+
+Web Admin bootstrap verification:
+
+```bash
+bash scripts/verify-us-003.sh
 ```
 
 Bazel is the selected top-level build system. Go and Rust rules now provide the

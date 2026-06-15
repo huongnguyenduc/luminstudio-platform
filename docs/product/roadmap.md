@@ -23,6 +23,10 @@ Selected work:
 
 - `US-001 Build the Go API and health endpoint` starts E01 with the pinned
   Bazel and Go toolchain plus one executable component target.
+- `US-002 Build the Rust worker and startup boundary` adds the executable
+  worker target without messaging or 3D dependencies.
+- `US-003 Build the Web Admin shell` adds the executable React + Vite target
+  without introducing Phase 2 administration workflows.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 

@@ -21,9 +21,10 @@
   cross-language build graph.
 - Phase 0 created package boundaries only. Phase 1 now pins Bazel 9.1.1,
   `rules_go` 0.61.1 with Go 1.26.4, and `rules_rust` 0.70.0 with Rust 1.95.0
-  for the first executable service targets. Other language rules must still be
-  introduced before `bazel build //...` becomes a repository-wide acceptance
-  claim.
+  for the first executable service targets. The Web Admin uses
+  `aspect_rules_js` 3.2.1 with Node.js 22.20.0 for its first executable React +
+  Vite target. Flutter rules must still be introduced before
+  `bazel build //...` becomes a repository-wide acceptance claim.
 
 ## Runtime Topology
 
@@ -51,8 +52,9 @@ Required platform services:
 
 Current proof is intentionally incremental: `US-001` covers the Go API build,
 tests, and operational health endpoint; `US-002` covers the Rust worker build,
-tests, and startup/configuration boundary. They do not satisfy the complete
-Phase 1 acceptance contract above.
+tests, and startup/configuration boundary; `US-003` covers the Web Admin build,
+tests, and non-product shell. They do not satisfy the complete Phase 1
+acceptance contract above.
 
 ## Boundary Rules
 
