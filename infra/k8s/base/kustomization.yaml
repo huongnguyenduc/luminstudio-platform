@@ -3,10 +3,12 @@ kind: Kustomization
 resources:
   - api-gateway-deployment.yaml
   - api-gateway-service.yaml
+  - meilisearch-ingress.yaml
   - meilisearch-secret.yaml
   - meilisearch-service.yaml
   - meilisearch-statefulset.yaml
   - minio-secret.yaml
+  - minio-console-ingress.yaml
   - minio-service.yaml
   - minio-statefulset.yaml
   - minio-buckets-job.yaml

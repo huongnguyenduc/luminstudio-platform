@@ -49,6 +49,8 @@ Required platform services:
   local development routes such as `minio-dev.local` and `search-dev.local`.
 - The Go API proves connectivity to PostgreSQL, MinIO, NATS, and Meilisearch.
 - A repeatable NATS publish/subscribe smoke command passes.
+- MinIO administration and Meilisearch are reachable through local development
+  routes.
 
 Current proof is intentionally incremental: `US-001` covers the Go API build,
 tests, and operational health endpoint; `US-002` covers the Rust worker build,
@@ -70,8 +72,8 @@ Meilisearch, including failure propagation during a controlled NATS outage.
 `US-012` adds a repeatable in-cluster NATS publish/subscribe smoke proof through
 the namespace-local Service. `US-013` adds idempotent MinIO development buckets
 for source GLB assets, optimized GLB assets, and 360-degree sprite assets.
-These stories do not satisfy the complete Phase 1 acceptance contract above;
-external development routes remain outstanding.
+`US-014` adds local Traefik host routes for MinIO administration and
+Meilisearch inspection.
 
 ## Boundary Rules
 

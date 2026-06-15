@@ -18,9 +18,10 @@ separate liveness and platform-readiness endpoints that prove connectivity to
 all four services. A repeatable in-cluster NATS publish/subscribe smoke command
 also proves message transport through the namespace-local Service. MinIO
 development buckets for source GLB, optimized GLB, and 360-degree sprite assets
-are bootstrapped idempotently in the dev namespace. 3D processing, product
-database schema, external development routes, and product workflows have not
-been implemented yet.
+are bootstrapped idempotently in the dev namespace, and Traefik host routes
+expose MinIO administration plus Meilisearch inspection for local development.
+3D processing, product database schema, and product workflows have not been
+implemented yet.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -133,6 +134,12 @@ MinIO development bucket verification:
 
 ```bash
 bash scripts/verify-us-013.sh
+```
+
+Local development route verification:
+
+```bash
+bash scripts/verify-us-014.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

@@ -56,6 +56,9 @@ Selected work:
 - `US-013 Create MinIO development buckets` adds idempotent source and
   processed asset buckets without product upload API behavior, object key
   policy, worker behavior, or external routing.
+- `US-014 Local development routes` exposes MinIO administration and
+  Meilisearch through Traefik host routes without adding public API routing,
+  product workflows, or production ingress topology.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 
