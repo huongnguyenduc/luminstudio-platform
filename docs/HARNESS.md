@@ -322,7 +322,7 @@ validation changes, record the decision in both places:
 
 1. Add a markdown file under `docs/decisions/` from
    `docs/templates/decision.md`.
-2. Add or refresh the durable record:
+2. Create the durable record:
 
 ```bash
 scripts/bin/harness-cli decision add \
@@ -335,6 +335,10 @@ scripts/bin/harness-cli decision add \
 The trace `--decisions` field is useful evidence, but it is not the decision
 log. Do not treat decision text in a trace as satisfying the durable decision
 record requirement.
+
+`decision add` currently rejects an existing id instead of refreshing it. Do
+not rely on it to update decision metadata or verification commands; the
+missing update/upsert capability is tracked in the Harness backlog.
 
 ## Harness Change Policy
 

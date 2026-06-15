@@ -91,8 +91,10 @@ Requirements:
 - Ask for human confirmation before implementation if direction is ambiguous.
 - Record a durable decision when behavior, architecture, authorization, data
   ownership, API shape, or validation requirements change meaningfully. Use a
-  `docs/decisions/NNNN-*.md` file from `docs/templates/decision.md`, then add
-  or refresh the durable row with `scripts/bin/harness-cli decision add`.
+  `docs/decisions/NNNN-*.md` file from `docs/templates/decision.md`, then create
+  the durable row with `scripts/bin/harness-cli decision add`. The current CLI
+  does not update an existing decision id; that capability is tracked in the
+  Harness backlog.
   Decision text in a trace is not a durable decision record.
 
 ## Risk Checklist

@@ -5,8 +5,7 @@ were made.
 
 Use `docs/templates/decision.md` when adding a new decision.
 
-After adding or updating a markdown decision file, also add or refresh the
-durable decision row:
+After adding a markdown decision file, create the durable decision row:
 
 ```bash
 scripts/bin/harness-cli decision add \
@@ -14,6 +13,10 @@ scripts/bin/harness-cli decision add \
   --title "Auth Boundary" \
   --doc docs/decisions/0008-auth-boundary.md
 ```
+
+The current CLI does not update an existing decision id. Keep later markdown
+edits consistent with the accepted decision, and record required durable-row
+changes in the Harness backlog until an update/upsert command exists.
 
 Trace fields such as `--decisions` summarize task-level choices. They do not
 count as the Harness decision log.
