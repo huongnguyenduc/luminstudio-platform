@@ -12,8 +12,9 @@ progress: the Go API has an operational health endpoint, and the Rust worker
 has an executable startup/configuration target. The React + Vite Web Admin has
 an executable build/test target and a non-product shell. A repeatable local
 K3d cluster now hosts the labeled `dev` namespace and a healthy namespace-local
-NATS service. PostgreSQL, MinIO, Meilisearch, 3D processing, and product
-workflows have not been implemented yet.
+NATS service plus a persistent PostgreSQL instance. MinIO, Meilisearch, 3D
+processing, product database schema, and product workflows have not been
+implemented yet.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -83,6 +84,12 @@ NATS development deployment verification:
 
 ```bash
 bash scripts/verify-us-006.sh
+```
+
+PostgreSQL development deployment verification:
+
+```bash
+bash scripts/verify-us-007.sh
 ```
 
 Bazel is the selected top-level build system. Go and Rust rules now provide the

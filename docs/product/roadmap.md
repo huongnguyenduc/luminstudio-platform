@@ -35,6 +35,9 @@ Selected work:
 - `US-006 Deploy NATS in the dev cluster` is selected to add the first healthy,
   namespace-local platform workload without application connectivity or event
   contracts.
+- `US-007 Deploy PostgreSQL in the dev cluster` adds the persistent relational
+  system of record without product schema, external routing, or API
+  connectivity.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 

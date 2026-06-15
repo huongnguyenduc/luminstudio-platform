@@ -3,9 +3,10 @@
 Kustomize resources for the local K3d `dev` namespace, including PostgreSQL,
 MinIO, NATS, Meilisearch, application workloads, and Traefik routing.
 
-The development overlay now deploys a single-node core NATS server with an
-internal Service and monitoring health probes. PostgreSQL, MinIO, Meilisearch,
-application workloads, persistence, and ingress remain deferred.
+The development overlay deploys a single-node core NATS server and a persistent
+single-instance PostgreSQL StatefulSet. Both are reachable only through
+namespace-local Services. MinIO, Meilisearch, application workloads, external
+routing, backups, and product database schema remain deferred.
 
 Create the local cluster and apply the development overlay with:
 
@@ -31,6 +32,12 @@ Verify the NATS deployment in an isolated cluster with:
 
 ```bash
 bash scripts/verify-us-006.sh
+```
+
+Verify PostgreSQL readiness and pod-replacement persistence with:
+
+```bash
+bash scripts/verify-us-007.sh
 ```
 
 Infrastructure stories must add health, persistence, routing, and rollback

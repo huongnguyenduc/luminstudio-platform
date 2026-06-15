@@ -16,16 +16,14 @@ bash -n infra/scripts/dev-cluster.sh scripts/verify-us-006.sh
 
 rendered="$(kubectl kustomize infra/k8s/overlays/dev)"
 
-test "$(grep -c '^kind: Deployment$' <<<"$rendered")" -eq 1
-test "$(grep -c '^kind: Service$' <<<"$rendered")" -eq 1
 grep -q '^  name: nats$' <<<"$rendered"
 grep -q 'image: docker.io/library/nats:2.11.6-alpine$' <<<"$rendered"
 grep -q 'path: /healthz$' <<<"$rendered"
 grep -q 'containerPort: 4222$' <<<"$rendered"
 grep -q 'containerPort: 8222$' <<<"$rendered"
 
-if grep -Eqi 'postgres|minio|meilisearch|ingress|persistentvolumeclaim|jetstream' <<<"$rendered"; then
-  echo "US-006 must contain only the scoped core NATS workload" >&2
+if grep -Eqi 'minio|meilisearch|ingress|jetstream' <<<"$rendered"; then
+  echo "US-006 must not include deferred NATS capabilities or unrelated services" >&2
   exit 1
 fi
 

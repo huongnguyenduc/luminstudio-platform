@@ -3,3 +3,6 @@ kind: Kustomization
 resources:
   - nats-deployment.yaml
   - nats-service.yaml
+  - postgres-secret.yaml
+  - postgres-service.yaml
+  - postgres-statefulset.yaml
