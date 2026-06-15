@@ -1,16 +1,36 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
+type readyStub struct {
+	err error
+}
+
+func (stub readyStub) Check(context.Context) error {
+	return stub.err
+}
+
 func TestRoutesExposeHealth(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 
-	routes().ServeHTTP(recorder, request)
+	routes(readyStub{}).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+}
+
+func TestRoutesExposeReadiness(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+
+	routes(readyStub{}).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)

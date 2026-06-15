@@ -46,6 +46,9 @@ Selected work:
 - `US-010 Deploy the Go API in the dev cluster` starts E03 with Bazel-built OCI
   images, a namespace-local application workload, and in-cluster health proof
   without platform connectivity or product behavior.
+- `US-011 Connect the Go API to platform services` adds environment-backed
+  PostgreSQL, MinIO, NATS, and Meilisearch connectivity with separate liveness
+  and readiness behavior, without adding product data or event contracts.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 

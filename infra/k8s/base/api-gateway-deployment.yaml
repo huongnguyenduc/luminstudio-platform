@@ -19,6 +19,47 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable
+            - name: MINIO_URL
+              value: http://minio:9000
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: MINIO_ROOT_USER
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: MINIO_ROOT_PASSWORD
+            - name: NATS_URL
+              value: nats://nats:4222
+            - name: MEILISEARCH_URL
+              value: http://meilisearch:7700
+            - name: MEILISEARCH_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: meilisearch
+                  key: MEILI_MASTER_KEY
+            - name: DEPENDENCY_CHECK_TIMEOUT
+              value: 3s
           startupProbe:
             httpGet:
               path: /healthz
@@ -27,7 +68,7 @@ spec:
             periodSeconds: 2
           readinessProbe:
             httpGet:
-              path: /healthz
+              path: /readyz
               port: http
             periodSeconds: 5
           livenessProbe:

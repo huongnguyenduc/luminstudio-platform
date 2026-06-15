@@ -64,9 +64,12 @@ pod replacement. `US-009` adds persistent Meilisearch and proves that an
 indexed document survives pod replacement. `US-010` packages the Go API as
 Bazel-built Linux amd64 and arm64 OCI images, deploys it behind a
 namespace-local Service, and proves the existing health endpoint from inside an
-isolated K3d cluster. These stories do not satisfy the complete Phase 1
-acceptance contract above; storage buckets, external development routes,
-platform connectivity, and publish/subscribe proof remain outstanding.
+isolated K3d cluster. `US-011` adds required platform configuration and a
+separate readiness endpoint that checks PostgreSQL, MinIO, NATS, and
+Meilisearch, including failure propagation during a controlled NATS outage.
+These stories do not satisfy the complete Phase 1 acceptance contract above;
+storage buckets, external development routes, and publish/subscribe proof
+remain outstanding.
 
 ## Boundary Rules
 

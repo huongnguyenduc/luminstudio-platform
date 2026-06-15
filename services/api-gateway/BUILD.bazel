@@ -4,12 +4,20 @@ load("@tar.bzl", "tar")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files([
+    "go.mod",
+    "go.sum",
+])
+
 go_library(
     name = "api_gateway_lib",
     srcs = ["main.go"],
     importpath = "lumin.studio/services/api-gateway",
     visibility = ["//visibility:private"],
-    deps = ["//services/api-gateway/internal/health"],
+    deps = [
+        "//services/api-gateway/internal/health",
+        "//services/api-gateway/internal/platform",
+    ],
 )
 
 go_binary(

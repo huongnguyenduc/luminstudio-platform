@@ -13,10 +13,11 @@ has an executable startup/configuration target. The React + Vite Web Admin has
 an executable build/test target and a non-product shell. A repeatable local
 K3d cluster now hosts the labeled `dev` namespace and a healthy namespace-local
 NATS service plus persistent PostgreSQL, MinIO, and Meilisearch instances. The
-Bazel-built Go API image also runs behind a namespace-local Service with
-in-cluster health proof. 3D processing, product database schema, storage
-buckets, platform connectivity, external development routes, and product
-workflows have not been implemented yet.
+Bazel-built Go API image runs behind a namespace-local Service and exposes
+separate liveness and platform-readiness endpoints that prove connectivity to
+all four services. 3D processing, product database schema, storage buckets,
+NATS publish/subscribe proof, external development routes, and product workflows
+have not been implemented yet.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -111,6 +112,12 @@ Go API image and K3d deployment verification:
 
 ```bash
 bash scripts/verify-us-010.sh
+```
+
+Go API platform connectivity verification:
+
+```bash
+bash scripts/verify-us-011.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

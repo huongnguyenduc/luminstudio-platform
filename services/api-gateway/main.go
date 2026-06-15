@@ -10,33 +10,51 @@ import (
 	"time"
 
 	"lumin.studio/services/api-gateway/internal/health"
+	"lumin.studio/services/api-gateway/internal/platform"
 )
 
 const defaultPort = 8080
 
 func main() {
-	port, err := portFromEnv(os.Getenv("PORT"))
-	if err != nil {
-		slog.Error("invalid server configuration", "error", err)
-		os.Exit(1)
-	}
-
-	server := &http.Server{
-		Addr:              fmt.Sprintf(":%d", port),
-		Handler:           routes(),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	slog.Info("api gateway starting", "address", server.Addr)
-	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+	if err := run(os.Getenv); err != nil {
 		slog.Error("api gateway stopped", "error", err)
 		os.Exit(1)
 	}
 }
 
-func routes() http.Handler {
+func run(getenv func(string) string) error {
+	port, err := portFromEnv(getenv("PORT"))
+	if err != nil {
+		return fmt.Errorf("invalid server configuration: %w", err)
+	}
+
+	config, err := platform.ConfigFromEnv(getenv)
+	if err != nil {
+		return fmt.Errorf("invalid platform configuration: %w", err)
+	}
+	checker, err := platform.NewChecker(config)
+	if err != nil {
+		return fmt.Errorf("initialize platform connectivity: %w", err)
+	}
+	defer checker.Close()
+
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           routes(checker),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	slog.Info("api gateway starting", "address", server.Addr)
+	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
+}
+
+func routes(readiness health.Readiness) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", health.Handler)
+	mux.Handle("GET /readyz", health.ReadinessHandler(readiness))
 	return mux
 }
 

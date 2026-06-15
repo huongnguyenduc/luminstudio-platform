@@ -33,11 +33,6 @@ grep -q 'readOnlyRootFilesystem: true$' <<<"$api_manifests"
 grep -q 'allowPrivilegeEscalation: false$' <<<"$api_manifests"
 grep -q 'type: ClusterIP$' <<<"$api_manifests"
 
-if grep -Eqi 'ingress|postgres|minio|nats|meilisearch|product' <<<"$api_manifests"; then
-  echo "US-010 must not add external routing or platform connectivity" >&2
-  exit 1
-fi
-
 (
   cd services/api-gateway
   go test ./...

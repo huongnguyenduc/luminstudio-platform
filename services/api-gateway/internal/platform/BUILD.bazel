@@ -1,0 +1,22 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "platform",
+    srcs = [
+        "checker.go",
+        "config.go",
+    ],
+    importpath = "lumin.studio/services/api-gateway/internal/platform",
+    visibility = ["//services/api-gateway:__pkg__"],
+    deps = [
+        "@com_github_jackc_pgx_v5//pgxpool",
+        "@com_github_minio_minio_go_v7//:minio-go",
+        "@com_github_minio_minio_go_v7//pkg/credentials",
+    ],
+)
+
+go_test(
+    name = "platform_test",
+    srcs = ["config_test.go"],
+    embed = [":platform"],
+)
