@@ -15,6 +15,7 @@ docker info >/dev/null
 bash -n infra/scripts/dev-cluster.sh scripts/verify-us-006.sh
 
 rendered="$(kubectl kustomize infra/k8s/overlays/dev)"
+nats_manifests="$(cat infra/k8s/base/nats-deployment.yaml infra/k8s/base/nats-service.yaml)"
 
 grep -q '^  name: nats$' <<<"$rendered"
 grep -q 'image: docker.io/library/nats:2.11.6-alpine$' <<<"$rendered"
@@ -22,7 +23,7 @@ grep -q 'path: /healthz$' <<<"$rendered"
 grep -q 'containerPort: 4222$' <<<"$rendered"
 grep -q 'containerPort: 8222$' <<<"$rendered"
 
-if grep -Eqi 'minio|meilisearch|ingress|jetstream' <<<"$rendered"; then
+if grep -Eqi 'meilisearch|ingress|jetstream' <<<"$nats_manifests"; then
   echo "US-006 must not include deferred NATS capabilities or unrelated services" >&2
   exit 1
 fi

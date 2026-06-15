@@ -15,6 +15,7 @@ docker info >/dev/null
 bash -n infra/scripts/dev-cluster.sh scripts/verify-us-007.sh
 
 rendered="$(kubectl kustomize infra/k8s/overlays/dev)"
+postgres_manifests="$(cat infra/k8s/base/postgres-secret.yaml infra/k8s/base/postgres-service.yaml infra/k8s/base/postgres-statefulset.yaml)"
 
 grep -q '^kind: StatefulSet$' <<<"$rendered"
 grep -q '^  name: postgres$' <<<"$rendered"
@@ -25,7 +26,7 @@ grep -q '^  volumeClaimTemplates:$' <<<"$rendered"
 grep -q 'storage: 1Gi$' <<<"$rendered"
 grep -q '^kind: Secret$' <<<"$rendered"
 
-if grep -Eqi 'minio|meilisearch|ingress' <<<"$rendered"; then
+if grep -Eqi 'minio|meilisearch|ingress' <<<"$postgres_manifests"; then
   echo "US-007 must not add deferred services or external routing" >&2
   exit 1
 fi

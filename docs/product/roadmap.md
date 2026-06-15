@@ -38,6 +38,8 @@ Selected work:
 - `US-007 Deploy PostgreSQL in the dev cluster` adds the persistent relational
   system of record without product schema, external routing, or API
   connectivity.
+- `US-008 Deploy MinIO in the dev cluster` adds the persistent object storage
+  service without buckets, external routing, or API connectivity.
 
 ## Phase 2: Admin, API, And 3D Pipeline
 
