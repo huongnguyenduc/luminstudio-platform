@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lumin_studio_mobile/features/catalog/presentation/catalog_products_view.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 
 class CustomerShellPage extends StatefulWidget {
@@ -136,6 +137,12 @@ class _TabList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (tab == CustomerTab.home) {
+      return const CatalogProductsView(
+        scrollKey: PageStorageKey<String>('home-scroll'),
+      );
+    }
+
     return Semantics(
       label: '${tab.label} tab content',
       child: ListView.separated(

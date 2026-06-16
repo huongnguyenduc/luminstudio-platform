@@ -162,6 +162,12 @@ Selected work:
   retained tab scroll/navigation state without adding catalog API integration,
   search, category pagination, sorting, 360-degree previews, product detail,
   cart persistence, Flutter Bazel rules, auth, or live device proof.
+- `US-031 Flutter Catalog Products API Integration` connects the Flutter Home
+  tab to the Go API `GET /catalog/products` route and renders customer-safe
+  catalog product cards without adding search UI, category taxonomy, sorting,
+  pagination controls, 360-degree preview activation, product detail, signed
+  object URLs, cart persistence, auth, Flutter Bazel rules, or live device
+  proof.
 
 ## Phase 4: 3D Detail And Cart
 

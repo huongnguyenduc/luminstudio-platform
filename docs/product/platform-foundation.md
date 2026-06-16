@@ -129,6 +129,11 @@ iOS with Home, Category, and Cart tabs plus retained tab scroll and nested
 navigation state, without adding catalog API integration, search, 360-degree
 previews, product detail, cart persistence, Flutter Bazel rules, or live device
 proof.
+`US-031` adds Flutter catalog products API integration through the existing Go
+API `GET /catalog/products` boundary and renders Home tab product cards with
+loading, empty, and failure states, without adding search UI, category behavior,
+360-degree preview activation, product detail, cart persistence, Flutter Bazel
+rules, or live device proof.
 
 ## Boundary Rules
 

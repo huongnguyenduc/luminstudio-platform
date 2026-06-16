@@ -18,6 +18,13 @@ Home, Category, and Cart tabs. It keeps tab scroll and nested navigation state
 without adding catalog API integration, search, category pagination, previews,
 product detail, or cart persistence.
 
+`US-031` connects the Home tab to the Go API `GET /catalog/products` route and
+loads catalog product cards through the API boundary. The Flutter app parses the
+v1 catalog response behind a repository/use-case boundary and renders loading,
+empty, failure, and product-list states. The app still does not activate
+360-degree previews, request product detail, expose search UI, persist cart
+state, or connect directly to Meilisearch, PostgreSQL, MinIO, or NATS.
+
 ## 360-Degree Catalog Preview
 
 When a product item remains more than 80% visible and scrolling has stopped for
