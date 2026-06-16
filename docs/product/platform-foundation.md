@@ -246,6 +246,9 @@ Meilisearch to process one uploaded GLB from admin creation through customer
 catalog/search/category/detail/sprite/model routes. The API now republishes
 `product.updated` after processing completion so the derived Meilisearch
 catalog document reflects completed processing state and sprite metadata.
+`US-050` adds local iOS simulator proof for the existing Flutter customer
+commerce flow against a live Go API gateway selected by
+`LUMIN_US050_API_BASE_URL`.
 
 ## Boundary Rules
 

@@ -431,6 +431,12 @@ Live processed product catalog smoke verification:
 bash scripts/verify-us-049.sh
 ```
 
+Live Flutter customer commerce smoke verification:
+
+```bash
+LUMIN_US050_API_BASE_URL=http://127.0.0.1:8080 bash scripts/verify-us-050.sh
+```
+
 Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and
 Flutter validation targets now provide executable component proof. Production
 mobile release packaging and remaining platform behavior will be added by later

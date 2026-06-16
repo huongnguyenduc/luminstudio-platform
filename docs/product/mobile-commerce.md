@@ -182,6 +182,15 @@ behind the Go API gateway. It does not add Flutter live device proof, checkout,
 payments, authentication, authorization, backend cart APIs, signed object URLs,
 or direct service access.
 
+`US-050` adds live simulator proof for the existing Flutter customer commerce
+flow. The verifier selects a completed processed product from a running Go API
+gateway, launches the Flutter app on an iOS simulator with `LUMIN_API_BASE_URL`
+pointing at that gateway, and drives Home catalog browsing, search, Category
+tab browsing, Product Detail, high-tier model route metadata, material color
+selection, Add to cart, and Cart subtotal rendering. It does not add checkout,
+payments, authentication, authorization, inventory checks, backend cart APIs,
+signed object URLs, new public contracts, or direct service access.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display

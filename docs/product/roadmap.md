@@ -246,6 +246,15 @@ Selected work:
   gateway without adding authentication, authorization, checkout, payments,
   order fulfillment, backend cart APIs, signed object URLs, product delete,
   direct platform access, new UI, or new customer contracts.
+- `US-050 Live Flutter Customer Commerce Smoke` adds simulator proof for the
+  existing Flutter customer flow against a live Go API gateway. It selects a
+  completed processed product from the customer API, launches Flutter on an iOS
+  simulator, and drives Home catalog browsing, search, Category tab browsing,
+  Product Detail, high-tier model route metadata, material color selection, Add
+  to cart, and Cart subtotal rendering without adding authentication,
+  authorization, checkout, payments, order fulfillment, inventory checks,
+  backend cart APIs, signed object URLs, direct platform access, new UI
+  behavior, or new customer contracts.
 
 ## Phase 4: 3D Detail And Cart
 

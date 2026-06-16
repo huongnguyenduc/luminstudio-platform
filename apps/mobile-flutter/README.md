@@ -107,3 +107,9 @@ Verify the Flutter Bazel build and test boundary from the repository root:
 ```bash
 bash scripts/verify-us-044.sh
 ```
+
+Verify the live Flutter customer commerce smoke from the repository root:
+
+```bash
+LUMIN_US050_API_BASE_URL=http://127.0.0.1:8080 bash scripts/verify-us-050.sh
+```
