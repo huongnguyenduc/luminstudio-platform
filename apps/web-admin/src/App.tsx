@@ -27,6 +27,13 @@ export type MeshColorConfig = Record<
   }
 >;
 
+export type ObjectRef = {
+  bucket: string;
+  key: string;
+  contentType?: string;
+  sizeBytes?: number;
+};
+
 export type ProductDraft = {
   name: string;
   slug: string;
@@ -46,6 +53,7 @@ export type ProductRecord = {
   categories?: ProductCategory[];
   informationSections?: InformationSection[];
   meshColorConfig?: MeshColorConfig;
+  sourceAsset?: ObjectRef;
   updatedAt: string;
   processingStatus: string;
 };
@@ -62,6 +70,12 @@ export type ProductCreateState =
   | { status: "error"; message: string };
 
 export type ProductEditState =
+  | { status: "idle" }
+  | { status: "submitting"; productId: string }
+  | { status: "success"; productName: string }
+  | { status: "error"; message: string };
+
+export type SourceUploadState =
   | { status: "idle" }
   | { status: "submitting"; productId: string }
   | { status: "success"; productName: string }
@@ -112,6 +126,13 @@ export function adminProductUrl(
   apiBaseUrl = import.meta.env.VITE_API_BASE_URL,
 ) {
   return `${adminProductsUrl(apiBaseUrl)}/${encodeURIComponent(productId)}`;
+}
+
+export function adminSourceUploadUrl(
+  productId: string,
+  apiBaseUrl = import.meta.env.VITE_API_BASE_URL,
+) {
+  return `${adminProductUrl(productId, apiBaseUrl)}/source-glb`;
 }
 
 export async function fetchAdminProducts(
@@ -174,6 +195,47 @@ export async function updateAdminProduct(
   }
 
   return (await response.json()) as ProductRecord;
+}
+
+export async function uploadProductSource(
+  productId: string,
+  file: File,
+  apiBaseUrl = import.meta.env.VITE_API_BASE_URL,
+): Promise<ProductRecord> {
+  const body = new FormData();
+  body.append("source", file);
+
+  const response = await fetch(adminSourceUploadUrl(productId, apiBaseUrl), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Source upload request failed with HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as ProductRecord;
+}
+
+export function validateSourceUpload(product: ProductRecord, file: File | null) {
+  if (!file) {
+    throw new Error("Choose a .glb file before uploading.");
+  }
+  if (!file.name.toLowerCase().endsWith(".glb")) {
+    throw new Error("Source asset must use a .glb file.");
+  }
+  if (file.size <= 0) {
+    throw new Error("Source asset file is empty.");
+  }
+  if (
+    !product.meshColorConfig ||
+    Object.keys(product.meshColorConfig).length === 0
+  ) {
+    throw new Error("Mesh color config is required before uploading a source asset.");
+  }
 }
 
 export function buildProductDraft(values: ProductFormValues): ProductDraft {
@@ -327,6 +389,10 @@ export function App() {
   const [editState, setEditState] = React.useState<ProductEditState>({
     status: "idle",
   });
+  const [sourceUploadState, setSourceUploadState] =
+    React.useState<SourceUploadState>({
+      status: "idle",
+    });
   const [selectedProductId, setSelectedProductId] = React.useState<string | null>(
     null,
   );
@@ -374,22 +440,50 @@ export function App() {
     [reloadProducts],
   );
 
+  const uploadSource = React.useCallback(
+    async (product: ProductRecord, file: File) => {
+      setSourceUploadState({ status: "submitting", productId: product.id });
+      try {
+        const updatedProduct = await uploadProductSource(product.id, file);
+        setSourceUploadState({
+          status: "success",
+          productName: updatedProduct.name,
+        });
+        await reloadProducts();
+        setSelectedProductId(updatedProduct.id);
+      } catch (error) {
+        setSourceUploadState({
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Source upload request failed",
+        });
+      }
+    },
+    [reloadProducts],
+  );
+
   return (
     <ProductListPage
       state={state}
       createState={createState}
       editState={editState}
+      sourceUploadState={sourceUploadState}
       selectedProductId={selectedProductId}
       onCreate={(values) => void createProduct(values)}
       onEditProduct={(productId) => {
         setSelectedProductId(productId);
         setEditState({ status: "idle" });
+        setSourceUploadState({ status: "idle" });
       }}
       onCancelEdit={() => {
         setSelectedProductId(null);
         setEditState({ status: "idle" });
+        setSourceUploadState({ status: "idle" });
       }}
       onUpdate={(productId, values) => void updateProduct(productId, values)}
+      onUploadSource={(product, file) => void uploadSource(product, file)}
       onRetry={() => void reloadProducts()}
     />
   );
@@ -427,21 +521,25 @@ export function ProductListPage({
   state,
   createState = { status: "idle" },
   editState = { status: "idle" },
+  sourceUploadState = { status: "idle" },
   selectedProductId = null,
   onCreate = () => undefined,
   onEditProduct = () => undefined,
   onCancelEdit = () => undefined,
   onUpdate = () => undefined,
+  onUploadSource = () => undefined,
   onRetry,
 }: {
   state: ProductListState;
   createState?: ProductCreateState;
   editState?: ProductEditState;
+  sourceUploadState?: SourceUploadState;
   selectedProductId?: string | null;
   onCreate?: (values: ProductFormValues) => void;
   onEditProduct?: (productId: string) => void;
   onCancelEdit?: () => void;
   onUpdate?: (productId: string, values: ProductFormValues) => void;
+  onUploadSource?: (product: ProductRecord, file: File) => void;
   onRetry: () => void;
 }) {
   const selectedProduct =
@@ -476,8 +574,10 @@ export function ProductListPage({
       <ProductEditPanel
         product={selectedProduct}
         editState={editState}
+        sourceUploadState={sourceUploadState}
         onCancel={onCancelEdit}
         onUpdate={onUpdate}
+        onUploadSource={onUploadSource}
       />
 
       <section className="product-panel" aria-labelledby="products-title">
@@ -570,38 +670,67 @@ export function ProductCreatePanel({
 export function ProductEditPanel({
   product,
   editState,
+  sourceUploadState,
   onCancel,
   onUpdate,
+  onUploadSource,
 }: {
   product: ProductRecord | null;
   editState: ProductEditState;
+  sourceUploadState: SourceUploadState;
   onCancel: () => void;
   onUpdate: (productId: string, values: ProductFormValues) => void;
+  onUploadSource: (product: ProductRecord, file: File) => void;
 }) {
   if (!product) {
     return null;
   }
 
   return (
-    <ProductEditForm
-      key={product.id}
-      product={product}
-      editState={editState}
-      onCancel={onCancel}
-      onUpdate={onUpdate}
-    />
+    <section className="edit-panel" aria-labelledby="edit-title">
+      <div className="panel-heading create-heading">
+        <div>
+          <p className="eyebrow">Selected product</p>
+          <h2 id="edit-title">{product.name}</h2>
+        </div>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={onCancel}
+          disabled={
+            editState.status === "submitting" ||
+            sourceUploadState.status === "submitting"
+          }
+        >
+          Close
+        </button>
+      </div>
+
+      <div className="selected-product-grid">
+        <ProductEditForm
+          key={`edit-${product.id}`}
+          product={product}
+          editState={editState}
+          onUpdate={onUpdate}
+        />
+        <ProductSourceUploadPanel
+          key={`upload-${product.id}`}
+          product={product}
+          sourceUploadState={sourceUploadState}
+          onUploadSource={onUploadSource}
+        />
+      </div>
+    </section>
   );
 }
 
 function ProductEditForm({
   product,
   editState,
-  onCancel,
   onUpdate,
 }: {
   product: ProductRecord;
   editState: ProductEditState;
-  onCancel: () => void;
   onUpdate: (productId: string, values: ProductFormValues) => void;
 }) {
   const [values, setValues] = React.useState<ProductFormValues>(() =>
@@ -632,22 +761,11 @@ function ProductEditForm({
   }
 
   return (
-    <section className="edit-panel" aria-labelledby="edit-title">
-      <div className="panel-heading create-heading">
-        <div>
-          <p className="eyebrow">Edit product</p>
-          <h2 id="edit-title">{product.name}</h2>
-        </div>
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={onCancel}
-          disabled={disabled}
-        >
-          Close
-        </button>
+    <div className="selected-product-card">
+      <div className="selected-card-heading">
+        <p className="eyebrow">Edit product</p>
+        <h3>Draft fields</h3>
       </div>
-
       <ProductDraftForm
         values={values}
         disabled={disabled}
@@ -665,7 +783,104 @@ function ProductEditForm({
         onFieldChange={updateField}
         onSubmit={handleSubmit}
       />
-    </section>
+    </div>
+  );
+}
+
+export function ProductSourceUploadPanel({
+  product,
+  sourceUploadState,
+  onUploadSource,
+}: {
+  product: ProductRecord;
+  sourceUploadState: SourceUploadState;
+  onUploadSource: (product: ProductRecord, file: File) => void;
+}) {
+  const [file, setFile] = React.useState<File | null>(null);
+  const [localError, setLocalError] = React.useState<string | null>(null);
+  const disabled =
+    sourceUploadState.status === "submitting" &&
+    sourceUploadState.productId === product.id;
+  const hasSourceAsset = product.sourceAsset !== undefined;
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLocalError(null);
+
+    try {
+      validateSourceUpload(product, file);
+    } catch (error) {
+      setLocalError(
+        error instanceof Error ? error.message : "Source asset is invalid.",
+      );
+      return;
+    }
+
+    if (!file) {
+      return;
+    }
+    onUploadSource(product, file);
+  }
+
+  return (
+    <div className="selected-product-card upload-card">
+      <div className="selected-card-heading">
+        <p className="eyebrow">3D intake</p>
+        <h3>Upload GLB</h3>
+      </div>
+      <p className="upload-copy">
+        Send one binary GLB to the API gateway. The API stores it and queues
+        processing for this product.
+      </p>
+      <dl className="asset-summary" aria-label="Current source asset">
+        <div>
+          <dt>Current asset</dt>
+          <dd>{hasSourceAsset ? product.sourceAsset?.key : "None uploaded"}</dd>
+        </div>
+        <div>
+          <dt>Processing</dt>
+          <dd>{statusLabels[product.processingStatus] ?? product.processingStatus}</dd>
+        </div>
+      </dl>
+
+      <form className="source-upload-form" onSubmit={handleSubmit}>
+        <label>
+          <span>Source file</span>
+          <input
+            name="source"
+            type="file"
+            accept=".glb,model/gltf-binary"
+            disabled={disabled}
+            onChange={(event) => {
+              setLocalError(null);
+              setFile(event.target.files?.[0] ?? null);
+            }}
+          />
+        </label>
+
+        {localError ? (
+          <p className="form-message form-message-error" role="alert">
+            {localError}
+          </p>
+        ) : null}
+        {sourceUploadState.status === "error" ? (
+          <p className="form-message form-message-error" role="alert">
+            {sourceUploadState.message}
+          </p>
+        ) : null}
+        {sourceUploadState.status === "success" ? (
+          <p className="form-message form-message-success" role="status">
+            Uploaded GLB for {sourceUploadState.productName}.
+          </p>
+        ) : null}
+
+        <div className="form-actions">
+          <button className="primary-button" type="submit" disabled={disabled}>
+            {disabled ? "Uploading" : "Upload GLB"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 

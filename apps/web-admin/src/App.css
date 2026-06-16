@@ -107,6 +107,112 @@
   padding: clamp(1rem, 3vw, 1.4rem);
 }
 
+.selected-product-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 0.7fr);
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.selected-product-card {
+  min-width: 0;
+  border: 1px solid #e1e5db;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.selected-product-card .product-form {
+  padding-top: 0;
+}
+
+.selected-card-heading {
+  padding: 1rem clamp(1rem, 3vw, 1.4rem) 0.35rem;
+}
+
+.selected-card-heading h3 {
+  margin: 0;
+  color: #1c201a;
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.upload-card {
+  align-self: start;
+  background: #fbfcf8;
+}
+
+.upload-copy {
+  margin: 0;
+  padding: 0 clamp(1rem, 3vw, 1.4rem);
+  color: #596154;
+  line-height: 1.55;
+}
+
+.asset-summary {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem clamp(1rem, 3vw, 1.4rem) 0;
+}
+
+.asset-summary div {
+  min-width: 0;
+  border: 1px solid #e1e5db;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: #ffffff;
+}
+
+.asset-summary dt {
+  color: #65715f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.asset-summary dd {
+  margin: 0.3rem 0 0;
+  color: #1d2419;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.source-upload-form {
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.source-upload-form label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.source-upload-form label span {
+  color: #4b5546;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.source-upload-form input[type="file"] {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px dashed #b8c4ae;
+  border-radius: 8px;
+  padding: 0.7rem;
+  background: #ffffff;
+  color: #1d2419;
+  font: inherit;
+}
+
+.source-upload-form input[type="file"]:focus {
+  border-color: #507a42;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(111, 143, 90, 0.24);
+}
+
+.source-upload-form input[type="file"]:disabled {
+  background: #f3f5ef;
+  color: #747d6f;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -496,6 +602,10 @@
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-product-grid {
     grid-template-columns: 1fr;
   }
 

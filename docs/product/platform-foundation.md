@@ -233,6 +233,13 @@ full-replacement updates to `PUT /admin/products/{id}`, validates before
 submit, renders inline success and failure states, and refreshes the list
 through `GET /admin/products` without adding delete, source GLB upload, auth,
 direct platform access, backend contract changes, or live backend proof.
+`US-048` adds the first Web Admin source asset workflow. The selected product
+panel uploads one `.glb` file through the Go API
+`POST /admin/products/{id}/source-glb` route as multipart field `source`,
+validates file selection before submit, renders inline upload states, and
+refreshes the list through `GET /admin/products` without adding delete, auth,
+direct platform access, backend contract changes, signed object URLs, or live
+backend proof.
 
 ## Boundary Rules
 

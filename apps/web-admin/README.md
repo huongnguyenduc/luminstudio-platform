@@ -10,7 +10,10 @@ loading, empty, failure, and ready states. `US-046` adds product creation
 through the Go API `POST /admin/products` boundary with client-side validation,
 submitting, success, and failure states. `US-047` adds product editing through
 the Go API `PUT /admin/products/{id}` boundary with hydrated draft values,
-client-side validation, submitting, success, and failure states.
+client-side validation, submitting, success, and failure states. `US-048` adds
+source `.glb` upload for selected products through the Go API
+`POST /admin/products/{id}/source-glb` boundary with file validation, uploading,
+success, and failure states.
 
 Native verification:
 
@@ -32,4 +35,5 @@ Story verification:
 bash scripts/verify-us-045.sh
 bash scripts/verify-us-046.sh
 bash scripts/verify-us-047.sh
+bash scripts/verify-us-048.sh
 ```

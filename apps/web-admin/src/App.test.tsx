@@ -5,13 +5,17 @@ import {
   ProductCreatePanel,
   ProductEditPanel,
   ProductListPage,
+  ProductSourceUploadPanel,
   adminProductUrl,
   adminProductsUrl,
+  adminSourceUploadUrl,
   buildProductDraft,
   createAdminProduct,
   formatPrice,
   productRecordToFormValues,
   updateAdminProduct,
+  uploadProductSource,
+  validateSourceUpload,
   type ProductFormValues,
   type ProductRecord,
 } from "./App";
@@ -43,6 +47,11 @@ const product: ProductRecord = {
       default: "#FFFFFF",
       allowed: ["#FFFFFF", "#111111"],
     },
+  },
+  sourceAsset: {
+    bucket: "lumin-source-glb",
+    key: "products/prod_12345678/source.glb",
+    contentType: "model/gltf-binary",
   },
   updatedAt: "2026-06-16T04:30:00Z",
   processingStatus: "completed",
@@ -83,6 +92,14 @@ describe("adminProductUrl", () => {
   it("builds the admin product detail route with encoded product identity", () => {
     expect(adminProductUrl("prod_12345678", "http://localhost:8080/")).toBe(
       "http://localhost:8080/admin/products/prod_12345678",
+    );
+  });
+});
+
+describe("adminSourceUploadUrl", () => {
+  it("builds the source upload route with encoded product identity", () => {
+    expect(adminSourceUploadUrl("prod_12345678", "http://localhost:8080/")).toBe(
+      "http://localhost:8080/admin/products/prod_12345678/source-glb",
     );
   });
 });
@@ -210,6 +227,65 @@ describe("updateAdminProduct", () => {
   });
 });
 
+describe("uploadProductSource", () => {
+  it("posts a multipart source file to the product source route", async () => {
+    const sourceFile = new File(["glTF"], "source.glb", {
+      type: "model/gltf-binary",
+    });
+    const fetchMock = vi.fn(async () => {
+      return new Response(
+        JSON.stringify({ ...product, processingStatus: "queued" }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      uploadProductSource(product.id, sourceFile, "http://localhost:8080/"),
+    ).resolves.toMatchObject({ processingStatus: "queued" });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8080/admin/products/prod_12345678/source-glb",
+      expect.objectContaining({
+        method: "POST",
+      }),
+    );
+    const [, requestInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(requestInit.headers).toEqual({ Accept: "application/json" });
+    expect(requestInit.body).toBeInstanceOf(FormData);
+    expect((requestInit.body as FormData).get("source")).toBe(sourceFile);
+  });
+});
+
+describe("validateSourceUpload", () => {
+  it("accepts non-empty GLB files for products with mesh color config", () => {
+    const sourceFile = new File(["glTF"], "source.glb");
+
+    expect(() => validateSourceUpload(product, sourceFile)).not.toThrow();
+  });
+
+  it("rejects missing files, non-GLB files, and records without mesh config", () => {
+    expect(() => validateSourceUpload(product, null)).toThrow(
+      "Choose a .glb file",
+    );
+    expect(() =>
+      validateSourceUpload(product, new File(["text"], "source.txt")),
+    ).toThrow("must use a .glb file");
+    expect(() =>
+      validateSourceUpload(
+        { ...product, meshColorConfig: undefined },
+        new File(["glTF"], "source.glb"),
+      ),
+    ).toThrow("Mesh color config is required");
+  });
+});
+
 describe("formatPrice", () => {
   it("formats integer-cent display pricing", () => {
     expect(formatPrice(product.price)).toBe("$129.00");
@@ -273,12 +349,14 @@ describe("ProductListPage", () => {
         state={{ status: "ready", products: [product] }}
         selectedProductId={product.id}
         editState={{ status: "idle" }}
+        sourceUploadState={{ status: "idle" }}
         onRetry={() => undefined}
       />,
     );
 
     expect(markup).toContain("Edit product");
     expect(markup).toContain("Save changes");
+    expect(markup).toContain("Upload GLB");
     expect(markup).toContain("matte-ceramic-pet-tag");
   });
 });
@@ -337,8 +415,10 @@ describe("ProductEditPanel", () => {
       <ProductEditPanel
         product={product}
         editState={{ status: "success", productName: product.name }}
+        sourceUploadState={{ status: "idle" }}
         onCancel={() => undefined}
         onUpdate={() => undefined}
+        onUploadSource={() => undefined}
       />,
     );
     const errorMarkup = renderToStaticMarkup(
@@ -348,12 +428,62 @@ describe("ProductEditPanel", () => {
           status: "error",
           message: "Product update request failed with HTTP 400",
         }}
+        sourceUploadState={{ status: "idle" }}
         onCancel={() => undefined}
         onUpdate={() => undefined}
+        onUploadSource={() => undefined}
       />,
     );
 
     expect(successMarkup).toContain("Updated Matte ceramic pet tag.");
     expect(errorMarkup).toContain("Product update request failed with HTTP 400");
+  });
+});
+
+describe("ProductSourceUploadPanel", () => {
+  it("renders source asset summary and the upload control", () => {
+    const markup = renderToStaticMarkup(
+      <ProductSourceUploadPanel
+        product={product}
+        sourceUploadState={{ status: "idle" }}
+        onUploadSource={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("3D intake");
+    expect(markup).toContain("Upload GLB");
+    expect(markup).toContain("products/prod_12345678/source.glb");
+    expect(markup).toContain("Completed");
+  });
+
+  it("renders upload progress, success, and failure states inline", () => {
+    const submittingMarkup = renderToStaticMarkup(
+      <ProductSourceUploadPanel
+        product={product}
+        sourceUploadState={{ status: "submitting", productId: product.id }}
+        onUploadSource={() => undefined}
+      />,
+    );
+    const successMarkup = renderToStaticMarkup(
+      <ProductSourceUploadPanel
+        product={product}
+        sourceUploadState={{ status: "success", productName: product.name }}
+        onUploadSource={() => undefined}
+      />,
+    );
+    const errorMarkup = renderToStaticMarkup(
+      <ProductSourceUploadPanel
+        product={product}
+        sourceUploadState={{
+          status: "error",
+          message: "Source upload request failed with HTTP 400",
+        }}
+        onUploadSource={() => undefined}
+      />,
+    );
+
+    expect(submittingMarkup).toContain("Uploading");
+    expect(successMarkup).toContain("Uploaded GLB for Matte ceramic pet tag.");
+    expect(errorMarkup).toContain("Source upload request failed with HTTP 400");
   });
 });

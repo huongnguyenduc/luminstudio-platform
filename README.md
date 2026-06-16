@@ -95,8 +95,11 @@ through `POST /admin/products` with client-side draft validation, submitting,
 success, and failure states, then refreshes the product list after a successful
 create. The Web Admin now also edits product drafts through
 `PUT /admin/products/{id}` with the same client-side draft validation and list
-refresh behavior. Signed object URLs, checkout, payment, inventory, discount
-engines, auth, and admin delete/upload UI remain deferred.
+refresh behavior. The Web Admin now also uploads selected product source
+`.glb` files through `POST /admin/products/{id}/source-glb` with client-side
+file validation, uploading, success, and failure states. Signed object URLs,
+checkout, payment, inventory, discount engines, auth, and admin delete UI remain
+deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -414,6 +417,12 @@ Web Admin product edit API integration verification:
 
 ```bash
 bash scripts/verify-us-047.sh
+```
+
+Web Admin source GLB upload API integration verification:
+
+```bash
+bash scripts/verify-us-048.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and

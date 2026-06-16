@@ -78,6 +78,14 @@ failure and success states, and refresh the product list after a successful
 update. Product delete, source GLB upload, authentication, and authorization
 remain deferred.
 
+The React Web Admin now uploads source `.glb` files for selected product
+records through the Go API `POST /admin/products/{id}/source-glb` route. The
+selected product panel shows current source asset and processing status,
+validates that a non-empty `.glb` file is selected before submit, sends
+multipart form data in the `source` field, renders inline progress, success,
+and failure states, and refreshes the product list after a successful upload.
+Product delete, authentication, and authorization remain deferred.
+
 The Go API also exposes full-replacement product updates through
 `PUT /admin/products/{id}`. The endpoint accepts the same v1 product draft shape
 as creation, validates the path identity before persistence access, updates the

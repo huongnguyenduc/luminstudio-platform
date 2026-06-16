@@ -157,6 +157,13 @@ Selected work:
   validates client-side fields and JSON sections, and refreshes the product
   list without adding delete, source GLB upload, auth, direct platform access,
   backend contract changes, or live backend proof.
+- `US-048 Web Admin Source GLB Upload API Integration` extends the selected
+  React Web Admin product workflow with a source `.glb` upload panel that
+  submits multipart `source` files to
+  `POST /admin/products/{id}/source-glb`, validates file selection before
+  submit, renders inline progress/success/failure states, and refreshes the
+  product list without adding delete, auth, direct platform access, backend
+  contract changes, signed object URLs, or live backend proof.
 
 ## Phase 3: Mobile Catalog And Search
 
