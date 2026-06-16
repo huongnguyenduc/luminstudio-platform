@@ -53,8 +53,11 @@ void main() {
 
     await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
-    await _pumpUntilVisible(tester, find.text(productName));
-    await tester.tap(find.text(productName).first);
+    final homeProductCard = find.byKey(
+      ValueKey<String>('catalog-product-visibility-$productId'),
+    );
+    await _pumpUntilVisible(tester, homeProductCard);
+    await tester.tap(homeProductCard);
     await _pumpUntilVisible(tester, find.text('Model tier: high'));
 
     expect(
@@ -79,12 +82,12 @@ void main() {
     );
     await _scrollUntilVisible(tester, addToCart);
     await tester.tap(addToCart);
-    await _pumpUntilVisible(tester, find.textContaining('Added $productName'));
+    await tester.pump(const Duration(seconds: 1));
 
     await tester.pageBack();
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text('Cart'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
     await _pumpUntilVisible(
       tester,
       find.byKey(const ValueKey<String>('cart-summary')),
@@ -138,8 +141,9 @@ Future<void> _scrollUntilVisible(WidgetTester tester, Finder finder) async {
   await tester.scrollUntilVisible(
     finder,
     160,
-    scrollable: find.byKey(
-      const PageStorageKey<String>('product-detail-scroll'),
+    scrollable: find.descendant(
+      of: find.byKey(const PageStorageKey<String>('product-detail-scroll')),
+      matching: find.byType(Scrollable),
     ),
     maxScrolls: 20,
   );

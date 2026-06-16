@@ -33,8 +33,8 @@ gateway, with category selection, sorting, pagination, incremental retry, and
 scroll-to-top behavior. The app now has a Bazel-owned validation boundary that
 runs the accepted Flutter dependency, formatting, analysis, and test checks from
 a copied temporary app directory. Checkout, payment, auth, inventory, discount
-engines, production mobile release packaging, and live device proof remain
-deferred.
+engines and production mobile release packaging remain deferred. The existing
+commerce flow now has local iOS simulator proof through `US-050`.
 
 Verify the shell from the repository root:
 

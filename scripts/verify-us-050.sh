@@ -42,7 +42,7 @@ done
 grep -q 'US-050 Live Flutter Customer Commerce Smoke' <<<"$roadmap_text"
 grep -q 'US-050' <<<"$mobile_text"
 grep -q 'US-050' <<<"$platform_text"
-grep -q 'US-050 in progress' <<<"$backlog_text"
+grep -q 'US-050 implemented' <<<"$backlog_text"
 grep -q 'bash scripts/verify-us-050.sh' <<<"$root_readme_text"
 grep -q 'bash scripts/verify-us-050.sh' <<<"$app_readme_text"
 grep -q 'integration_test:' <<<"$pubspec_text"
@@ -84,8 +84,8 @@ jq -e --arg id "$product_id" \
   '.id == $id and .processingStatus == "completed" and .modelTier == "high" and .modelUrl == ("/catalog/products/" + $id + "/model?tier=high") and .spriteAsset != null and (.meshColorConfig | length > 0)' \
   "$detail_response" >/dev/null
 
-mesh_id="$(jq -r '.meshColorConfig[0].meshId' "$detail_response")"
-mesh_color="$(jq -r '.meshColorConfig[0].allowedColors[-1]' "$detail_response")"
+mesh_id="$(jq -r '.meshColorConfig | to_entries[0].key' "$detail_response")"
+mesh_color="$(jq -r '.meshColorConfig | to_entries[0].value.allowed[-1]' "$detail_response")"
 if [[ -z "$mesh_id" || "$mesh_id" == "null" || -z "$mesh_color" || "$mesh_color" == "null" ]]; then
   cat "$detail_response" >&2
   echo "US-050 requires product detail mesh color configuration with at least one allowed color" >&2

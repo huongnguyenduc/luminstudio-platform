@@ -28,8 +28,9 @@
   boundary in `apps/mobile-flutter` that runs dependency resolution,
   formatting, analysis, and tests from a copied temporary app directory.
   Bazel tests inherit local CLI discovery environment and run without sandboxing
-  for Flutter until a hermetic Flutter toolchain is selected. Production mobile
-  release packaging and live device proof remain deferred.
+  for Flutter until a hermetic Flutter toolchain is selected. The existing
+  Flutter customer commerce flow now has local iOS simulator proof through
+  `US-050`; production mobile release packaging remains deferred.
 
 ## Runtime Topology
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-in_progress
+implemented
 
 ## Lane
 
@@ -79,10 +79,16 @@ None planned.
 
 ## Evidence
 
-- `flutter pub get` resolved the new `integration_test` SDK dependency.
-- `dart format --set-exit-if-changed lib test integration_test` passed.
-- `flutter analyze` passed for `apps/mobile-flutter`.
-- `flutter test` passed for `apps/mobile-flutter` with 33 tests.
-- `LUMIN_US050_API_BASE_URL=http://127.0.0.1:8080 bash scripts/verify-us-050.sh`
-  reached the live API precondition and failed because no Go API was listening
-  on `127.0.0.1:8080`; e2e/platform proof remains pending.
+- `LUMIN_US050_API_BASE_URL=http://127.0.0.1:21367 bash scripts/verify-us-050.sh`
+  passed against a live Go API gateway backed by the temporary
+  `lumin-us050-live-58867` K3d cluster.
+- The verifier selected completed product `prod_mLF6KcegHjOYk2LQY7aCAjea`
+  with category metadata, a sprite asset, high-tier model access, and mesh
+  color configuration.
+- `flutter pub get`, `dart format --set-exit-if-changed lib test integration_test`,
+  `flutter analyze`, and `flutter test` passed for `apps/mobile-flutter` with
+  33 tests.
+- The Flutter integration test passed on the booted iPhone 17 Pro simulator,
+  driving Home catalog browsing, search, Category tab browsing, Product Detail,
+  high-tier model route metadata, material color selection, Add to cart, and
+  Cart subtotal rendering.
