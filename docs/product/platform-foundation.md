@@ -24,9 +24,12 @@
   for the first executable service targets. The Web Admin uses
   `aspect_rules_js` 3.2.1 with Node.js 22.20.0 for its first executable React +
   Vite target. The Flutter customer app now has a native Flutter Android/iOS
-  shell with `flutter analyze` and `flutter test` proof, but Flutter Bazel
-  rules must still be introduced before `bazel build //...` becomes a
-  repository-wide acceptance claim.
+  shell with `flutter analyze` and `flutter test` proof plus a Bazel test
+  boundary in `apps/mobile-flutter` that runs dependency resolution,
+  formatting, analysis, and tests from a copied temporary app directory.
+  Bazel tests inherit local CLI discovery environment and run without sandboxing
+  for Flutter until a hermetic Flutter toolchain is selected. Production mobile
+  release packaging and live device proof remain deferred.
 
 ## Runtime Topology
 
@@ -208,6 +211,11 @@ sorting, pagination, incremental retry, scroll-to-top, and existing product
 detail navigation without introducing checkout, payment, auth, inventory,
 backend cart APIs, direct storage/search/message access, Flutter Bazel rules,
 or live device proof.
+`US-044` adds the Flutter Bazel build and test boundary. The target validates
+the app with `flutter pub get`, formatting, analysis, and tests in a copied
+temporary directory, keeping generated Flutter files out of the source checkout
+and leaving checkout, payment, auth, inventory, production mobile release
+packaging, and live device proof deferred.
 
 ## Boundary Rules
 

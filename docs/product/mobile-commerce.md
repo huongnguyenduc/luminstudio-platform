@@ -165,6 +165,15 @@ authorization, inventory checks, backend cart APIs, signed object URLs, Flutter
 Bazel rules, live backend proof, live device proof, and direct service access
 remain deferred.
 
+`US-044` adds a Bazel-owned validation boundary for the Flutter customer app.
+The Bazel target copies the app into a test temporary directory, then runs
+`flutter pub get`, `dart format --set-exit-if-changed lib test`,
+`flutter analyze`, the existing US-040 golden refresh, and `flutter test`
+without mutating the source checkout.
+Checkout, payments, authentication, authorization, inventory checks, backend
+cart APIs, signed object URLs, production mobile release packaging, live backend
+proof, live device proof, and direct service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display

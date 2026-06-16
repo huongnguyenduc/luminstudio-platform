@@ -30,8 +30,11 @@ renders stored product identity, selected colors, quantity, selection state,
 selected subtotal, and savings from locally stored price snapshots. Category
 taxonomy and sorting are now active in the Category tab through the Go API
 gateway, with category selection, sorting, pagination, incremental retry, and
-scroll-to-top behavior. Checkout, payment, auth, inventory, discount engines,
-and executable Bazel Flutter targets remain deferred.
+scroll-to-top behavior. The app now has a Bazel-owned validation boundary that
+runs the accepted Flutter dependency, formatting, analysis, and test checks from
+a copied temporary app directory. Checkout, payment, auth, inventory, discount
+engines, production mobile release packaging, and live device proof remain
+deferred.
 
 Verify the shell from the repository root:
 
@@ -97,4 +100,10 @@ Verify Flutter category tab API integration from the repository root:
 
 ```bash
 bash scripts/verify-us-043.sh
+```
+
+Verify the Flutter Bazel build and test boundary from the repository root:
+
+```bash
+bash scripts/verify-us-044.sh
 ```

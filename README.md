@@ -78,6 +78,9 @@ renders as selectable material swatches backed by local Flutter state. The
 selected configuration can now be added to a locally persisted Flutter cart, and
 the Cart tab renders stored quantity, selected colors, selection state,
 selected subtotal, and savings from the API-owned display pricing contract.
+The Flutter customer app now also has a Bazel validation boundary that runs
+dependency resolution, formatting, analysis, and tests from a copied temporary
+app directory.
 `US-042` adds customer category taxonomy and category product
 sorting routes through `GET /catalog/categories` and
 `GET /catalog/categories/{slug}/products`, backed by product category metadata
@@ -381,6 +384,13 @@ Flutter category tab API integration verification:
 bash scripts/verify-us-043.sh
 ```
 
-Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI
-rules now provide executable component and API image targets; Flutter rules and
-remaining platform behavior will be added by later stories.
+Flutter Bazel build and test boundary verification:
+
+```bash
+bash scripts/verify-us-044.sh
+```
+
+Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and
+Flutter validation targets now provide executable component proof. Production
+mobile release packaging and remaining platform behavior will be added by later
+stories.

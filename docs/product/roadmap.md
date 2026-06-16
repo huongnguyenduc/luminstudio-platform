@@ -208,6 +208,12 @@ Selected work:
   detail navigation without adding checkout, payments, authentication,
   authorization, inventory checks, backend cart APIs, signed object URLs,
   Flutter Bazel rules, live backend proof, or live device proof.
+- `US-044 Flutter Bazel Build And Test Boundary` adds a Bazel source and test
+  boundary for the Flutter customer app. The Bazel test copies the app into a
+  temporary directory and runs dependency resolution, formatting, analysis, and
+  tests without adding checkout, payments, authentication, authorization,
+  inventory checks, backend cart APIs, signed object URLs, production mobile
+  release packaging, live backend proof, or live device proof.
 
 ## Phase 4: 3D Detail And Cart
 
