@@ -31,3 +31,10 @@ The Flutter customer app uses
 [`http`](https://pub.dev/packages/http/versions/1.6.0), licensed under BSD-3-
 Clause, for cross-platform HTTP requests from the catalog API adapter. Upstream
 project: <https://github.com/dart-lang/http/tree/master/pkgs/http>.
+
+## shared_preferences 2.5.5
+
+The Flutter customer app uses
+[`shared_preferences`](https://pub.dev/packages/shared_preferences/versions/2.5.5),
+licensed under BSD-3-Clause, for local cart persistence. Upstream project:
+<https://github.com/flutter/packages/tree/main/packages/shared_preferences/shared_preferences>.

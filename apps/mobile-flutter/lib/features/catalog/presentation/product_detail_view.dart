@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lumin_studio_mobile/features/cart/presentation/cubit/cart_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/product_detail_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/product_model_viewer.dart';
@@ -9,25 +10,34 @@ class ProductDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ProductDetailCubit, ProductDetailState>(
-      builder: (context, state) {
-        final title = state.detail?.name ?? 'Product detail';
-
-        return Scaffold(
-          appBar: AppBar(title: Text(title)),
-          body: switch (state.status) {
-            ProductDetailStatus.initial ||
-            ProductDetailStatus.loading => const _ProductDetailLoading(),
-            ProductDetailStatus.failure => _ProductDetailFailure(
-              message: state.message,
-            ),
-            ProductDetailStatus.ready => _ProductDetailReady(
-              detail: state.detail!,
-              selectedMeshColors: state.selectedMeshColors,
-            ),
-          },
+    return BlocListener<CartCubit, CartState>(
+      listenWhen: (previous, current) =>
+          previous.message != current.message && current.message != null,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.message ?? 'Cart updated')),
         );
       },
+      child: BlocBuilder<ProductDetailCubit, ProductDetailState>(
+        builder: (context, state) {
+          final title = state.detail?.name ?? 'Product detail';
+
+          return Scaffold(
+            appBar: AppBar(title: Text(title)),
+            body: switch (state.status) {
+              ProductDetailStatus.initial ||
+              ProductDetailStatus.loading => const _ProductDetailLoading(),
+              ProductDetailStatus.failure => _ProductDetailFailure(
+                message: state.message,
+              ),
+              ProductDetailStatus.ready => _ProductDetailReady(
+                detail: state.detail!,
+                selectedMeshColors: state.selectedMeshColors,
+              ),
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -131,6 +141,24 @@ class _ProductDetailReady extends StatelessWidget {
               const SizedBox(height: 10),
             ],
           ],
+          const SizedBox(height: 18),
+          BlocBuilder<CartCubit, CartState>(
+            builder: (context, cartState) {
+              return FilledButton.icon(
+                key: const ValueKey<String>('add-selected-product-to-cart'),
+                onPressed: cartState.isMutating
+                    ? null
+                    : () {
+                        context.read<CartCubit>().addProduct(
+                          detail,
+                          selectedMeshColors,
+                        );
+                      },
+                icon: const Icon(Icons.add_shopping_cart),
+                label: const Text('Add to cart'),
+              );
+            },
+          ),
         ],
       ),
     );

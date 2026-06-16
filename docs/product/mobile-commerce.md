@@ -127,6 +127,14 @@ allowed colors can be selected, and the selected color map remains in
 URLs, cart persistence, live backend proof, live device proof, and direct
 service access remain deferred.
 
+`US-040` lets customers add the selected Product Detail configuration to a
+locally persisted cart. The cart stores product identity, selected mesh colors,
+quantity, and selection state through a local Flutter repository and renders
+that state on the Cart tab. Backend cart APIs, checkout, payments, inventory
+checks, pricing precision, currency, discount rules, authentication,
+authorization, signed object URLs, live backend proof, live device proof, and
+direct service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, selected mesh colors,

@@ -183,6 +183,12 @@ the existing `meshColorConfig` response. Selection remains local Flutter state
 inside `ProductDetailCubit`, keeps direct storage/search/message access out of
 the app, and leaves cart persistence, Flutter Bazel rules, and live device
 proof deferred.
+`US-040` adds the first local Flutter cart persistence slice. Product Detail can
+add the selected product configuration to a local cart repository, and the Cart
+tab renders stored product identity, selected mesh colors, quantity, and
+selection state without introducing backend cart APIs, checkout, payment,
+inventory, direct storage/search/message access, Flutter Bazel rules, or live
+device proof.
 
 ## Boundary Rules
 

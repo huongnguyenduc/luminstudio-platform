@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lumin_studio_mobile/features/cart/presentation/cart_view.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/catalog_products_view.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 
@@ -141,6 +142,10 @@ class _TabList extends StatelessWidget {
       return const CatalogProductsView(
         scrollKey: PageStorageKey<String>('home-scroll'),
       );
+    }
+
+    if (tab == CustomerTab.cart) {
+      return const CartView();
     }
 
     return Semantics(

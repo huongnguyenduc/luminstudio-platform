@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lumin_studio_mobile/app/app.dart';
+import 'package:lumin_studio_mobile/features/cart/domain/cart_item.dart';
+import 'package:lumin_studio_mobile/features/cart/domain/cart_repository.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/device_tier.dart';
+import 'package:lumin_studio_mobile/features/catalog/presentation/product_model_viewer.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -27,7 +30,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      LuminStudioApp(catalogRepository: _FakeCatalogRepository.empty()),
+      _testApp(catalogRepository: _FakeCatalogRepository.empty()),
     );
     await tester.pumpAndSettle();
 
@@ -41,9 +44,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      LuminStudioApp(
-        catalogRepository: _FakeCatalogRepository.withProducts(16),
-      ),
+      _testApp(catalogRepository: _FakeCatalogRepository.withProducts(16)),
     );
     await tester.pumpAndSettle();
 
@@ -68,7 +69,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      LuminStudioApp(catalogRepository: _FakeCatalogRepository.empty()),
+      _testApp(catalogRepository: _FakeCatalogRepository.empty()),
     );
     await tester.pumpAndSettle();
 
@@ -89,7 +90,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      LuminStudioApp(catalogRepository: _FakeCatalogRepository.withProducts(2)),
+      _testApp(catalogRepository: _FakeCatalogRepository.withProducts(2)),
     );
     await tester.pumpAndSettle();
 
@@ -104,7 +105,7 @@ void main() {
     final repository = _FakeCatalogRepository.withProducts(3);
     repository.searchPage = _catalogPage(1, namePrefix: 'Pendant');
 
-    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(SearchBar), 'pendant');
@@ -127,7 +128,7 @@ void main() {
     final repository = _FakeCatalogRepository.withProducts(2);
     repository.searchPage = _catalogPage(0);
 
-    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(SearchBar), 'missing');
@@ -141,7 +142,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final repository = _FakeCatalogRepository.failure();
-    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
     await tester.pumpAndSettle();
 
     expect(find.text('Catalog is unavailable'), findsOneWidget);
@@ -160,7 +161,7 @@ void main() {
     repository.shouldFailSearch = true;
     repository.searchPage = _catalogPage(1, namePrefix: 'Search Hit');
 
-    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(SearchBar), 'hit');
@@ -180,7 +181,7 @@ void main() {
   ) async {
     final repository = _FakeCatalogRepository.pagedProducts(5, pageSize: 2);
 
-    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
     await tester.pumpAndSettle();
 
     expect(find.text('Product 1'), findsOneWidget);
@@ -203,7 +204,7 @@ void main() {
       ..searchPageSize = 2
       ..searchNamePrefix = 'Pendant';
 
-    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(SearchBar), 'pendant');
@@ -226,7 +227,7 @@ void main() {
     final repository = _FakeCatalogRepository.pagedProducts(5, pageSize: 2)
       ..shouldFailNextPage = true;
 
-    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
     await tester.pumpAndSettle();
 
     await _loadMoreThroughHome(tester);
@@ -245,9 +246,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      LuminStudioApp(
-        catalogRepository: _FakeCatalogRepository.previewProduct(),
-      ),
+      _testApp(catalogRepository: _FakeCatalogRepository.previewProduct()),
     );
     await tester.pumpAndSettle();
 
@@ -275,7 +274,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      LuminStudioApp(catalogRepository: _FakeCatalogRepository.withProducts(8)),
+      _testApp(catalogRepository: _FakeCatalogRepository.withProducts(8)),
     );
     await tester.pumpAndSettle();
 
@@ -301,7 +300,7 @@ void main() {
     final repository = _FakeCatalogRepository.withProducts(2);
 
     await tester.pumpWidget(
-      LuminStudioApp(
+      _testApp(
         catalogRepository: repository,
         deviceTierResolver: const FixedDeviceTierResolver(
           ProductModelTier.high,
@@ -341,7 +340,7 @@ void main() {
     final repository = _FakeCatalogRepository.withProducts(1);
 
     await tester.pumpWidget(
-      LuminStudioApp(
+      _testApp(
         catalogRepository: repository,
         deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
         productModelViewerBuilder: _fakeProductModelViewerBuilder,
@@ -370,7 +369,7 @@ void main() {
     final repository = _FakeCatalogRepository.withProducts(1);
 
     await tester.pumpWidget(
-      LuminStudioApp(
+      _testApp(
         catalogRepository: repository,
         deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
         productModelViewerBuilder: _fakeProductModelViewerBuilder,
@@ -407,13 +406,114 @@ void main() {
   });
 
   testWidgets(
+    'product detail adds the selected configuration to the local cart',
+    (WidgetTester tester) async {
+      final cartRepository = _FakeCartRepository();
+
+      await tester.pumpWidget(
+        _testApp(
+          catalogRepository: _FakeCatalogRepository.withProducts(1),
+          cartRepository: cartRepository,
+          deviceTierResolver: const FixedDeviceTierResolver(
+            ProductModelTier.low,
+          ),
+          productModelViewerBuilder: _fakeProductModelViewerBuilder,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Product 1'));
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byKey(const PageStorageKey<String>('product-detail-scroll')),
+        const Offset(0, -360),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('mesh-color-mesh_body-#0F172A')),
+      );
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byKey(const PageStorageKey<String>('product-detail-scroll')),
+        const Offset(0, -220),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey<String>('add-selected-product-to-cart')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Added to cart'), findsOneWidget);
+      expect(cartRepository.items.single.productId, 'prod_1');
+      expect(
+        cartRepository.items.single.selectedColors['mesh_body'],
+        '#0F172A',
+      );
+      expect(cartRepository.items.single.quantity, 1);
+      expect(cartRepository.items.single.isSelected, isTrue);
+
+      await tester.tap(find.text('Cart'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 in cart, 1 selected'), findsOneWidget);
+      expect(find.text('Product prod_1'), findsOneWidget);
+      expect(find.text('mesh_body: #0F172A'), findsOneWidget);
+    },
+  );
+
+  testWidgets('cart tab updates quantity and selection state', (
+    WidgetTester tester,
+  ) async {
+    final cartRepository = _FakeCartRepository(
+      items: const [
+        CartItem(
+          productId: 'prod_1',
+          selectedColors: {'mesh_body': '#0F172A'},
+          quantity: 1,
+          isSelected: true,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      _testApp(
+        catalogRepository: _FakeCatalogRepository.empty(),
+        cartRepository: cartRepository,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cart'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 in cart, 1 selected'), findsOneWidget);
+    expect(find.text('mesh_body: #0F172A'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Increase prod_1 quantity'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey<String>('cart-qty-prod_1')),
+      findsOneWidget,
+    );
+    expect(cartRepository.items.single.quantity, 2);
+    expect(find.text('2 in cart, 2 selected'), findsOneWidget);
+
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+
+    expect(cartRepository.items.single.isSelected, isFalse);
+    expect(find.text('2 in cart, 0 selected'), findsOneWidget);
+  });
+
+  testWidgets(
     'product detail renders unavailable model state without a model route',
     (WidgetTester tester) async {
       final repository = _FakeCatalogRepository.withProducts(1)
         ..detailWithoutModelRoute = true;
 
       await tester.pumpWidget(
-        LuminStudioApp(
+        _testApp(
           catalogRepository: repository,
           deviceTierResolver: const FixedDeviceTierResolver(
             ProductModelTier.low,
@@ -437,7 +537,7 @@ void main() {
       ..shouldFailDetail = true;
 
     await tester.pumpWidget(
-      LuminStudioApp(
+      _testApp(
         catalogRepository: repository,
         deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
         productModelViewerBuilder: _fakeProductModelViewerBuilder,
@@ -460,7 +560,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      LuminStudioApp(
+      _testApp(
         catalogRepository: _FakeCatalogRepository.withProducts(2),
         deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
         productModelViewerBuilder: _fakeProductModelViewerBuilder,
@@ -480,6 +580,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Model tier: low'), findsOneWidget);
   });
+}
+
+Widget _testApp({
+  required CatalogRepository catalogRepository,
+  CartRepository? cartRepository,
+  DeviceTierResolver deviceTierResolver = const DefaultDeviceTierResolver(),
+  ProductModelViewerBuilder productModelViewerBuilder =
+      defaultProductModelViewerBuilder,
+}) {
+  return LuminStudioApp(
+    catalogRepository: catalogRepository,
+    cartRepository: cartRepository ?? _FakeCartRepository(),
+    deviceTierResolver: deviceTierResolver,
+    productModelViewerBuilder: productModelViewerBuilder,
+  );
 }
 
 Widget _fakeProductModelViewerBuilder(
@@ -618,6 +733,23 @@ class _FakeCatalogRepository implements CatalogRepository {
       tier,
       includeModelRoute: !detailWithoutModelRoute,
     );
+  }
+}
+
+class _FakeCartRepository implements CartRepository {
+  _FakeCartRepository({List<CartItem> items = const <CartItem>[]})
+    : items = List<CartItem>.of(items);
+
+  List<CartItem> items;
+
+  @override
+  Future<List<CartItem>> loadCart() async {
+    return List<CartItem>.of(items);
+  }
+
+  @override
+  Future<void> saveCart(List<CartItem> items) async {
+    this.items = List<CartItem>.of(items);
   }
 }
 

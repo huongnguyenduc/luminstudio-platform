@@ -236,6 +236,12 @@ Selected work:
   and selected colors stay in `ProductDetailCubit` state for later cart use
   without adding cart persistence, related products, signed object URLs, auth,
   Flutter Bazel rules, live backend proof, or live device proof.
+- `US-040 Flutter Local Cart Persistence` lets customers add the selected
+  Product Detail configuration to a locally persisted cart. The Cart tab renders
+  stored product identity, selected mesh colors, quantity, and selection state
+  with local quantity and selection updates without adding backend cart APIs,
+  checkout, payments, inventory checks, pricing rules, signed object URLs, auth,
+  Flutter Bazel rules, live backend proof, or live device proof.
 
 ## Deferred
 
