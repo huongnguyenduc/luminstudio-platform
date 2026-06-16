@@ -124,8 +124,6 @@ class _ProductDetailReady extends StatelessWidget {
           const SizedBox(height: 18),
           Text(detail.name, style: theme.textTheme.headlineSmall),
           const SizedBox(height: 8),
-          Text(detail.description, style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 8),
           Text(
             _formatMoney(detail.price.amountCents, detail.price.currency),
             key: const ValueKey<String>('product-detail-price'),
@@ -133,12 +131,17 @@ class _ProductDetailReady extends StatelessWidget {
               color: theme.colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 20),
           if (detail.meshColorConfig.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _SelectedConfigurationSummary(
+              detail: detail,
+              selectedMeshColors: selectedMeshColors,
+            ),
+            const SizedBox(height: 16),
             Text('Customize color', style: theme.textTheme.titleMedium),
             const SizedBox(height: 4),
             Text(
-              'Choose the finish before adding this item to your cart.',
+              'Choose a finish before adding this item to your cart.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -153,6 +156,8 @@ class _ProductDetailReady extends StatelessWidget {
               const SizedBox(height: 10),
             ],
           ],
+          const SizedBox(height: 12),
+          Text(detail.description, style: theme.textTheme.bodyLarge),
           if (detail.informationSections.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text('Product information', style: theme.textTheme.titleMedium),
@@ -192,10 +197,12 @@ class _InteractiveModelPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final modelViewerBuilder = context.read<ProductModelViewerBuilder>();
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final panelHeight = (screenHeight * 0.24).clamp(176.0, 224.0);
 
     return SizedBox(
       key: ValueKey<String>('product-model-panel-${detail.id}'),
-      height: 280,
+      height: panelHeight,
       width: double.infinity,
       child: modelViewerBuilder(context, detail),
     );
@@ -274,6 +281,10 @@ class _ProductDetailBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final selectedLabel = _selectedChoiceLabels(
+      detail,
+      selectedMeshColors,
+    ).join(' · ');
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -303,7 +314,11 @@ class _ProductDetailBottomBar extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${selectedMeshColors.length} custom choices',
+                      selectedLabel.isEmpty
+                          ? 'Ready to add'
+                          : 'Selected $selectedLabel',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -337,6 +352,83 @@ class _ProductDetailBottomBar extends StatelessWidget {
   }
 }
 
+class _SelectedConfigurationSummary extends StatelessWidget {
+  const _SelectedConfigurationSummary({
+    required this.detail,
+    required this.selectedMeshColors,
+  });
+
+  final CatalogProductDetail detail;
+  final Map<String, String> selectedMeshColors;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final labels = _selectedChoiceLabels(detail, selectedMeshColors);
+
+    return Semantics(
+      label: labels.isEmpty
+          ? 'No product configuration selected'
+          : 'Selected configuration ${labels.join(', ')}',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Selected finish', style: theme.textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (labels.isEmpty)
+                    Text(
+                      'Standard configuration',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  else
+                    for (final label in labels)
+                      _SelectedConfigurationChip(label: label),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedConfigurationChip extends StatelessWidget {
+  const _SelectedConfigurationChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Text(label, style: theme.textTheme.labelMedium),
+      ),
+    );
+  }
+}
+
 class _InformationSection extends StatelessWidget {
   const _InformationSection({required this.section});
 
@@ -363,6 +455,16 @@ class _InformationSection extends StatelessWidget {
       ),
     );
   }
+}
+
+List<String> _selectedChoiceLabels(
+  CatalogProductDetail detail,
+  Map<String, String> selectedMeshColors,
+) {
+  return [
+    for (final options in detail.meshColorConfig)
+      '${_friendlyMeshName(options.meshId)} ${selectedMeshColors[options.meshId] ?? options.defaultColor}',
+  ];
 }
 
 class _MeshColorOptions extends StatelessWidget {

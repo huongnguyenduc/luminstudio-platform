@@ -255,6 +255,13 @@ Selected work:
   authorization, checkout, payments, order fulfillment, inventory checks,
   backend cart APIs, signed object URLs, direct platform access, new UI
   behavior, or new customer contracts.
+- `US-055 Flutter UI UX Audit Capture Harness` adds deterministic mobile-size
+  screenshot proof for Home, Category, Product Detail top, Product Detail
+  scrolled customization, and Cart through Flutter widget capture with fake
+  repositories. It supports UI/UX review without requiring live backend or
+  manual simulator state and does not add authentication, authorization,
+  checkout, payments, order fulfillment, inventory checks, signed object URLs,
+  direct platform access, new UI behavior, or new customer contracts.
 
 ## Phase 4: 3D Detail And Cart
 
@@ -359,3 +366,17 @@ Selected work:
   adding checkout, payments, authentication, authorization, inventory checks,
   tax, shipping, order fulfillment, signed object URLs, new backend contracts,
   or direct platform access.
+- `US-056 Product Detail Customize To Cart Ergonomics` improves the existing
+  Flutter Product Detail flow by using a mobile-responsive 3D viewer height,
+  exposing the selected finish near the price, repeating that choice in the
+  persistent Add to cart bar, and allowing add-to-cart immediately after swatch
+  selection without adding checkout, payments, authentication, authorization,
+  inventory checks, tax, shipping, order fulfillment, signed object URLs, new
+  backend contracts, or direct platform access.
+- `US-057 Catalog And Category Browse Ergonomics` improves the existing
+  Flutter Home and Category browse surfaces with clearer product-card
+  hierarchy, visible category/price/preview cues, quick sort chips, and a
+  visible selected category/sort summary without adding checkout, payments,
+  authentication, authorization, inventory checks, tax, shipping, order
+  fulfillment, signed object URLs, new backend contracts, or direct platform
+  access.

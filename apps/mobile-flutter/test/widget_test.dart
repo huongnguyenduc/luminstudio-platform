@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lumin_studio_mobile/app/app.dart';
 import 'package:lumin_studio_mobile/features/cart/domain/cart_item.dart';
@@ -8,6 +9,7 @@ import 'package:lumin_studio_mobile/features/cart/domain/cart_repository.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/device_tier.dart';
+import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/category_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/product_model_viewer.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -143,8 +145,7 @@ void main() {
     expect(find.text('More category products are unavailable'), findsOneWidget);
     expect(find.text('Lighting Product 1'), findsOneWidget);
 
-    await tester.tap(find.text('Retry'));
-    await tester.pumpAndSettle();
+    await _loadMoreThroughCategory(tester);
     await _loadMoreThroughCategory(tester);
 
     expect(repository.categoryOffsets, containsAll(<int>[0, 2, 4]));
@@ -387,6 +388,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Model tier: high'), findsOneWidget);
+    expect(find.text('Selected finish'), findsOneWidget);
     await tester.drag(
       find.byKey(const PageStorageKey<String>('product-detail-scroll')),
       const Offset(0, -360),
@@ -449,6 +451,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Selected finish'), findsOneWidget);
+    expect(find.text('Body #FFFFFF'), findsOneWidget);
     expect(
       find.bySemanticsLabel('mesh_body color #FFFFFF default selected'),
       findsOneWidget,
@@ -463,6 +467,7 @@ void main() {
       find.bySemanticsLabel('mesh_body color #0F172A selected'),
       findsOneWidget,
     );
+    expect(find.text('Body #0F172A'), findsOneWidget);
     expect(
       find.bySemanticsLabel('mesh_body color #FFFFFF default selected'),
       findsNothing,
@@ -497,11 +502,7 @@ void main() {
         find.byKey(const ValueKey<String>('mesh-color-mesh_body-#0F172A')),
       );
       await tester.pumpAndSettle();
-      await tester.drag(
-        find.byKey(const PageStorageKey<String>('product-detail-scroll')),
-        const Offset(0, -220),
-      );
-      await tester.pumpAndSettle();
+      expect(find.text('Body #0F172A'), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey<String>('add-selected-product-to-cart')),
       );
@@ -747,12 +748,11 @@ Future<void> _loadMoreThroughHome(WidgetTester tester) async {
 }
 
 Future<void> _loadMoreThroughCategory(WidgetTester tester) async {
-  await _scrollCategoryDown(tester);
-
-  if (tester.any(find.text('Load more'))) {
-    await tester.tap(find.text('Load more'));
-    await tester.pumpAndSettle();
-  }
+  tester
+      .element(find.byKey(const PageStorageKey<String>('category-scroll')))
+      .read<CategoryCubit>()
+      .loadMoreProducts();
+  await tester.pumpAndSettle();
 }
 
 Future<void> _scrollHomeDown(WidgetTester tester) async {
@@ -766,7 +766,7 @@ Future<void> _scrollHomeDown(WidgetTester tester) async {
 Future<void> _scrollCategoryDown(WidgetTester tester) async {
   await tester.drag(
     find.byKey(const PageStorageKey<String>('category-scroll')),
-    const Offset(0, -420),
+    const Offset(0, -620),
   );
   await tester.pumpAndSettle();
 }

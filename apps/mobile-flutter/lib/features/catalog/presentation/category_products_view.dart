@@ -134,6 +134,7 @@ class _CategoryReady extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = state.selectedCategory;
+    final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,11 +143,24 @@ class _CategoryReady extends StatelessWidget {
           categories: state.categories,
           selectedCategory: selected,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         _CategorySortControl(sort: state.sort),
-        const SizedBox(height: 16),
-        if (selected != null)
-          Text(selected.name, style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 18),
+        if (selected != null) ...[
+          Text(
+            selected.name,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Sorted by ${state.sort.label}',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         switch (state.productsStatus) {
           CategoryProductsStatus.idle ||
@@ -173,6 +187,8 @@ class _CategorySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -181,6 +197,14 @@ class _CategorySelector extends StatelessWidget {
             ChoiceChip(
               label: Text(category.name),
               selected: selectedCategory?.slug == category.slug,
+              showCheckmark: false,
+              avatar: selectedCategory?.slug == category.slug
+                  ? Icon(
+                      Icons.check,
+                      size: 18,
+                      color: theme.colorScheme.onSecondaryContainer,
+                    )
+                  : null,
               onSelected: (_) {
                 context.read<CategoryCubit>().selectCategory(category);
               },
@@ -200,21 +224,40 @@ class _CategorySortControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<CategoryProductSort>(
-      initialValue: sort,
-      decoration: const InputDecoration(
-        border: OutlineInputBorder(),
-        labelText: 'Sort products',
+    final theme = Theme.of(context);
+
+    return Semantics(
+      label: 'Sort products',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sort products',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final value in CategoryProductSort.values) ...[
+                  ChoiceChip(
+                    label: Text(value.label),
+                    selected: value == sort,
+                    showCheckmark: false,
+                    onSelected: (_) {
+                      context.read<CategoryCubit>().changeSort(value);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
-      items: [
-        for (final value in CategoryProductSort.values)
-          DropdownMenuItem(value: value, child: Text(value.label)),
-      ],
-      onChanged: (value) {
-        if (value != null) {
-          context.read<CategoryCubit>().changeSort(value);
-        }
-      },
     );
   }
 }
@@ -337,29 +380,35 @@ class _CategoryProductTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final statusLabel = product.processingStatus.replaceAll('_', ' ');
+    final categoryLabel = product.categories.isEmpty
+        ? 'Category'
+        : product.categories.first.name;
 
     return Semantics(
       button: true,
       label: 'Category product ${product.name}',
       child: Material(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: () => _openProductDetail(context),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 104),
+            constraints: const BoxConstraints(minHeight: 128),
             padding: const EdgeInsets.all(16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 72,
+                  height: 78,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
+                    color: product.hasPreview
+                        ? theme.colorScheme.primaryContainer
+                        : theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: theme.colorScheme.outlineVariant),
                   ),
                   child: Icon(
@@ -374,11 +423,36 @@ class _CategoryProductTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              categoryLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: _CategoryStatusPill(
+                              label: product.hasPreview
+                                  ? '360 preview ready'
+                                  : statusLabel,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
                       Text(
                         product.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -390,7 +464,7 @@ class _CategoryProductTile extends StatelessWidget {
                       const SizedBox(height: 10),
                       Text(
                         _formatPrice(product.price),
-                        style: theme.textTheme.labelLarge?.copyWith(
+                        style: theme.textTheme.titleSmall?.copyWith(
                           color: theme.colorScheme.primary,
                         ),
                       ),
@@ -398,9 +472,18 @@ class _CategoryProductTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right,
-                  color: theme.colorScheme.onSurfaceVariant,
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -412,6 +495,35 @@ class _CategoryProductTile extends StatelessWidget {
 
   String _formatPrice(CatalogPrice price) {
     return '${price.currency} ${(price.amountCents / 100).toStringAsFixed(2)}';
+  }
+}
+
+class _CategoryStatusPill extends StatelessWidget {
+  const _CategoryStatusPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ),
+    );
   }
 }
 

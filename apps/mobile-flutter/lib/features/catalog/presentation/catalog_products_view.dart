@@ -297,6 +297,7 @@ class _CatalogList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final products = state.products;
+    final theme = Theme.of(context);
 
     return ListView.separated(
       key: scrollKey,
@@ -304,7 +305,21 @@ class _CatalogList extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
       itemBuilder: (context, index) {
         if (index == 0) {
-          return _CatalogSearchField(controller: searchController);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _CatalogSearchField(controller: searchController),
+              const SizedBox(height: 12),
+              Text(
+                state.isSearching
+                    ? '${products.length} matching products'
+                    : 'Browse ${products.length} products',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          );
         }
         if (index == products.length + 1) {
           return _CatalogPaginationFooter(state: state);
@@ -568,7 +583,7 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
     final statusLabel = product.processingStatus.replaceAll('_', ' ');
     final previewUri = product.spritePreviewUri;
     final categoryLabel = product.categories.isEmpty
-        ? null
+        ? 'Catalog'
         : product.categories.first.name;
 
     return VisibilityDetector(
@@ -584,7 +599,7 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
             onTap: _openProductDetail,
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              constraints: const BoxConstraints(minHeight: 116),
+              constraints: const BoxConstraints(minHeight: 128),
               padding: const EdgeInsets.all(16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -624,22 +639,36 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (categoryLabel != null) ...[
-                          Text(
-                            categoryLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                categoryLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: _ProductStatusPill(
+                                label: product.hasPreview
+                                    ? '360 preview ready'
+                                    : statusLabel,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
                         Text(
                           product.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -663,10 +692,11 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
                                 color: theme.colorScheme.primary,
                               ),
                             ),
-                            _ProductStatusPill(
-                              label: product.hasPreview
-                                  ? '360 preview ready'
-                                  : statusLabel,
+                            Text(
+                              'View details',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
                             ),
                           ],
                         ),
@@ -677,15 +707,19 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.chevron_right,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(height: 28),
-                      Text(
-                        'View',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.primary,
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.10,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(
+                            Icons.chevron_right,
+                            color: theme.colorScheme.primary,
+                          ),
                         ),
                       ),
                     ],
@@ -718,6 +752,8 @@ class _ProductStatusPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.primary,
           ),

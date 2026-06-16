@@ -231,6 +231,32 @@ authentication, authorization, inventory checks, tax, shipping, order
 fulfillment, signed object URLs, new backend contracts, and direct service
 access remain deferred.
 
+`US-055` adds a deterministic Flutter UI/UX audit capture harness for the
+current customer commerce surfaces. The harness captures Home, Category,
+Product Detail top, Product Detail scrolled customization, and Cart at a
+mobile-size viewport through fake repositories and injected model-viewer
+behavior, so review artifacts do not depend on a live API gateway or manual
+simulator navigation. It does not change the UI implementation, checkout,
+payments, authentication, authorization, inventory checks, tax, shipping, order
+fulfillment, signed object URLs, backend contracts, or direct service access.
+
+`US-056` improves the Flutter Product Detail customize-to-cart path. The detail
+screen now uses a mobile-responsive 3D viewer height, shows the selected finish
+near the price, repeats the selected choice in the persistent Add to cart bar,
+and lets customers add the configured item immediately after changing a swatch
+without an extra scroll. Checkout, payments, authentication, authorization,
+inventory checks, tax, shipping, order fulfillment, signed object URLs, new
+backend contracts, and direct service access remain deferred.
+
+`US-057` improves the Flutter Home and Category browse ergonomics. Home now
+adds a small browse/result count and clearer catalog card hierarchy for
+category, price, preview readiness, and detail entry. Category now uses
+horizontal touch chips for sort choices, keeps the selected category and sort
+visible above results, and renders category products with the same card
+language as Home. Checkout, payments, authentication, authorization, inventory
+checks, tax, shipping, order fulfillment, signed object URLs, new backend
+contracts, and direct service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display
