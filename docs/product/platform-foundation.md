@@ -240,6 +240,12 @@ validates file selection before submit, renders inline upload states, and
 refreshes the list through `GET /admin/products` without adding delete, auth,
 direct platform access, backend contract changes, signed object URLs, or live
 backend proof.
+`US-049` adds an isolated K3d live processed product catalog smoke. The proof
+uses the existing API and worker images with PostgreSQL, MinIO, NATS, and
+Meilisearch to process one uploaded GLB from admin creation through customer
+catalog/search/category/detail/sprite/model routes. The API now republishes
+`product.updated` after processing completion so the derived Meilisearch
+catalog document reflects completed processing state and sprite metadata.
 
 ## Boundary Rules
 

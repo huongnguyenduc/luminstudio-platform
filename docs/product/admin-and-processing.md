@@ -180,7 +180,15 @@ Meilisearch, exposes `GET /catalog/categories`, and exposes
 `price_asc`, `price_desc`, and `name_asc` sort values. The Flutter Category tab
 now consumes those routes through the Go API gateway with category selection,
 sorting, paginated product results, incremental retry, scroll-to-top, and
-product detail navigation. Live backend proof remains deferred.
+product detail navigation.
+
+`US-049` adds live processed product catalog smoke proof for the already
+implemented backend flow. After the API consumes a valid `3d.task.completed`
+event and stores processed asset references, it publishes `product.updated` so
+Meilisearch receives completed processing state and sprite metadata. The live
+smoke creates a priced categorized product, uploads `resources/pet_tag.glb`,
+waits for worker completion, and proves catalog, search, category, product
+detail, sprite, and low/high model routes through the Go API gateway.
 
 Authentication, authorization, product delete workflows, signed object URLs,
 retry/outbox semantics, and dead-letter handling remain deferred.

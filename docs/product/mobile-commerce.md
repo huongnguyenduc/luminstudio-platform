@@ -174,6 +174,14 @@ Checkout, payments, authentication, authorization, inventory checks, backend
 cart APIs, signed object URLs, production mobile release packaging, live backend
 proof, live device proof, and direct service access remain deferred.
 
+`US-049` adds live backend proof for the existing customer catalog and product
+detail API boundaries. A processed product created from the admin upload and
+worker pipeline is verified through catalog browsing, search, category
+products, product detail, sprite streaming, and low/high model streaming routes
+behind the Go API gateway. It does not add Flutter live device proof, checkout,
+payments, authentication, authorization, backend cart APIs, signed object URLs,
+or direct service access.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display

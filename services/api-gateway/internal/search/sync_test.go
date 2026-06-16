@@ -97,18 +97,26 @@ func TestMeilisearchIndexerUpsertsProductDocument(t *testing.T) {
 	now := time.Date(2026, 6, 15, 14, 0, 0, 0, time.UTC)
 	var paths []string
 	var authorization string
+	var indexRequest map[string]string
 	var documents []ProductDocument
 	var settings map[string][]string
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		paths = append(paths, request.Method+" "+request.URL.String())
 		authorization = request.Header.Get("Authorization")
-		switch request.Method {
-		case http.MethodPatch:
+		switch {
+		case request.Method == http.MethodGet && request.URL.Path == "/indexes/products":
+			response.WriteHeader(http.StatusNotFound)
+		case request.Method == http.MethodPost && request.URL.Path == "/indexes":
+			if err := json.NewDecoder(request.Body).Decode(&indexRequest); err != nil {
+				t.Fatalf("decode index body: %v", err)
+			}
+			response.WriteHeader(http.StatusAccepted)
+		case request.Method == http.MethodPatch:
 			if err := json.NewDecoder(request.Body).Decode(&settings); err != nil {
 				t.Fatalf("decode settings body: %v", err)
 			}
 			response.WriteHeader(http.StatusAccepted)
-		case http.MethodPost:
+		case request.Method == http.MethodPost:
 			if err := json.NewDecoder(request.Body).Decode(&documents); err != nil {
 				t.Fatalf("decode request body: %v", err)
 			}
@@ -128,10 +136,15 @@ func TestMeilisearchIndexerUpsertsProductDocument(t *testing.T) {
 		t.Fatalf("upsert product: %v", err)
 	}
 
-	if len(paths) != 2 ||
-		paths[0] != "PATCH /indexes/products/settings" ||
-		paths[1] != "POST /indexes/products/documents?primaryKey=id" {
+	if len(paths) != 4 ||
+		paths[0] != "GET /indexes/products" ||
+		paths[1] != "POST /indexes" ||
+		paths[2] != "PATCH /indexes/products/settings" ||
+		paths[3] != "POST /indexes/products/documents?primaryKey=id" {
 		t.Fatalf("paths = %#v", paths)
+	}
+	if indexRequest["uid"] != "products" || indexRequest["primaryKey"] != "id" {
+		t.Fatalf("index request = %#v", indexRequest)
 	}
 	if authorization != "Bearer search-key" {
 		t.Fatalf("authorization = %q", authorization)

@@ -51,6 +51,12 @@ exposes `GET /catalog/categories` plus
 `GET /catalog/categories/{slug}/products?sort=...` through the gateway without
 adding Flutter Category tab UI, checkout, payments, auth, inventory, or backend
 cart APIs.
+The API also republishes `product.updated` after processing completion so the
+derived Meilisearch catalog document can reflect completed processing state and
+sprite metadata. `US-049` proves one live processed product through admin
+creation, source upload, worker completion, catalog/search/category queries,
+product detail, sprite streaming, and low/high model streaming behind the API
+gateway.
 
 Run native tests:
 
@@ -148,4 +154,10 @@ Verify customer category taxonomy and sorting API from the repository root:
 
 ```bash
 bash scripts/verify-us-042.sh
+```
+
+Verify the live processed product catalog smoke from the repository root:
+
+```bash
+bash scripts/verify-us-049.sh
 ```

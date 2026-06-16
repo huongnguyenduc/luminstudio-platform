@@ -43,6 +43,7 @@ func run(getenv func(string) string) error {
 	defer checker.Close()
 
 	productStore := product.NewStore(checker.Postgres())
+	eventPublisher := product.NewNATSPublisher(config.NATSURL, config.DependencyTimeout)
 	searchSyncer := search.NewSyncer(
 		productStore,
 		search.NewMeilisearchIndexer(config.MeilisearchURL, config.MeilisearchKey, config.DependencyTimeout),
@@ -53,7 +54,7 @@ func run(getenv func(string) string) error {
 			slog.Error("product search sync stopped", "error", err)
 		}
 	}()
-	completionHandler := processing.NewCompletionHandler(productStore)
+	completionHandler := processing.NewCompletionHandler(productStore).WithEventPublisher(eventPublisher)
 	go func() {
 		err := processing.NewNATSSubscriber(config.NATSURL, config.DependencyTimeout, completionHandler).Run(context.Background())
 		if err != nil && !errors.Is(err, context.Canceled) {
@@ -67,7 +68,7 @@ func run(getenv func(string) string) error {
 			checker,
 			product.NewHandler(productStore).
 				WithSourceAssetStore(product.NewMinIOSourceAssetStore(checker.MinIO())).
-				WithEventPublisher(product.NewNATSPublisher(config.NATSURL, config.DependencyTimeout)),
+				WithEventPublisher(eventPublisher),
 			search.NewHandler(search.NewMeilisearchSearcher(config.MeilisearchURL, config.MeilisearchKey, config.DependencyTimeout)).
 				WithCatalogProductReader(productStore).
 				WithSpriteAssetStore(search.NewMinIOSpriteAssetStore(checker.MinIO())).

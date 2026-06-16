@@ -28,11 +28,17 @@ type ProductCompleter interface {
 }
 
 type CompletionHandler struct {
-	products ProductCompleter
+	products       ProductCompleter
+	eventPublisher product.EventPublisher
 }
 
 func NewCompletionHandler(products ProductCompleter) CompletionHandler {
 	return CompletionHandler{products: products}
+}
+
+func (handler CompletionHandler) WithEventPublisher(publisher product.EventPublisher) CompletionHandler {
+	handler.eventPublisher = publisher
+	return handler
 }
 
 func (handler CompletionHandler) HandleTaskCompleted(ctx context.Context, data []byte) error {
@@ -51,7 +57,7 @@ func (handler CompletionHandler) HandleTaskCompleted(ctx context.Context, data [
 	if err := event.Validate(); err != nil {
 		return err
 	}
-	_, err := handler.products.CompleteProcessing(
+	record, err := handler.products.CompleteProcessing(
 		ctx,
 		event.Payload.ProductID,
 		event.Payload.OptimizedAsset,
@@ -60,6 +66,15 @@ func (handler CompletionHandler) HandleTaskCompleted(ctx context.Context, data [
 	)
 	if err != nil {
 		return fmt.Errorf("complete product processing: %w", err)
+	}
+	if handler.eventPublisher != nil {
+		updatedEvent, err := product.NewProductUpdatedEvent(event.ID+"-product-updated", event.CorrelationID, record)
+		if err != nil {
+			return fmt.Errorf("build completion product.updated event: %w", err)
+		}
+		if err := handler.eventPublisher.PublishProductUpdated(ctx, updatedEvent); err != nil {
+			return fmt.Errorf("publish completion product.updated event: %w", err)
+		}
 	}
 	return nil
 }

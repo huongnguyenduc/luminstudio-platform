@@ -425,6 +425,12 @@ Web Admin source GLB upload API integration verification:
 bash scripts/verify-us-048.sh
 ```
 
+Live processed product catalog smoke verification:
+
+```bash
+bash scripts/verify-us-049.sh
+```
+
 Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and
 Flutter validation targets now provide executable component proof. Production
 mobile release packaging and remaining platform behavior will be added by later

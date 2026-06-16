@@ -238,6 +238,14 @@ Selected work:
   tests without adding checkout, payments, authentication, authorization,
   inventory checks, backend cart APIs, signed object URLs, production mobile
   release packaging, live backend proof, or live device proof.
+- `US-049 Live Processed Product Catalog Smoke` completes live backend proof for
+  the existing processed product flow. It creates a product through the admin
+  API, uploads a source GLB, waits for worker processing and API completion,
+  verifies completion-driven search synchronization, and proves catalog,
+  search, category, detail, sprite, and tiered model routes through the Go API
+  gateway without adding authentication, authorization, checkout, payments,
+  order fulfillment, backend cart APIs, signed object URLs, product delete,
+  direct platform access, new UI, or new customer contracts.
 
 ## Phase 4: 3D Detail And Cart
 

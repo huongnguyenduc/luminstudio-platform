@@ -508,7 +508,6 @@ func (searcher MeilisearchSearcher) SearchProducts(ctx context.Context, query Pr
 		TotalHits          *int              `json:"totalHits"`
 	}
 	decoder := json.NewDecoder(response.Body)
-	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&decoded); err != nil {
 		return ProductSearchResult{}, fmt.Errorf("decode product search response: %w", err)
 	}
@@ -563,7 +562,6 @@ func (searcher MeilisearchSearcher) ListCategories(ctx context.Context) ([]produ
 		FacetDistribution map[string]map[string]int `json:"facetDistribution"`
 	}
 	decoder := json.NewDecoder(response.Body)
-	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&decoded); err != nil {
 		return nil, fmt.Errorf("decode category list response: %w", err)
 	}

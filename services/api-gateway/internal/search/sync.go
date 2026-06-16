@@ -143,6 +143,9 @@ func (indexer MeilisearchIndexer) UpsertProduct(ctx context.Context, record prod
 	if indexer.apiKey == "" {
 		return errors.New("Meilisearch API key is not configured")
 	}
+	if err := indexer.ensureProductIndex(ctx); err != nil {
+		return err
+	}
 	if err := indexer.configureProductIndex(ctx); err != nil {
 		return err
 	}
@@ -174,6 +177,62 @@ func (indexer MeilisearchIndexer) UpsertProduct(ctx context.Context, record prod
 		return fmt.Errorf("Meilisearch returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(body)))
 	}
 	return nil
+}
+
+func (indexer MeilisearchIndexer) ensureProductIndex(ctx context.Context) error {
+	target := *indexer.baseURL
+	target.Path = strings.TrimRight(target.Path, "/") + "/indexes/" + productIndexUID
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, target.String(), nil)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Authorization", "Bearer "+indexer.apiKey)
+
+	response, err := indexer.httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode >= 200 && response.StatusCode < 300 {
+		return nil
+	}
+	body, _ := io.ReadAll(io.LimitReader(response.Body, 2048))
+	if response.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("Meilisearch index lookup returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	payload, err := json.Marshal(map[string]string{
+		"uid":        productIndexUID,
+		"primaryKey": "id",
+	})
+	if err != nil {
+		return fmt.Errorf("marshal product index request: %w", err)
+	}
+
+	target = *indexer.baseURL
+	target.Path = strings.TrimRight(target.Path, "/") + "/indexes"
+
+	request, err = http.NewRequestWithContext(ctx, http.MethodPost, target.String(), bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Authorization", "Bearer "+indexer.apiKey)
+	request.Header.Set("Content-Type", "application/json")
+
+	response, err = indexer.httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode >= 200 && response.StatusCode < 300 {
+		return nil
+	}
+	body, _ = io.ReadAll(io.LimitReader(response.Body, 2048))
+	if strings.Contains(string(body), "index_already_exists") {
+		return nil
+	}
+	return fmt.Errorf("Meilisearch index creation returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(body)))
 }
 
 func (indexer MeilisearchIndexer) configureProductIndex(ctx context.Context) error {
