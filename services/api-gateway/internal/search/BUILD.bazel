@@ -4,6 +4,7 @@ go_library(
     name = "search",
     srcs = [
         "catalog.go",
+        "model_assets.go",
         "sprite_assets.go",
         "sync.go",
     ],

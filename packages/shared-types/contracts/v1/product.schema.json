@@ -217,6 +217,83 @@
           "maxLength": 160
         }
       }
+    },
+    "ProductDetailResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "description",
+        "informationSections",
+        "processingStatus",
+        "modelTier",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 180
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "informationSections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InformationSection"
+          }
+        },
+        "meshColorConfig": {
+          "$ref": "common.schema.json#/$defs/MeshColorConfig"
+        },
+        "processingStatus": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "queued",
+            "processing",
+            "completed",
+            "failed"
+          ]
+        },
+        "modelTier": {
+          "type": "string",
+          "enum": [
+            "low",
+            "high"
+          ]
+        },
+        "modelAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "modelUrl": {
+          "type": "string",
+          "pattern": "^/catalog/products/prod_[A-Za-z0-9][A-Za-z0-9_-]{7,63}/model\\?tier=(low|high)$"
+        },
+        "spriteAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "spriteUrl": {
+          "type": "string",
+          "pattern": "^/catalog/products/prod_[A-Za-z0-9][A-Za-z0-9_-]{7,63}/sprite$"
+        },
+        "updatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        }
+      }
     }
   }
 }

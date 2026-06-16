@@ -128,10 +128,17 @@ the API boundary and do not connect directly to Meilisearch, PostgreSQL, MinIO,
 or NATS. The API also exposes `GET /catalog/products/{id}/sprite` to stream the
 completed product's 360-degree sprite JPEG from MinIO after checking the
 authoritative product row.
+The API now also exposes customer product detail through
+`GET /catalog/products/{id}?tier=low|high` and GLB model bytes through
+`GET /catalog/products/{id}/model?tier=low|high`. Both routes read the
+authoritative product row first, require completed processing and matching
+object references, and keep source and optimized GLB access behind the API
+gateway rather than exposing direct MinIO URLs.
 
 Authentication, authorization, product delete workflows, customer
-category taxonomy, sorting, signed object URLs, Flutter preview activation,
-retry/outbox semantics, and dead-letter handling remain deferred.
+category taxonomy, sorting, signed object URLs, Flutter 3D viewer behavior,
+cart persistence, retry/outbox semantics, and dead-letter handling remain
+deferred.
 
 ## Processing Pipeline
 

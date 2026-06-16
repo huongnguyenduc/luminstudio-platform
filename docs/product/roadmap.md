@@ -204,6 +204,18 @@ in a local cart.
 - Epic `E12`: Product configuration and related content.
 - Epic `E13`: Persistent cart calculations.
 
+Selected work:
+
+- `US-036 Customer Product Detail And Tiered Model Access API` starts E11 with
+  customer-facing `GET /catalog/products/{id}?tier=low|high` detail responses
+  and `GET /catalog/products/{id}/model?tier=low|high` GLB streaming through
+  the Go API gateway. The low tier serves completed optimized GLB output from
+  `lumin-optimized-glb`; the high tier serves the completed product's source
+  GLB from `lumin-source-glb`. The slice does not add Flutter device-tier
+  detection, a Flutter 3D viewer, material color editing, related products,
+  signed object URLs, cart persistence, auth, retry/outbox behavior, or live
+  K3d proof.
+
 ## Deferred
 
 - Authentication and authorization.

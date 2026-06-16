@@ -17,6 +17,10 @@ API now exposes completed sprite JPEGs at
 sprite previews after a product card remains at least 80% visible and idle for
 three seconds. Category taxonomy, sorting, product detail, cart persistence,
 and executable Bazel Flutter targets remain deferred.
+The Go API now also exposes product detail and tiered model routes through
+`GET /catalog/products/{id}?tier=low|high` and
+`GET /catalog/products/{id}/model?tier=low|high`, but Flutter device-tier
+detection and the 3D product viewer remain deferred.
 
 Verify the shell from the repository root:
 

@@ -35,6 +35,18 @@ func (productCreatorStub) GetProduct(_ context.Context, _ string) (product.Produ
 	record := routeProductRecord(time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC))
 	size := int64(3)
 	record.ProcessingStatus = product.ProcessingCompleted
+	record.SourceAsset = &product.ObjectRef{
+		Bucket:      "lumin-source-glb",
+		Key:         "products/prod_12345678/source.glb",
+		ContentType: "model/gltf-binary",
+		SizeBytes:   &size,
+	}
+	record.OptimizedAsset = &product.ObjectRef{
+		Bucket:      "lumin-optimized-glb",
+		Key:         "prod_12345678_low.glb",
+		ContentType: "model/gltf-binary",
+		SizeBytes:   &size,
+	}
 	record.SpriteAsset = &product.ObjectRef{
 		Bucket:      "lumin-360-sprites",
 		Key:         "prod_12345678_360_sprite.jpg",
@@ -217,6 +229,39 @@ func TestRoutesExposeCatalogProductSprite(t *testing.T) {
 	}
 }
 
+func TestRoutesExposeCatalogProductDetail(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678?tier=low", nil)
+	searchHandler := search.NewHandler(productSearcherRouteStub{}).
+		WithCatalogProductReader(productCreatorStub{})
+
+	routes(readyStub{}, product.NewHandler(productCreatorStub{}), searchHandler).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if !strings.Contains(recorder.Body.String(), `"/catalog/products/prod_12345678/model?tier=low"`) {
+		t.Fatalf("body missing model URL: %s", recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeCatalogProductModel(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678/model?tier=low", nil)
+	searchHandler := search.NewHandler(productSearcherRouteStub{}).
+		WithCatalogProductReader(productCreatorStub{}).
+		WithModelAssetStore(modelAssetStoreRouteStub{body: []byte("glb")})
+
+	routes(readyStub{}, product.NewHandler(productCreatorStub{}), searchHandler).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if recorder.Header().Get("Content-Type") != "model/gltf-binary" {
+		t.Fatalf("content-type = %q", recorder.Header().Get("Content-Type"))
+	}
+}
+
 type sourceAssetStoreRouteStub struct {
 	ref product.ObjectRef
 }
@@ -240,6 +285,14 @@ type spriteAssetStoreRouteStub struct {
 }
 
 func (stub spriteAssetStoreRouteStub) GetSpriteAsset(_ context.Context, _ product.ObjectRef) (io.ReadCloser, error) {
+	return io.NopCloser(strings.NewReader(string(stub.body))), nil
+}
+
+type modelAssetStoreRouteStub struct {
+	body []byte
+}
+
+func (stub modelAssetStoreRouteStub) GetModelAsset(_ context.Context, _ product.ObjectRef) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader(string(stub.body))), nil
 }
 

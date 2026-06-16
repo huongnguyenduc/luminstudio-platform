@@ -54,6 +54,20 @@ func (stub *spriteAssetStoreStub) GetSpriteAsset(_ context.Context, ref product.
 	return io.NopCloser(bytes.NewReader(stub.body)), nil
 }
 
+type modelAssetStoreStub struct {
+	body []byte
+	ref  product.ObjectRef
+	err  error
+}
+
+func (stub *modelAssetStoreStub) GetModelAsset(_ context.Context, ref product.ObjectRef) (io.ReadCloser, error) {
+	stub.ref = ref
+	if stub.err != nil {
+		return nil, stub.err
+	}
+	return io.NopCloser(bytes.NewReader(stub.body)), nil
+}
+
 func TestListCatalogProductsReturnsCustomerSafeItems(t *testing.T) {
 	now := time.Date(2026, 6, 16, 9, 0, 0, 0, time.UTC)
 	spriteSize := int64(4096)
@@ -99,6 +113,136 @@ func TestListCatalogProductsReturnsCustomerSafeItems(t *testing.T) {
 	}
 	if strings.Contains(recorder.Body.String(), "informationText") {
 		t.Fatalf("customer response leaked index-only text: %s", recorder.Body.String())
+	}
+}
+
+func TestGetCatalogProductDetailReturnsTieredModelAccess(t *testing.T) {
+	reader := &catalogProductReaderStub{record: ProductRecordWithAssets(3)}
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(reader)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678?tier=low", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetCatalogProductDetail(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	var got ProductDetailResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode product detail: %v", err)
+	}
+	if got.ModelTier != "low" || got.ModelAsset == nil || got.ModelAsset.Bucket != "lumin-optimized-glb" {
+		t.Fatalf("model detail = %#v", got)
+	}
+	if got.ModelURL != "/catalog/products/prod_12345678/model?tier=low" {
+		t.Fatalf("modelUrl = %q", got.ModelURL)
+	}
+	if got.SpriteURL != "/catalog/products/prod_12345678/sprite" {
+		t.Fatalf("spriteUrl = %q", got.SpriteURL)
+	}
+	if got.MeshColorConfig["mesh_body"].Default != "#FFFFFF" {
+		t.Fatalf("meshColorConfig = %#v", got.MeshColorConfig)
+	}
+}
+
+func TestGetCatalogProductDetailRejectsInvalidTier(t *testing.T) {
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(&catalogProductReaderStub{})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678?tier=mid", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetCatalogProductDetail(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+}
+
+func TestGetCatalogProductDetailRequiresCompletedModelAsset(t *testing.T) {
+	record := ProductRecordWithAssets(3)
+	record.OptimizedAsset = nil
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(&catalogProductReaderStub{record: record})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678?tier=low", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetCatalogProductDetail(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)
+	}
+}
+
+func TestGetCatalogProductModelStreamsLowTierModel(t *testing.T) {
+	reader := &catalogProductReaderStub{record: ProductRecordWithAssets(4)}
+	store := &modelAssetStoreStub{body: []byte("glb!")}
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(reader).
+		WithModelAssetStore(store)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678/model?tier=low", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetCatalogProductModel(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if store.ref.Bucket != "lumin-optimized-glb" || store.ref.Key != "prod_12345678_low.glb" {
+		t.Fatalf("store ref = %#v", store.ref)
+	}
+	if recorder.Header().Get("Content-Type") != "model/gltf-binary" {
+		t.Fatalf("content-type = %q", recorder.Header().Get("Content-Type"))
+	}
+	if recorder.Header().Get("Content-Length") != "4" {
+		t.Fatalf("content-length = %q", recorder.Header().Get("Content-Length"))
+	}
+	if recorder.Body.String() != "glb!" {
+		t.Fatalf("body = %q", recorder.Body.String())
+	}
+}
+
+func TestGetCatalogProductModelStreamsHighTierSourceModel(t *testing.T) {
+	store := &modelAssetStoreStub{body: []byte("source")}
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(&catalogProductReaderStub{record: ProductRecordWithAssets(6)}).
+		WithModelAssetStore(store)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678/model?tier=high", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetCatalogProductModel(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if store.ref.Bucket != "lumin-source-glb" || store.ref.Key != "products/prod_12345678/source.glb" {
+		t.Fatalf("store ref = %#v", store.ref)
+	}
+}
+
+func TestGetCatalogProductModelReportsStorageFailure(t *testing.T) {
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(&catalogProductReaderStub{record: ProductRecordWithAssets(3)}).
+		WithModelAssetStore(&modelAssetStoreStub{err: errors.New("minio unavailable")})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678/model", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetCatalogProductModel(recorder, request)
+
+	if recorder.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadGateway)
 	}
 }
 
@@ -212,6 +356,7 @@ func ProductRecordWithSprite(size int64) product.ProductRecord {
 		Description:      "Configurable chair.",
 		CreatedAt:        now,
 		UpdatedAt:        now,
+		MeshColorConfig:  product.MeshColorConfig{"mesh_body": {Default: "#FFFFFF", Allowed: []string{"#FFFFFF", "#FF0000"}}},
 		ProcessingStatus: product.ProcessingCompleted,
 		SpriteAsset: &product.ObjectRef{
 			Bucket:      "lumin-360-sprites",
@@ -220,6 +365,28 @@ func ProductRecordWithSprite(size int64) product.ProductRecord {
 			SizeBytes:   &size,
 		},
 	}
+}
+
+func ProductRecordWithAssets(size int64) product.ProductRecord {
+	record := ProductRecordWithSprite(size)
+	record.InformationSections = []product.InformationSection{{
+		Title:              "Materials",
+		Body:               "Powder-coated steel.",
+		CollapsedByDefault: true,
+	}}
+	record.SourceAsset = &product.ObjectRef{
+		Bucket:      "lumin-source-glb",
+		Key:         "products/prod_12345678/source.glb",
+		ContentType: "model/gltf-binary",
+		SizeBytes:   &size,
+	}
+	record.OptimizedAsset = &product.ObjectRef{
+		Bucket:      "lumin-optimized-glb",
+		Key:         "prod_12345678_low.glb",
+		ContentType: "model/gltf-binary",
+		SizeBytes:   &size,
+	}
+	return record
 }
 
 func TestSearchCatalogProductsValidatesLimit(t *testing.T) {

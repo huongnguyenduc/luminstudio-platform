@@ -93,6 +93,16 @@ MinIO directly.
   configured mesh identifiers through the selected viewer bridge/API.
 - Product details include seller-provided sections and related products.
 
+`US-036` adds the first backend product-detail boundary:
+`GET /catalog/products/{id}?tier=low|high` returns one completed product's
+seller-provided information sections, mesh color configuration, sprite route,
+and model route through the Go API gateway. The companion
+`GET /catalog/products/{id}/model?tier=low|high` route streams GLB bytes after
+checking the authoritative product row. The low tier uses the optimized GLB
+output, and the high tier uses the source GLB. Flutter device-tier detection,
+the Flutter 3D viewer, material color editing, related products, signed object
+URLs, cart persistence, and direct service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, selected mesh colors,

@@ -33,7 +33,12 @@ derived Meilisearch `products` index through the API gateway and return v1
 catalog card response shapes. The API also streams completed customer
 360-degree sprite JPEGs from MinIO through
 `GET /catalog/products/{id}/sprite`, after checking the authoritative product
-row. Retry/outbox semantics remain deferred.
+row. Product detail now uses `GET /catalog/products/{id}?tier=low|high` to
+return seller-provided information sections, mesh color configuration, and
+gateway asset routes. Model bytes are streamed through
+`GET /catalog/products/{id}/model?tier=low|high`, with low tier reading the
+optimized GLB and high tier reading the source GLB after the product row is
+completed. Retry/outbox semantics remain deferred.
 
 Run native tests:
 
@@ -112,4 +117,11 @@ Verify customer sprite preview asset access from the repository root:
 
 ```bash
 bash scripts/verify-us-034.sh
+```
+
+Verify customer product detail and tiered model access from the repository
+root:
+
+```bash
+bash scripts/verify-us-036.sh
 ```

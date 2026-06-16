@@ -34,6 +34,10 @@ type SpriteAssetStore interface {
 	GetSpriteAsset(ctx context.Context, ref product.ObjectRef) (io.ReadCloser, error)
 }
 
+type ModelAssetStore interface {
+	GetModelAsset(ctx context.Context, ref product.ObjectRef) (io.ReadCloser, error)
+}
+
 type ProductSearchQuery struct {
 	Query  string
 	Limit  int
@@ -63,10 +67,27 @@ type CatalogSearchResponse struct {
 	Query  string        `json:"query,omitempty"`
 }
 
+type ProductDetailResponse struct {
+	ID                  string                       `json:"id"`
+	Name                string                       `json:"name"`
+	Slug                string                       `json:"slug"`
+	Description         string                       `json:"description"`
+	InformationSections []product.InformationSection `json:"informationSections"`
+	MeshColorConfig     product.MeshColorConfig      `json:"meshColorConfig,omitempty"`
+	ProcessingStatus    product.ProcessingStatus     `json:"processingStatus"`
+	ModelTier           string                       `json:"modelTier"`
+	ModelAsset          *product.ObjectRef           `json:"modelAsset,omitempty"`
+	ModelURL            string                       `json:"modelUrl,omitempty"`
+	SpriteAsset         *product.ObjectRef           `json:"spriteAsset,omitempty"`
+	SpriteURL           string                       `json:"spriteUrl,omitempty"`
+	UpdatedAt           time.Time                    `json:"updatedAt"`
+}
+
 type Handler struct {
 	searcher      ProductSearcher
 	productReader CatalogProductReader
 	spriteAssets  SpriteAssetStore
+	modelAssets   ModelAssetStore
 }
 
 func NewHandler(searcher ProductSearcher) Handler {
@@ -83,12 +104,126 @@ func (handler Handler) WithSpriteAssetStore(store SpriteAssetStore) Handler {
 	return handler
 }
 
+func (handler Handler) WithModelAssetStore(store ModelAssetStore) Handler {
+	handler.modelAssets = store
+	return handler
+}
+
 func (handler Handler) ListCatalogProducts(response http.ResponseWriter, request *http.Request) {
 	handler.search(response, request, false)
 }
 
 func (handler Handler) SearchCatalogProducts(response http.ResponseWriter, request *http.Request) {
 	handler.search(response, request, true)
+}
+
+func (handler Handler) GetCatalogProductDetail(response http.ResponseWriter, request *http.Request) {
+	if handler.productReader == nil {
+		writeError(response, http.StatusServiceUnavailable, "catalog products are not configured")
+		return
+	}
+
+	id := request.PathValue("id")
+	if !product.ValidProductID(id) {
+		writeError(response, http.StatusBadRequest, "id must match the v1 product id contract")
+		return
+	}
+	tier, err := modelTierFromRequest(request)
+	if err != nil {
+		writeError(response, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	record, err := handler.productReader.GetProduct(request.Context(), id)
+	if err != nil {
+		if errors.Is(err, product.ErrProductNotFound) {
+			writeError(response, http.StatusNotFound, "product not found")
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not read product")
+		return
+	}
+	modelAsset, ok := modelAssetForTier(record, tier)
+	if !ok {
+		writeError(response, http.StatusNotFound, "model asset not found")
+		return
+	}
+
+	detail := ProductDetailResponse{
+		ID:                  record.ID,
+		Name:                record.Name,
+		Slug:                record.Slug,
+		Description:         record.Description,
+		InformationSections: record.InformationSections,
+		MeshColorConfig:     record.MeshColorConfig,
+		ProcessingStatus:    record.ProcessingStatus,
+		ModelTier:           tier,
+		ModelAsset:          modelAsset,
+		ModelURL:            fmt.Sprintf("/catalog/products/%s/model?tier=%s", record.ID, tier),
+		SpriteAsset:         record.SpriteAsset,
+		UpdatedAt:           record.UpdatedAt,
+	}
+	if record.SpriteAsset != nil {
+		detail.SpriteURL = fmt.Sprintf("/catalog/products/%s/sprite", record.ID)
+	}
+	writeJSON(response, http.StatusOK, detail)
+}
+
+func (handler Handler) GetCatalogProductModel(response http.ResponseWriter, request *http.Request) {
+	if handler.productReader == nil || handler.modelAssets == nil {
+		writeError(response, http.StatusServiceUnavailable, "catalog model assets are not configured")
+		return
+	}
+
+	id := request.PathValue("id")
+	if !product.ValidProductID(id) {
+		writeError(response, http.StatusBadRequest, "id must match the v1 product id contract")
+		return
+	}
+	tier, err := modelTierFromRequest(request)
+	if err != nil {
+		writeError(response, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	record, err := handler.productReader.GetProduct(request.Context(), id)
+	if err != nil {
+		if errors.Is(err, product.ErrProductNotFound) {
+			writeError(response, http.StatusNotFound, "product not found")
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not read product")
+		return
+	}
+	modelAsset, ok := modelAssetForTier(record, tier)
+	if !ok {
+		writeError(response, http.StatusNotFound, "model asset not found")
+		return
+	}
+
+	asset, err := handler.modelAssets.GetModelAsset(request.Context(), *modelAsset)
+	if err != nil {
+		writeError(response, http.StatusBadGateway, "could not read model asset")
+		return
+	}
+	defer asset.Close()
+
+	contentType := modelAsset.ContentType
+	if contentType == "" {
+		contentType = "model/gltf-binary"
+	}
+	response.Header().Set("Content-Type", contentType)
+	response.Header().Set("Cache-Control", "public, max-age=300")
+	if modelAsset.ETag != "" {
+		response.Header().Set("ETag", modelAsset.ETag)
+	}
+	if modelAsset.SizeBytes != nil {
+		response.Header().Set("Content-Length", strconv.FormatInt(*modelAsset.SizeBytes, 10))
+	}
+	response.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(response, asset); err != nil {
+		return
+	}
 }
 
 func (handler Handler) GetCatalogProductSprite(response http.ResponseWriter, request *http.Request) {
@@ -142,6 +277,39 @@ func (handler Handler) GetCatalogProductSprite(response http.ResponseWriter, req
 	response.WriteHeader(http.StatusOK)
 	if _, err := io.Copy(response, asset); err != nil {
 		return
+	}
+}
+
+func modelTierFromRequest(request *http.Request) (string, error) {
+	tier := strings.TrimSpace(request.URL.Query().Get("tier"))
+	if tier == "" {
+		tier = "low"
+	}
+	switch tier {
+	case "low", "high":
+		return tier, nil
+	default:
+		return "", errors.New("tier must be low or high")
+	}
+}
+
+func modelAssetForTier(record product.ProductRecord, tier string) (*product.ObjectRef, bool) {
+	if record.ProcessingStatus != product.ProcessingCompleted {
+		return nil, false
+	}
+	switch tier {
+	case "low":
+		if record.OptimizedAsset == nil || record.OptimizedAsset.Bucket != "lumin-optimized-glb" {
+			return nil, false
+		}
+		return record.OptimizedAsset, true
+	case "high":
+		if record.SourceAsset == nil || record.SourceAsset.Bucket != "lumin-source-glb" {
+			return nil, false
+		}
+		return record.SourceAsset, true
+	default:
+		return nil, false
 	}
 }
 

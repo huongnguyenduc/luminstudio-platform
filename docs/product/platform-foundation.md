@@ -156,6 +156,15 @@ card is at least 80% visible and idle for three seconds. Preview rendering
 still goes through the Go API sprite route and does not add direct storage
 access, signed URLs, product detail, cart persistence, Flutter Bazel rules, or
 live device proof.
+`US-036` starts Phase 4 product detail by adding
+`GET /catalog/products/{id}?tier=low|high` and
+`GET /catalog/products/{id}/model?tier=low|high` through the Go API gateway.
+The detail route returns seller-provided sections, mesh color configuration,
+sprite/model gateway routes, and the selected model asset after the API reads
+the authoritative PostgreSQL row. The model route streams completed low-tier
+optimized GLB output or high-tier source GLB bytes from MinIO without exposing
+direct storage access, signed URLs, Flutter viewer behavior, cart persistence,
+or live device proof.
 
 ## Boundary Rules
 

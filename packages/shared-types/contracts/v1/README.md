@@ -12,7 +12,8 @@ later stories, but generated output must not replace these contract sources.
 - `common.schema.json`: shared identifiers, object storage references, and mesh
   color configuration.
 - `product.schema.json`: initial product draft, persisted product record,
-  customer catalog item, and catalog search response shapes.
+  customer catalog item, catalog search response, and product detail response
+  shapes.
 - `events.schema.json`: NATS event envelope and payload shapes for
   `product.updated`, `3d.task.created`, and `3d.task.completed`.
 
@@ -22,6 +23,11 @@ later stories, but generated output must not replace these contract sources.
   for completed products whose catalog item contains a `lumin-360-sprites`
   object reference. The response body is binary, so it is documented here
   rather than modeled as a JSON Schema object.
+- `GET /catalog/products/{id}/model?tier=low|high` streams
+  `model/gltf-binary` for completed products. Low tier reads the optimized GLB
+  object from `lumin-optimized-glb`; high tier reads the source GLB object from
+  `lumin-source-glb`. Clients receive gateway routes, not direct MinIO or
+  signed object URLs.
 
 ## Non-Goals
 
