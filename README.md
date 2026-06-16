@@ -57,8 +57,10 @@ Meilisearch `products` index. The Flutter customer app now has an executable
 Android/iOS shell with Home, Category, and Cart tabs plus retained tab scroll
 and navigation state. The Flutter Home tab now loads catalog product cards from
 the Go API `GET /catalog/products` boundary with loading, empty, failure, and
-ready states. Category taxonomy, search UI, 360-degree preview activation,
-product detail, signed object URLs, cart persistence, and auth remain deferred.
+ready states. The Flutter Home tab also submits catalog searches to the Go API
+`GET /catalog/search?q=...` boundary with loading, empty, failure/retry, clear,
+and ready states. Category taxonomy, 360-degree preview activation, product
+detail, signed object URLs, cart persistence, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -280,6 +282,12 @@ Flutter catalog products API integration verification:
 
 ```bash
 bash scripts/verify-us-031.sh
+```
+
+Flutter catalog search UI integration verification:
+
+```bash
+bash scripts/verify-us-032.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

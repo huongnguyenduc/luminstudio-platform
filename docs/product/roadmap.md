@@ -168,6 +168,12 @@ Selected work:
   pagination controls, 360-degree preview activation, product detail, signed
   object URLs, cart persistence, auth, Flutter Bazel rules, or live device
   proof.
+- `US-032 Flutter Catalog Search UI Integration` exposes Home tab catalog
+  search through the Go API `GET /catalog/search?q=...` route and renders
+  loading, empty, failure/retry, clear, and ready states without adding category
+  taxonomy, sorting, pagination controls, 360-degree preview activation,
+  product detail, signed object URLs, cart persistence, auth, Flutter Bazel
+  rules, or live device proof.
 
 ## Phase 4: 3D Detail And Cart
 

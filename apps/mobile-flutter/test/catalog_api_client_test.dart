@@ -24,9 +24,10 @@ void main() {
       "updatedAt": "2026-06-16T05:30:00Z"
     }
   ],
-  "total": 1,
-  "limit": 20,
-  "offset": 0
+      "total": 1,
+      "limit": 20,
+      "offset": 0,
+      "query": "pendant"
 }
 ''')
             as Map<String, Object?>;
@@ -37,6 +38,19 @@ void main() {
     expect(page.items.single.name, 'Ceramic Pendant');
     expect(page.items.single.hasPreview, isTrue);
     expect(page.items.single.spriteAsset?.bucket, 'lumin-360-sprites');
+  });
+
+  test('CatalogProductsDto accepts catalog search response query metadata', () {
+    final page = CatalogProductsDto.fromJson({
+      'items': <Object?>[],
+      'total': 0,
+      'limit': 20,
+      'offset': 0,
+      'query': 'chair',
+    }).toDomain();
+
+    expect(page.items, isEmpty);
+    expect(page.total, 0);
   });
 
   test('CatalogProductsDto rejects malformed catalog responses', () {

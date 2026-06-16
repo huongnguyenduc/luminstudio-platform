@@ -92,6 +92,45 @@ void main() {
     expect(find.text('360 preview ready'), findsOneWidget);
   });
 
+  testWidgets('home tab searches catalog products through the API repository', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withProducts(3);
+    repository.searchPage = _catalogPage(1, namePrefix: 'Pendant');
+
+    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(SearchBar), 'pendant');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(repository.lastSearchQuery, 'pendant');
+    expect(find.text('Pendant 1'), findsOneWidget);
+    expect(find.text('Product 2'), findsNothing);
+
+    await tester.tap(find.byTooltip('Clear search'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Product 2'), findsOneWidget);
+  });
+
+  testWidgets('home tab renders empty search results', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withProducts(2);
+    repository.searchPage = _catalogPage(0);
+
+    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(SearchBar), 'missing');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(find.text('No matching products'), findsOneWidget);
+  });
+
   testWidgets('home tab exposes a retry state when catalog loading fails', (
     WidgetTester tester,
   ) async {
@@ -107,6 +146,28 @@ void main() {
 
     expect(find.text('Product 1'), findsOneWidget);
   });
+
+  testWidgets('home tab retries failed catalog searches', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withProducts(2);
+    repository.shouldFailSearch = true;
+    repository.searchPage = _catalogPage(1, namePrefix: 'Search Hit');
+
+    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(SearchBar), 'hit');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search is unavailable'), findsOneWidget);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search Hit 1'), findsOneWidget);
+  });
 }
 
 class _FakeCatalogRepository implements CatalogRepository {
@@ -119,7 +180,10 @@ class _FakeCatalogRepository implements CatalogRepository {
   _FakeCatalogRepository.failure() : this(_catalogPage(0), shouldFail: true);
 
   CatalogProductsPage page;
+  CatalogProductsPage searchPage = _catalogPage(0);
   bool shouldFail;
+  bool shouldFailSearch = false;
+  String? lastSearchQuery;
 
   @override
   Future<CatalogProductsPage> listProducts({
@@ -132,17 +196,31 @@ class _FakeCatalogRepository implements CatalogRepository {
     }
     return page;
   }
+
+  @override
+  Future<CatalogProductsPage> searchProducts(
+    String query, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    lastSearchQuery = query;
+    if (shouldFailSearch) {
+      shouldFailSearch = false;
+      throw StateError('search unavailable');
+    }
+    return searchPage;
+  }
 }
 
-CatalogProductsPage _catalogPage(int count) {
+CatalogProductsPage _catalogPage(int count, {String namePrefix = 'Product'}) {
   return CatalogProductsPage(
     items: [
       for (var index = 1; index <= count; index += 1)
         CatalogProduct(
           id: 'prod_$index',
-          name: 'Product $index',
-          slug: 'product-$index',
-          description: 'Customer-safe description for product $index',
+          name: '$namePrefix $index',
+          slug: '${namePrefix.toLowerCase().replaceAll(' ', '-')}-$index',
+          description: 'Customer-safe description for $namePrefix $index',
           processingStatus: index.isEven ? 'completed' : 'queued',
           updatedAt: DateTime.utc(2026, 6, 16, 12, index),
           spriteAsset: index.isEven

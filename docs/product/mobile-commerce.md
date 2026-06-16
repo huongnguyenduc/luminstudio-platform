@@ -25,6 +25,14 @@ empty, failure, and product-list states. The app still does not activate
 360-degree previews, request product detail, expose search UI, persist cart
 state, or connect directly to Meilisearch, PostgreSQL, MinIO, or NATS.
 
+`US-032` adds Home tab catalog search through the Go API
+`GET /catalog/search?q=...` route. The Flutter app keeps the search request
+behind the same repository/use-case boundary as catalog browsing and renders
+search loading, empty, failure/retry, clear, and result states. Category
+taxonomy, sorting, pagination controls, 360-degree preview activation, product
+detail, signed object URLs, cart persistence, and direct service access remain
+deferred.
+
 ## 360-Degree Catalog Preview
 
 When a product item remains more than 80% visible and scrolling has stopped for
@@ -47,6 +55,8 @@ catalog and search HTTP routes are selected as the first Phase 3 slice:
 API boundary. Both routes query Meilisearch from the API gateway and return the
 same v1 catalog search response shape, including the 360-degree sprite asset
 reference when the processed product document has one.
+The Flutter Home tab now submits customer search queries to that API route and
+renders the returned catalog cards without connecting directly to Meilisearch.
 
 ## Product Detail And Device Tier
 

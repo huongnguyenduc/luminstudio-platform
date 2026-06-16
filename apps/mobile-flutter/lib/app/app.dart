@@ -4,6 +4,7 @@ import 'package:lumin_studio_mobile/features/catalog/data/catalog_api_client.dar
 import 'package:lumin_studio_mobile/features/catalog/data/http_catalog_repository.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/load_catalog_products.dart';
+import 'package:lumin_studio_mobile/features/catalog/domain/search_catalog_products.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/catalog_cubit.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/shell_page.dart';
@@ -32,8 +33,10 @@ class LuminStudioApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => ShellCubit()),
         BlocProvider(
-          create: (_) =>
-              CatalogCubit(LoadCatalogProducts(repository))..loadProducts(),
+          create: (_) => CatalogCubit(
+            LoadCatalogProducts(repository),
+            SearchCatalogProducts(repository),
+          )..loadProducts(),
         ),
       ],
       child: MaterialApp(

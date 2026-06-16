@@ -134,6 +134,11 @@ API `GET /catalog/products` boundary and renders Home tab product cards with
 loading, empty, and failure states, without adding search UI, category behavior,
 360-degree preview activation, product detail, cart persistence, Flutter Bazel
 rules, or live device proof.
+`US-032` adds Flutter catalog search UI integration through the existing Go API
+`GET /catalog/search?q=...` boundary and renders Home tab search loading,
+empty, failure/retry, clear, and result states, without adding category
+behavior, 360-degree preview activation, product detail, cart persistence,
+Flutter Bazel rules, or live device proof.
 
 ## Boundary Rules
 

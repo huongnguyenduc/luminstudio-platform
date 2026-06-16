@@ -11,4 +11,13 @@ class HttpCatalogRepository implements CatalogRepository {
   Future<CatalogProductsPage> listProducts({int limit = 20, int offset = 0}) {
     return _client.listProducts(limit: limit, offset: offset);
   }
+
+  @override
+  Future<CatalogProductsPage> searchProducts(
+    String query, {
+    int limit = 20,
+    int offset = 0,
+  }) {
+    return _client.searchProducts(query, limit: limit, offset: offset);
+  }
 }

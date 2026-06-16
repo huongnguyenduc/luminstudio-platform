@@ -3,29 +3,127 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/catalog_cubit.dart';
 
-class CatalogProductsView extends StatelessWidget {
+class CatalogProductsView extends StatefulWidget {
   const CatalogProductsView({required this.scrollKey, super.key});
 
   final PageStorageKey<String> scrollKey;
 
   @override
+  State<CatalogProductsView> createState() => _CatalogProductsViewState();
+}
+
+class _CatalogProductsViewState extends State<CatalogProductsView> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CatalogCubit, CatalogState>(
+    return BlocConsumer<CatalogCubit, CatalogState>(
+      listener: (context, state) {
+        if (_searchController.text != state.query) {
+          _searchController.value = TextEditingValue(
+            text: state.query,
+            selection: TextSelection.collapsed(offset: state.query.length),
+          );
+        }
+      },
       builder: (context, state) {
         return Semantics(
           label: 'Home catalog products',
           child: switch (state.status) {
-            CatalogStatus.initial ||
-            CatalogStatus.loading => const _CatalogLoading(),
-            CatalogStatus.empty => const _CatalogEmpty(),
-            CatalogStatus.failure => _CatalogFailure(message: state.message),
+            CatalogStatus.initial || CatalogStatus.loading => _CatalogScaffold(
+              scrollKey: widget.scrollKey,
+              searchController: _searchController,
+              child: const _CatalogLoading(),
+            ),
+            CatalogStatus.empty => _CatalogScaffold(
+              scrollKey: widget.scrollKey,
+              searchController: _searchController,
+              child: _CatalogEmpty(isSearching: state.isSearching),
+            ),
+            CatalogStatus.failure => _CatalogScaffold(
+              scrollKey: widget.scrollKey,
+              searchController: _searchController,
+              child: _CatalogFailure(
+                message: state.message,
+                isSearching: state.isSearching,
+              ),
+            ),
             CatalogStatus.ready => _CatalogList(
-              scrollKey: scrollKey,
+              scrollKey: widget.scrollKey,
+              searchController: _searchController,
               products: state.products,
             ),
           },
         );
       },
+    );
+  }
+}
+
+class _CatalogScaffold extends StatelessWidget {
+  const _CatalogScaffold({
+    required this.scrollKey,
+    required this.searchController,
+    required this.child,
+  });
+
+  final PageStorageKey<String> scrollKey;
+  final TextEditingController searchController;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      key: scrollKey,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        _CatalogSearchField(controller: searchController),
+        const SizedBox(height: 16),
+        child,
+      ],
+    );
+  }
+}
+
+class _CatalogSearchField extends StatelessWidget {
+  const _CatalogSearchField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<CatalogCubit>();
+    final isSearching = context.select<CatalogCubit, bool>(
+      (cubit) => cubit.state.isSearching,
+    );
+
+    return SearchBar(
+      controller: controller,
+      leading: const Icon(Icons.search),
+      hintText: 'Search products',
+      constraints: const BoxConstraints(minHeight: 56),
+      textInputAction: TextInputAction.search,
+      onSubmitted: cubit.searchProducts,
+      trailing: [
+        if (isSearching)
+          IconButton(
+            tooltip: 'Clear search',
+            onPressed: cubit.clearSearch,
+            icon: const Icon(Icons.close),
+          ),
+      ],
     );
   }
 }
@@ -45,84 +143,85 @@ class _CatalogLoading extends StatelessWidget {
 }
 
 class _CatalogEmpty extends StatelessWidget {
-  const _CatalogEmpty();
+  const _CatalogEmpty({required this.isSearching});
+
+  final bool isSearching;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListView(
-      key: const PageStorageKey<String>('home-scroll'),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      children: [
-        Container(
-          constraints: const BoxConstraints(minHeight: 168),
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            'No catalog products yet',
-            style: theme.textTheme.titleMedium,
-          ),
-        ),
-      ],
+    return Container(
+      constraints: const BoxConstraints(minHeight: 168),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        isSearching ? 'No matching products' : 'No catalog products yet',
+        style: theme.textTheme.titleMedium,
+      ),
     );
   }
 }
 
 class _CatalogFailure extends StatelessWidget {
-  const _CatalogFailure({required this.message});
+  const _CatalogFailure({required this.message, required this.isSearching});
 
   final String? message;
+  final bool isSearching;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListView(
-      key: const PageStorageKey<String>('home-scroll'),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      children: [
-        Container(
-          constraints: const BoxConstraints(minHeight: 168),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            border: Border.all(color: theme.colorScheme.error),
-            borderRadius: BorderRadius.circular(8),
+    return Container(
+      constraints: const BoxConstraints(minHeight: 168),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.error),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            message ?? 'Catalog is unavailable',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.error,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                message ?? 'Catalog is unavailable',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () {
-                  context.read<CatalogCubit>().loadProducts();
-                },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: () {
+              final cubit = context.read<CatalogCubit>();
+              if (isSearching) {
+                cubit.searchProducts(cubit.state.query);
+              } else {
+                cubit.loadProducts();
+              }
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 class _CatalogList extends StatelessWidget {
-  const _CatalogList({required this.scrollKey, required this.products});
+  const _CatalogList({
+    required this.scrollKey,
+    required this.searchController,
+    required this.products,
+  });
 
   final PageStorageKey<String> scrollKey;
+  final TextEditingController searchController;
   final List<CatalogProduct> products;
 
   @override
@@ -131,10 +230,13 @@ class _CatalogList extends StatelessWidget {
       key: scrollKey,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       itemBuilder: (context, index) {
-        return _CatalogProductTile(product: products[index]);
+        if (index == 0) {
+          return _CatalogSearchField(controller: searchController);
+        }
+        return _CatalogProductTile(product: products[index - 1]);
       },
       separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemCount: products.length,
+      itemCount: products.length + 1,
     );
   }
 }

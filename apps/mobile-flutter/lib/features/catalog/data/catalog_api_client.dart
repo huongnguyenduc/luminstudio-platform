@@ -15,9 +15,34 @@ class CatalogApiClient {
     int limit = 20,
     int offset = 0,
   }) async {
-    final uri = _baseUri.replace(
-      path: _joinPath(_baseUri.path, '/catalog/products'),
+    return _fetchCatalogPage(
+      routePath: '/catalog/products',
       queryParameters: {'limit': limit.toString(), 'offset': offset.toString()},
+    );
+  }
+
+  Future<CatalogProductsPage> searchProducts(
+    String query, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    return _fetchCatalogPage(
+      routePath: '/catalog/search',
+      queryParameters: {
+        'q': query,
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      },
+    );
+  }
+
+  Future<CatalogProductsPage> _fetchCatalogPage({
+    required String routePath,
+    required Map<String, String> queryParameters,
+  }) async {
+    final uri = _baseUri.replace(
+      path: _joinPath(_baseUri.path, routePath),
+      queryParameters: queryParameters,
     );
     final request = await _httpClient.getUrl(uri);
     request.headers.set(HttpHeaders.acceptHeader, 'application/json');
@@ -60,12 +85,14 @@ class CatalogProductsDto {
     required this.total,
     required this.limit,
     required this.offset,
+    this.query,
   });
 
   final List<CatalogProductDto> items;
   final int total;
   final int limit;
   final int offset;
+  final String? query;
 
   factory CatalogProductsDto.fromJson(Map<String, Object?> json) {
     final items = json['items'];
@@ -81,6 +108,7 @@ class CatalogProductsDto {
       total: _expectInt(json['total'], 'total'),
       limit: _expectInt(json['limit'], 'limit'),
       offset: _expectInt(json['offset'], 'offset'),
+      query: _expectOptionalString(json['query'], 'query'),
     );
   }
 
