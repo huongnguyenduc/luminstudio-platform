@@ -139,6 +139,12 @@ rules, or live device proof.
 empty, failure/retry, clear, and result states, without adding category
 behavior, 360-degree preview activation, product detail, cart persistence,
 Flutter Bazel rules, or live device proof.
+`US-033` adds Flutter Home tab pagination for both catalog browsing and search
+results through the existing Go API `limit` and `offset` parameters, with
+append behavior, end-of-list messaging, and inline retry for incremental load
+failures, without adding category behavior, sorting controls, 360-degree
+preview activation, product detail, cart persistence, Flutter Bazel rules, or
+live device proof.
 
 ## Boundary Rules
 

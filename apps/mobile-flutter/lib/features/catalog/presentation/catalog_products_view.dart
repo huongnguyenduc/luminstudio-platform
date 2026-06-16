@@ -14,17 +14,33 @@ class CatalogProductsView extends StatefulWidget {
 
 class _CatalogProductsViewState extends State<CatalogProductsView> {
   late final TextEditingController _searchController;
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _scrollController = ScrollController()..addListener(_loadMoreNearEnd);
   }
 
   @override
   void dispose() {
+    _scrollController
+      ..removeListener(_loadMoreNearEnd)
+      ..dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _loadMoreNearEnd() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 320) {
+      context.read<CatalogCubit>().loadMoreProducts();
+    }
   }
 
   @override
@@ -44,16 +60,19 @@ class _CatalogProductsViewState extends State<CatalogProductsView> {
           child: switch (state.status) {
             CatalogStatus.initial || CatalogStatus.loading => _CatalogScaffold(
               scrollKey: widget.scrollKey,
+              scrollController: _scrollController,
               searchController: _searchController,
               child: const _CatalogLoading(),
             ),
             CatalogStatus.empty => _CatalogScaffold(
               scrollKey: widget.scrollKey,
+              scrollController: _scrollController,
               searchController: _searchController,
               child: _CatalogEmpty(isSearching: state.isSearching),
             ),
             CatalogStatus.failure => _CatalogScaffold(
               scrollKey: widget.scrollKey,
+              scrollController: _scrollController,
               searchController: _searchController,
               child: _CatalogFailure(
                 message: state.message,
@@ -62,8 +81,9 @@ class _CatalogProductsViewState extends State<CatalogProductsView> {
             ),
             CatalogStatus.ready => _CatalogList(
               scrollKey: widget.scrollKey,
+              scrollController: _scrollController,
               searchController: _searchController,
-              products: state.products,
+              state: state,
             ),
           },
         );
@@ -75,11 +95,13 @@ class _CatalogProductsViewState extends State<CatalogProductsView> {
 class _CatalogScaffold extends StatelessWidget {
   const _CatalogScaffold({
     required this.scrollKey,
+    required this.scrollController,
     required this.searchController,
     required this.child,
   });
 
   final PageStorageKey<String> scrollKey;
+  final ScrollController scrollController;
   final TextEditingController searchController;
   final Widget child;
 
@@ -87,6 +109,7 @@ class _CatalogScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       key: scrollKey,
+      controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         _CatalogSearchField(controller: searchController),
@@ -216,27 +239,111 @@ class _CatalogFailure extends StatelessWidget {
 class _CatalogList extends StatelessWidget {
   const _CatalogList({
     required this.scrollKey,
+    required this.scrollController,
     required this.searchController,
-    required this.products,
+    required this.state,
   });
 
   final PageStorageKey<String> scrollKey;
+  final ScrollController scrollController;
   final TextEditingController searchController;
-  final List<CatalogProduct> products;
+  final CatalogState state;
 
   @override
   Widget build(BuildContext context) {
+    final products = state.products;
+
     return ListView.separated(
       key: scrollKey,
+      controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       itemBuilder: (context, index) {
         if (index == 0) {
           return _CatalogSearchField(controller: searchController);
         }
+        if (index == products.length + 1) {
+          return _CatalogPaginationFooter(state: state);
+        }
         return _CatalogProductTile(product: products[index - 1]);
       },
       separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemCount: products.length + 1,
+      itemCount: products.length + 2,
+    );
+  }
+}
+
+class _CatalogPaginationFooter extends StatelessWidget {
+  const _CatalogPaginationFooter({required this.state});
+
+  final CatalogState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (state.isLoadingMore) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: SizedBox.square(
+            dimension: 24,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          ),
+        ),
+      );
+    }
+
+    if (state.loadMoreMessage != null) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.colorScheme.error),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  state.loadMoreMessage!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: context.read<CatalogCubit>().loadMoreProducts,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!state.canLoadMore) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: Text(
+            state.isSearching
+                ? 'All search results loaded'
+                : 'All products loaded',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: TextButton.icon(
+        onPressed: context.read<CatalogCubit>().loadMoreProducts,
+        icon: const Icon(Icons.expand_more),
+        label: const Text('Load more'),
+      ),
     );
   }
 }

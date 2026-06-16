@@ -174,6 +174,12 @@ Selected work:
   taxonomy, sorting, pagination controls, 360-degree preview activation,
   product detail, signed object URLs, cart persistence, auth, Flutter Bazel
   rules, or live device proof.
+- `US-033 Flutter Catalog Pagination And Infinite Scroll` extends the Home tab
+  catalog and search lists with incremental page loading through the existing
+  `limit` and `offset` API parameters, including a pagination footer and inline
+  retry state without adding category taxonomy, sorting controls, 360-degree
+  preview activation, product detail, signed object URLs, cart persistence,
+  auth, Flutter Bazel rules, or live device proof.
 
 ## Phase 4: 3D Detail And Cart
 

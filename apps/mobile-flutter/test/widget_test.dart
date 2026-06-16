@@ -168,6 +168,89 @@ void main() {
 
     expect(find.text('Search Hit 1'), findsOneWidget);
   });
+
+  testWidgets('home tab loads additional catalog pages near the list end', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.pagedProducts(5, pageSize: 2);
+
+    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Product 1'), findsOneWidget);
+    expect(find.text('Product 5'), findsNothing);
+
+    await _loadMoreThroughHome(tester);
+    await _loadMoreThroughHome(tester);
+
+    expect(repository.listOffsets, containsAll(<int>[0, 2, 4]));
+    expect(find.text('Product 5'), findsOneWidget);
+    await _scrollHomeDown(tester);
+    expect(find.text('All products loaded'), findsOneWidget);
+  });
+
+  testWidgets('home tab paginates search results without clearing the query', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.pagedProducts(2)
+      ..searchTotal = 5
+      ..searchPageSize = 2
+      ..searchNamePrefix = 'Pendant';
+
+    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(SearchBar), 'pendant');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    await _loadMoreThroughHome(tester);
+    await _loadMoreThroughHome(tester);
+
+    expect(repository.lastSearchQuery, 'pendant');
+    expect(repository.searchOffsets, containsAll(<int>[0, 2, 4]));
+    expect(find.text('Pendant 5'), findsOneWidget);
+    await _scrollHomeDown(tester);
+    expect(find.text('All search results loaded'), findsOneWidget);
+  });
+
+  testWidgets('home tab retries failed incremental catalog loads', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.pagedProducts(5, pageSize: 2)
+      ..shouldFailNextPage = true;
+
+    await tester.pumpWidget(LuminStudioApp(catalogRepository: repository));
+    await tester.pumpAndSettle();
+
+    await _loadMoreThroughHome(tester);
+
+    expect(find.text('More catalog products are unavailable'), findsOneWidget);
+    expect(find.text('Product 1'), findsOneWidget);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(repository.listOffsets, containsAll(<int>[0, 2]));
+    expect(find.text('Product 4'), findsOneWidget);
+  });
+}
+
+Future<void> _loadMoreThroughHome(WidgetTester tester) async {
+  await _scrollHomeDown(tester);
+
+  if (tester.any(find.text('Load more'))) {
+    await tester.tap(find.text('Load more'));
+    await tester.pumpAndSettle();
+  }
+}
+
+Future<void> _scrollHomeDown(WidgetTester tester) async {
+  await tester.drag(
+    find.byKey(const PageStorageKey<String>('home-scroll')),
+    const Offset(0, -420),
+  );
+  await tester.pumpAndSettle();
 }
 
 class _FakeCatalogRepository implements CatalogRepository {
@@ -177,22 +260,49 @@ class _FakeCatalogRepository implements CatalogRepository {
 
   _FakeCatalogRepository.withProducts(int count) : this(_catalogPage(count));
 
+  _FakeCatalogRepository.pagedProducts(int count, {int pageSize = 20})
+    : page = _catalogPageSlice(count: count),
+      pagedTotal = count,
+      pagedPageSize = pageSize,
+      shouldFail = false;
+
   _FakeCatalogRepository.failure() : this(_catalogPage(0), shouldFail: true);
 
   CatalogProductsPage page;
   CatalogProductsPage searchPage = _catalogPage(0);
+  int? pagedTotal;
+  int pagedPageSize = 20;
+  int? searchTotal;
+  int searchPageSize = 20;
+  String searchNamePrefix = 'Search Hit';
   bool shouldFail;
   bool shouldFailSearch = false;
+  bool shouldFailNextPage = false;
   String? lastSearchQuery;
+  final List<int> listOffsets = [];
+  final List<int> searchOffsets = [];
 
   @override
   Future<CatalogProductsPage> listProducts({
     int limit = 20,
     int offset = 0,
   }) async {
+    listOffsets.add(offset);
     if (shouldFail) {
       shouldFail = false;
       throw StateError('catalog unavailable');
+    }
+    if (shouldFailNextPage && offset > 0) {
+      shouldFailNextPage = false;
+      throw StateError('next catalog page unavailable');
+    }
+    final total = pagedTotal;
+    if (total != null) {
+      return _catalogPageSlice(
+        count: total,
+        limit: pagedPageSize,
+        offset: offset,
+      );
     }
     return page;
   }
@@ -204,18 +314,39 @@ class _FakeCatalogRepository implements CatalogRepository {
     int offset = 0,
   }) async {
     lastSearchQuery = query;
+    searchOffsets.add(offset);
     if (shouldFailSearch) {
       shouldFailSearch = false;
       throw StateError('search unavailable');
+    }
+    final total = searchTotal;
+    if (total != null) {
+      return _catalogPageSlice(
+        count: total,
+        limit: searchPageSize,
+        offset: offset,
+        namePrefix: searchNamePrefix,
+      );
     }
     return searchPage;
   }
 }
 
 CatalogProductsPage _catalogPage(int count, {String namePrefix = 'Product'}) {
+  return _catalogPageSlice(count: count, namePrefix: namePrefix);
+}
+
+CatalogProductsPage _catalogPageSlice({
+  required int count,
+  int limit = 20,
+  int offset = 0,
+  String namePrefix = 'Product',
+}) {
+  final end = (offset + limit) > count ? count : offset + limit;
+
   return CatalogProductsPage(
     items: [
-      for (var index = 1; index <= count; index += 1)
+      for (var index = offset + 1; index <= end; index += 1)
         CatalogProduct(
           id: 'prod_$index',
           name: '$namePrefix $index',
@@ -232,7 +363,7 @@ CatalogProductsPage _catalogPage(int count, {String namePrefix = 'Product'}) {
         ),
     ],
     total: count,
-    limit: 20,
-    offset: 0,
+    limit: limit,
+    offset: offset,
   );
 }

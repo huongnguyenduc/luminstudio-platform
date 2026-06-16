@@ -10,5 +10,5 @@ boundaries derived from `docs/product/roadmap.md`.
 | E02 | K3d dev infrastructure | active; US-004 through US-009 implemented |
 | E03 | API connectivity and NATS smoke flow | active; US-010 through US-014 implemented |
 | E04-E07 | Admin, API, search sync, and 3D processing | active; US-015 through US-028 implemented |
-| E08-E10 | Flutter catalog, previews, and search | active; US-029 implemented for customer catalog/search API; US-030 implemented for Flutter shell; US-031 implemented for Flutter catalog products API integration; US-032 implemented for Flutter catalog search UI integration |
+| E08-E10 | Flutter catalog, previews, and search | active; US-029 implemented for customer catalog/search API; US-030 implemented for Flutter shell; US-031 implemented for Flutter catalog products API integration; US-032 implemented for Flutter catalog search UI integration; US-033 implemented for Flutter catalog pagination and infinite scroll |
 | E11-E13 | 3D detail, configuration, and cart | unsliced |

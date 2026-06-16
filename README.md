@@ -290,6 +290,12 @@ Flutter catalog search UI integration verification:
 bash scripts/verify-us-032.sh
 ```
 
+Flutter catalog pagination and infinite scroll verification:
+
+```bash
+bash scripts/verify-us-033.sh
+```
+
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI
 rules now provide executable component and API image targets; Flutter rules and
 remaining platform behavior will be added by later stories.
