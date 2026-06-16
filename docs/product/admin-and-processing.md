@@ -69,6 +69,15 @@ inline failure and success states, and refreshes the product list after a
 successful create. Product edit, delete, source GLB upload, authentication, and
 authorization remain deferred.
 
+The React Web Admin now also edits product drafts through the Go API
+`PUT /admin/products/{id}` route. Administrators can select a product row,
+hydrate the existing product record into the same v1 draft form shape, validate
+required text, slug, price, currency, and JSON-shaped category, information
+section, and mesh color configuration fields before submit, render inline
+failure and success states, and refresh the product list after a successful
+update. Product delete, source GLB upload, authentication, and authorization
+remain deferred.
+
 The Go API also exposes full-replacement product updates through
 `PUT /admin/products/{id}`. The endpoint accepts the same v1 product draft shape
 as creation, validates the path identity before persistence access, updates the

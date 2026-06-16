@@ -93,8 +93,10 @@ product detail navigation. The Web Admin now consumes
 persisted product records. The Web Admin now also creates product drafts
 through `POST /admin/products` with client-side draft validation, submitting,
 success, and failure states, then refreshes the product list after a successful
-create. Signed object URLs, checkout, payment, inventory, discount engines,
-auth, and admin edit/delete/upload UI remain deferred.
+create. The Web Admin now also edits product drafts through
+`PUT /admin/products/{id}` with the same client-side draft validation and list
+refresh behavior. Signed object URLs, checkout, payment, inventory, discount
+engines, auth, and admin delete/upload UI remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -406,6 +408,12 @@ Web Admin product create API integration verification:
 
 ```bash
 bash scripts/verify-us-046.sh
+```
+
+Web Admin product edit API integration verification:
+
+```bash
+bash scripts/verify-us-047.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and

@@ -151,6 +151,12 @@ Selected work:
   renders inline success/failure states, and refreshes the product list without
   adding edit, delete, source GLB upload, auth, direct platform access, backend
   contract changes, or live backend proof.
+- `US-047 Web Admin Product Edit API Integration` extends the React Web Admin
+  product workflow with an edit form that hydrates the selected v1 product
+  record, submits a full-replacement draft to `PUT /admin/products/{id}`,
+  validates client-side fields and JSON sections, and refreshes the product
+  list without adding delete, source GLB upload, auth, direct platform access,
+  backend contract changes, or live backend proof.
 
 ## Phase 3: Mobile Catalog And Search
 

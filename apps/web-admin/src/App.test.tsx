@@ -3,11 +3,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   ProductCreatePanel,
+  ProductEditPanel,
   ProductListPage,
+  adminProductUrl,
   adminProductsUrl,
   buildProductDraft,
   createAdminProduct,
   formatPrice,
+  productRecordToFormValues,
+  updateAdminProduct,
   type ProductFormValues,
   type ProductRecord,
 } from "./App";
@@ -28,6 +32,18 @@ const product: ProductRecord = {
       name: "Pets",
     },
   ],
+  informationSections: [
+    {
+      title: "Materials",
+      body: "Ceramic body with brass ring.",
+    },
+  ],
+  meshColorConfig: {
+    mesh_body: {
+      default: "#FFFFFF",
+      allowed: ["#FFFFFF", "#111111"],
+    },
+  },
   updatedAt: "2026-06-16T04:30:00Z",
   processingStatus: "completed",
 };
@@ -60,6 +76,14 @@ describe("adminProductsUrl", () => {
 
   it("uses same-origin API routing when no base URL is configured", () => {
     expect(adminProductsUrl("")).toBe("/admin/products");
+  });
+});
+
+describe("adminProductUrl", () => {
+  it("builds the admin product detail route with encoded product identity", () => {
+    expect(adminProductUrl("prod_12345678", "http://localhost:8080/")).toBe(
+      "http://localhost:8080/admin/products/prod_12345678",
+    );
   });
 });
 
@@ -98,6 +122,24 @@ describe("buildProductDraft", () => {
   });
 });
 
+describe("productRecordToFormValues", () => {
+  it("hydrates the product draft form from a product record", () => {
+    expect(productRecordToFormValues(product)).toEqual({
+      name: "Matte ceramic pet tag",
+      slug: "matte-ceramic-pet-tag",
+      description: "Configurable tag with processed 3D assets.",
+      amountCents: "12900",
+      currency: "USD",
+      compareAtAmountCents: "15900",
+      categoriesJson: '[{"slug":"pets","name":"Pets"}]',
+      informationSectionsJson:
+        '[{"title":"Materials","body":"Ceramic body with brass ring."}]',
+      meshColorConfigJson:
+        '{"mesh_body":{"default":"#FFFFFF","allowed":["#FFFFFF","#111111"]}}',
+    });
+  });
+});
+
 describe("createAdminProduct", () => {
   it("posts the product draft to the admin create route", async () => {
     const draft = buildProductDraft(validFormValues);
@@ -117,6 +159,41 @@ describe("createAdminProduct", () => {
       "http://localhost:8080/admin/products",
       expect.objectContaining({
         method: "POST",
+        body: JSON.stringify(draft),
+      }),
+    );
+    const [, requestInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(requestInit).toMatchObject({
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    });
+  });
+});
+
+describe("updateAdminProduct", () => {
+  it("puts the product draft to the admin update route", async () => {
+    const draft = buildProductDraft(validFormValues);
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify(product), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      updateAdminProduct(product.id, draft, "http://localhost:8080/"),
+    ).resolves.toEqual(product);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8080/admin/products/prod_12345678",
+      expect.objectContaining({
+        method: "PUT",
         body: JSON.stringify(draft),
       }),
     );
@@ -187,6 +264,22 @@ describe("ProductListPage", () => {
     expect(markup).toContain("$129.00");
     expect(markup).toContain("Completed");
     expect(markup).toContain("Pets");
+    expect(markup).toContain("Edit");
+  });
+
+  it("renders the selected product edit workflow", () => {
+    const markup = renderToStaticMarkup(
+      <ProductListPage
+        state={{ status: "ready", products: [product] }}
+        selectedProductId={product.id}
+        editState={{ status: "idle" }}
+        onRetry={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Edit product");
+    expect(markup).toContain("Save changes");
+    expect(markup).toContain("matte-ceramic-pet-tag");
   });
 });
 
@@ -235,5 +328,32 @@ describe("ProductCreatePanel", () => {
     );
 
     expect(markup).toContain("Product create request failed with HTTP 400");
+  });
+});
+
+describe("ProductEditPanel", () => {
+  it("renders success and failure states inline", () => {
+    const successMarkup = renderToStaticMarkup(
+      <ProductEditPanel
+        product={product}
+        editState={{ status: "success", productName: product.name }}
+        onCancel={() => undefined}
+        onUpdate={() => undefined}
+      />,
+    );
+    const errorMarkup = renderToStaticMarkup(
+      <ProductEditPanel
+        product={product}
+        editState={{
+          status: "error",
+          message: "Product update request failed with HTTP 400",
+        }}
+        onCancel={() => undefined}
+        onUpdate={() => undefined}
+      />,
+    );
+
+    expect(successMarkup).toContain("Updated Matte ceramic pet tag.");
+    expect(errorMarkup).toContain("Product update request failed with HTTP 400");
   });
 });

@@ -227,6 +227,12 @@ admin form before submit, renders inline success and failure states, and
 refreshes the list through `GET /admin/products` without adding edit, delete,
 source GLB upload, auth, direct platform access, backend contract changes, or
 live backend proof.
+`US-047` adds the first product edit workflow to the Web Admin shell. The React
+app hydrates the selected v1 product record into the draft form, submits
+full-replacement updates to `PUT /admin/products/{id}`, validates before
+submit, renders inline success and failure states, and refreshes the list
+through `GET /admin/products` without adding delete, source GLB upload, auth,
+direct platform access, backend contract changes, or live backend proof.
 
 ## Boundary Rules
 

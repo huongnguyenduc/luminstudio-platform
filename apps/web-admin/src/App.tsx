@@ -44,6 +44,8 @@ export type ProductRecord = {
   description: string;
   price: ProductPrice;
   categories?: ProductCategory[];
+  informationSections?: InformationSection[];
+  meshColorConfig?: MeshColorConfig;
   updatedAt: string;
   processingStatus: string;
 };
@@ -56,6 +58,12 @@ export type ProductListState =
 export type ProductCreateState =
   | { status: "idle" }
   | { status: "submitting" }
+  | { status: "success"; productName: string }
+  | { status: "error"; message: string };
+
+export type ProductEditState =
+  | { status: "idle" }
+  | { status: "submitting"; productId: string }
   | { status: "success"; productName: string }
   | { status: "error"; message: string };
 
@@ -99,6 +107,13 @@ export function adminProductsUrl(apiBaseUrl = import.meta.env.VITE_API_BASE_URL)
   return `${baseUrl.replace(/\/$/, "")}/admin/products`;
 }
 
+export function adminProductUrl(
+  productId: string,
+  apiBaseUrl = import.meta.env.VITE_API_BASE_URL,
+) {
+  return `${adminProductsUrl(apiBaseUrl)}/${encodeURIComponent(productId)}`;
+}
+
 export async function fetchAdminProducts(
   apiBaseUrl = import.meta.env.VITE_API_BASE_URL,
 ): Promise<ProductRecord[]> {
@@ -135,6 +150,27 @@ export async function createAdminProduct(
 
   if (!response.ok) {
     throw new Error(`Product create request failed with HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as ProductRecord;
+}
+
+export async function updateAdminProduct(
+  productId: string,
+  draft: ProductDraft,
+  apiBaseUrl = import.meta.env.VITE_API_BASE_URL,
+): Promise<ProductRecord> {
+  const response = await fetch(adminProductUrl(productId, apiBaseUrl), {
+    method: "PUT",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(draft),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Product update request failed with HTTP ${response.status}`);
   }
 
   return (await response.json()) as ProductRecord;
@@ -200,6 +236,25 @@ export function buildProductDraft(values: ProductFormValues): ProductDraft {
     categories,
     informationSections,
     ...(Object.keys(meshColorConfig).length === 0 ? {} : { meshColorConfig }),
+  };
+}
+
+export function productRecordToFormValues(
+  product: ProductRecord,
+): ProductFormValues {
+  return {
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    amountCents: String(product.price.amountCents),
+    currency: product.price.currency,
+    compareAtAmountCents:
+      product.price.compareAtAmountCents === undefined
+        ? ""
+        : String(product.price.compareAtAmountCents),
+    categoriesJson: JSON.stringify(product.categories ?? []),
+    informationSectionsJson: JSON.stringify(product.informationSections ?? []),
+    meshColorConfigJson: JSON.stringify(product.meshColorConfig ?? {}),
   };
 }
 
@@ -269,6 +324,12 @@ export function App() {
   const [createState, setCreateState] = React.useState<ProductCreateState>({
     status: "idle",
   });
+  const [editState, setEditState] = React.useState<ProductEditState>({
+    status: "idle",
+  });
+  const [selectedProductId, setSelectedProductId] = React.useState<string | null>(
+    null,
+  );
 
   const createProduct = React.useCallback(
     async (values: ProductFormValues) => {
@@ -291,11 +352,44 @@ export function App() {
     [reloadProducts],
   );
 
+  const updateProduct = React.useCallback(
+    async (productId: string, values: ProductFormValues) => {
+      setEditState({ status: "submitting", productId });
+      try {
+        const draft = buildProductDraft(values);
+        const product = await updateAdminProduct(productId, draft);
+        setEditState({ status: "success", productName: product.name });
+        await reloadProducts();
+        setSelectedProductId(product.id);
+      } catch (error) {
+        setEditState({
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Product update request failed",
+        });
+      }
+    },
+    [reloadProducts],
+  );
+
   return (
     <ProductListPage
       state={state}
       createState={createState}
+      editState={editState}
+      selectedProductId={selectedProductId}
       onCreate={(values) => void createProduct(values)}
+      onEditProduct={(productId) => {
+        setSelectedProductId(productId);
+        setEditState({ status: "idle" });
+      }}
+      onCancelEdit={() => {
+        setSelectedProductId(null);
+        setEditState({ status: "idle" });
+      }}
+      onUpdate={(productId, values) => void updateProduct(productId, values)}
       onRetry={() => void reloadProducts()}
     />
   );
@@ -332,14 +426,30 @@ function useProducts(): [ProductListState, () => Promise<void>] {
 export function ProductListPage({
   state,
   createState = { status: "idle" },
+  editState = { status: "idle" },
+  selectedProductId = null,
   onCreate = () => undefined,
+  onEditProduct = () => undefined,
+  onCancelEdit = () => undefined,
+  onUpdate = () => undefined,
   onRetry,
 }: {
   state: ProductListState;
   createState?: ProductCreateState;
+  editState?: ProductEditState;
+  selectedProductId?: string | null;
   onCreate?: (values: ProductFormValues) => void;
+  onEditProduct?: (productId: string) => void;
+  onCancelEdit?: () => void;
+  onUpdate?: (productId: string, values: ProductFormValues) => void;
   onRetry: () => void;
 }) {
+  const selectedProduct =
+    state.status === "ready" && selectedProductId
+      ? (state.products.find((product) => product.id === selectedProductId) ??
+        null)
+      : null;
+
   return (
     <main className="admin-shell">
       <header className="topbar" aria-label="Workspace">
@@ -363,6 +473,13 @@ export function ProductListPage({
 
       <ProductCreatePanel createState={createState} onCreate={onCreate} />
 
+      <ProductEditPanel
+        product={selectedProduct}
+        editState={editState}
+        onCancel={onCancelEdit}
+        onUpdate={onUpdate}
+      />
+
       <section className="product-panel" aria-labelledby="products-title">
         <div className="panel-heading">
           <div>
@@ -375,7 +492,11 @@ export function ProductListPage({
             </button>
           ) : null}
         </div>
-        <ProductListContent state={state} />
+        <ProductListContent
+          state={state}
+          selectedProductId={selectedProductId}
+          onEditProduct={onEditProduct}
+        />
       </section>
     </main>
   );
@@ -425,138 +546,282 @@ export function ProductCreatePanel({
         ) : null}
       </div>
 
-      <form className="product-form" onSubmit={handleSubmit}>
-        <div className="form-grid">
-          <label>
-            <span>Name</span>
-            <input
-              name="name"
-              value={values.name}
-              onChange={(event) => updateField("name", event.target.value)}
-              disabled={disabled}
-              autoComplete="off"
-            />
-          </label>
-          <label>
-            <span>Slug</span>
-            <input
-              name="slug"
-              value={values.slug}
-              onChange={(event) => updateField("slug", event.target.value)}
-              disabled={disabled}
-              autoComplete="off"
-              placeholder="matte-ceramic-pet-tag"
-            />
-          </label>
-          <label className="wide-field">
-            <span>Description</span>
-            <textarea
-              name="description"
-              value={values.description}
-              onChange={(event) =>
-                updateField("description", event.target.value)
-              }
-              disabled={disabled}
-              rows={3}
-            />
-          </label>
-          <label>
-            <span>Amount cents</span>
-            <input
-              name="amountCents"
-              inputMode="numeric"
-              value={values.amountCents}
-              onChange={(event) =>
-                updateField("amountCents", event.target.value)
-              }
-              disabled={disabled}
-              placeholder="12900"
-            />
-          </label>
-          <label>
-            <span>Currency</span>
-            <input
-              name="currency"
-              value={values.currency}
-              onChange={(event) => updateField("currency", event.target.value)}
-              disabled={disabled}
-              maxLength={3}
-            />
-          </label>
-          <label>
-            <span>Compare-at cents</span>
-            <input
-              name="compareAtAmountCents"
-              inputMode="numeric"
-              value={values.compareAtAmountCents}
-              onChange={(event) =>
-                updateField("compareAtAmountCents", event.target.value)
-              }
-              disabled={disabled}
-              placeholder="15900"
-            />
-          </label>
-          <label className="wide-field">
-            <span>Categories JSON</span>
-            <textarea
-              name="categoriesJson"
-              value={values.categoriesJson}
-              onChange={(event) =>
-                updateField("categoriesJson", event.target.value)
-              }
-              disabled={disabled}
-              rows={3}
-            />
-          </label>
-          <label className="wide-field">
-            <span>Information sections JSON</span>
-            <textarea
-              name="informationSectionsJson"
-              value={values.informationSectionsJson}
-              onChange={(event) =>
-                updateField("informationSectionsJson", event.target.value)
-              }
-              disabled={disabled}
-              rows={4}
-            />
-          </label>
-          <label className="wide-field">
-            <span>Mesh color config JSON</span>
-            <textarea
-              name="meshColorConfigJson"
-              value={values.meshColorConfigJson}
-              onChange={(event) =>
-                updateField("meshColorConfigJson", event.target.value)
-              }
-              disabled={disabled}
-              rows={4}
-            />
-          </label>
-        </div>
-
-        {localError ? (
-          <p className="form-message form-message-error" role="alert">
-            {localError}
-          </p>
-        ) : null}
-        {createState.status === "error" ? (
-          <p className="form-message form-message-error" role="alert">
-            {createState.message}
-          </p>
-        ) : null}
-        {createState.status === "success" ? (
-          <p className="form-message form-message-success" role="status">
-            Created {createState.productName}.
-          </p>
-        ) : null}
-
-        <div className="form-actions">
-          <button className="primary-button" type="submit" disabled={disabled}>
-            {disabled ? "Saving" : "Create product"}
-          </button>
-        </div>
-      </form>
+      <ProductDraftForm
+        values={values}
+        disabled={disabled}
+        localError={localError}
+        remoteError={
+          createState.status === "error" ? createState.message : undefined
+        }
+        successMessage={
+          createState.status === "success"
+            ? `Created ${createState.productName}.`
+            : undefined
+        }
+        submitLabel="Create product"
+        submittingLabel="Saving"
+        onFieldChange={updateField}
+        onSubmit={handleSubmit}
+      />
     </section>
+  );
+}
+
+export function ProductEditPanel({
+  product,
+  editState,
+  onCancel,
+  onUpdate,
+}: {
+  product: ProductRecord | null;
+  editState: ProductEditState;
+  onCancel: () => void;
+  onUpdate: (productId: string, values: ProductFormValues) => void;
+}) {
+  if (!product) {
+    return null;
+  }
+
+  return (
+    <ProductEditForm
+      key={product.id}
+      product={product}
+      editState={editState}
+      onCancel={onCancel}
+      onUpdate={onUpdate}
+    />
+  );
+}
+
+function ProductEditForm({
+  product,
+  editState,
+  onCancel,
+  onUpdate,
+}: {
+  product: ProductRecord;
+  editState: ProductEditState;
+  onCancel: () => void;
+  onUpdate: (productId: string, values: ProductFormValues) => void;
+}) {
+  const [values, setValues] = React.useState<ProductFormValues>(() =>
+    productRecordToFormValues(product),
+  );
+  const [localError, setLocalError] = React.useState<string | null>(null);
+  const disabled =
+    editState.status === "submitting" && editState.productId === product.id;
+
+  function updateField(field: keyof ProductFormValues, value: string) {
+    setValues((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLocalError(null);
+
+    try {
+      buildProductDraft(values);
+    } catch (error) {
+      setLocalError(
+        error instanceof Error ? error.message : "Product draft is invalid.",
+      );
+      return;
+    }
+
+    onUpdate(product.id, values);
+  }
+
+  return (
+    <section className="edit-panel" aria-labelledby="edit-title">
+      <div className="panel-heading create-heading">
+        <div>
+          <p className="eyebrow">Edit product</p>
+          <h2 id="edit-title">{product.name}</h2>
+        </div>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={onCancel}
+          disabled={disabled}
+        >
+          Close
+        </button>
+      </div>
+
+      <ProductDraftForm
+        values={values}
+        disabled={disabled}
+        localError={localError}
+        remoteError={
+          editState.status === "error" ? editState.message : undefined
+        }
+        successMessage={
+          editState.status === "success"
+            ? `Updated ${editState.productName}.`
+            : undefined
+        }
+        submitLabel="Save changes"
+        submittingLabel="Saving"
+        onFieldChange={updateField}
+        onSubmit={handleSubmit}
+      />
+    </section>
+  );
+}
+
+function ProductDraftForm({
+  values,
+  disabled,
+  localError,
+  remoteError,
+  successMessage,
+  submitLabel,
+  submittingLabel,
+  onFieldChange,
+  onSubmit,
+}: {
+  values: ProductFormValues;
+  disabled: boolean;
+  localError?: string | null;
+  remoteError?: string;
+  successMessage?: string;
+  submitLabel: string;
+  submittingLabel: string;
+  onFieldChange: (field: keyof ProductFormValues, value: string) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <form className="product-form" onSubmit={onSubmit}>
+      <div className="form-grid">
+        <label>
+          <span>Name</span>
+          <input
+            name="name"
+            value={values.name}
+            onChange={(event) => onFieldChange("name", event.target.value)}
+            disabled={disabled}
+            autoComplete="off"
+          />
+        </label>
+        <label>
+          <span>Slug</span>
+          <input
+            name="slug"
+            value={values.slug}
+            onChange={(event) => onFieldChange("slug", event.target.value)}
+            disabled={disabled}
+            autoComplete="off"
+            placeholder="matte-ceramic-pet-tag"
+          />
+        </label>
+        <label className="wide-field">
+          <span>Description</span>
+          <textarea
+            name="description"
+            value={values.description}
+            onChange={(event) =>
+              onFieldChange("description", event.target.value)
+            }
+            disabled={disabled}
+            rows={3}
+          />
+        </label>
+        <label>
+          <span>Amount cents</span>
+          <input
+            name="amountCents"
+            inputMode="numeric"
+            value={values.amountCents}
+            onChange={(event) =>
+              onFieldChange("amountCents", event.target.value)
+            }
+            disabled={disabled}
+            placeholder="12900"
+          />
+        </label>
+        <label>
+          <span>Currency</span>
+          <input
+            name="currency"
+            value={values.currency}
+            onChange={(event) => onFieldChange("currency", event.target.value)}
+            disabled={disabled}
+            maxLength={3}
+          />
+        </label>
+        <label>
+          <span>Compare-at cents</span>
+          <input
+            name="compareAtAmountCents"
+            inputMode="numeric"
+            value={values.compareAtAmountCents}
+            onChange={(event) =>
+              onFieldChange("compareAtAmountCents", event.target.value)
+            }
+            disabled={disabled}
+            placeholder="15900"
+          />
+        </label>
+        <label className="wide-field">
+          <span>Categories JSON</span>
+          <textarea
+            name="categoriesJson"
+            value={values.categoriesJson}
+            onChange={(event) =>
+              onFieldChange("categoriesJson", event.target.value)
+            }
+            disabled={disabled}
+            rows={3}
+          />
+        </label>
+        <label className="wide-field">
+          <span>Information sections JSON</span>
+          <textarea
+            name="informationSectionsJson"
+            value={values.informationSectionsJson}
+            onChange={(event) =>
+              onFieldChange("informationSectionsJson", event.target.value)
+            }
+            disabled={disabled}
+            rows={4}
+          />
+        </label>
+        <label className="wide-field">
+          <span>Mesh color config JSON</span>
+          <textarea
+            name="meshColorConfigJson"
+            value={values.meshColorConfigJson}
+            onChange={(event) =>
+              onFieldChange("meshColorConfigJson", event.target.value)
+            }
+            disabled={disabled}
+            rows={4}
+          />
+        </label>
+      </div>
+
+      {localError ? (
+        <p className="form-message form-message-error" role="alert">
+          {localError}
+        </p>
+      ) : null}
+      {remoteError ? (
+        <p className="form-message form-message-error" role="alert">
+          {remoteError}
+        </p>
+      ) : null}
+      {successMessage ? (
+        <p className="form-message form-message-success" role="status">
+          {successMessage}
+        </p>
+      ) : null}
+
+      <div className="form-actions">
+        <button className="primary-button" type="submit" disabled={disabled}>
+          {disabled ? submittingLabel : submitLabel}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -578,7 +843,15 @@ function ProductCount({ state }: { state: ProductListState }) {
   );
 }
 
-function ProductListContent({ state }: { state: ProductListState }) {
+function ProductListContent({
+  state,
+  selectedProductId,
+  onEditProduct,
+}: {
+  state: ProductListState;
+  selectedProductId?: string | null;
+  onEditProduct: (productId: string) => void;
+}) {
   if (state.status === "loading") {
     return <ProductSkeleton />;
   }
@@ -611,9 +884,16 @@ function ProductListContent({ state }: { state: ProductListState }) {
         <span role="columnheader">Price</span>
         <span role="columnheader">Status</span>
         <span role="columnheader">Updated</span>
+        <span role="columnheader">Action</span>
       </div>
       {state.products.map((product) => (
-        <article className="product-row" role="row" key={product.id}>
+        <article
+          className={`product-row${
+            selectedProductId === product.id ? " product-row-selected" : ""
+          }`}
+          role="row"
+          key={product.id}
+        >
           <div className="product-main" role="cell">
             <h3>{product.name}</h3>
             <p>{product.slug}</p>
@@ -631,6 +911,16 @@ function ProductListContent({ state }: { state: ProductListState }) {
           <time className="muted-cell" dateTime={product.updatedAt} role="cell">
             {formatDateTime(product.updatedAt)}
           </time>
+          <div role="cell">
+            <button
+              className="row-action-button"
+              type="button"
+              onClick={() => onEditProduct(product.id)}
+              aria-pressed={selectedProductId === product.id}
+            >
+              Edit
+            </button>
+          </div>
         </article>
       ))}
     </div>

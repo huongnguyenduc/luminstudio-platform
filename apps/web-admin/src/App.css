@@ -81,7 +81,8 @@
   line-height: 1.6;
 }
 
-.create-panel {
+.create-panel,
+.edit-panel {
   margin-bottom: 1rem;
   overflow: hidden;
 }
@@ -224,7 +225,9 @@
 }
 
 .retry-button,
-.primary-button {
+.primary-button,
+.secondary-button,
+.row-action-button {
   min-height: 2.4rem;
   border: 1px solid #2d4f2a;
   border-radius: 8px;
@@ -245,12 +248,16 @@
 }
 
 .retry-button:active,
-.primary-button:active {
+.primary-button:active,
+.secondary-button:active,
+.row-action-button:active {
   transform: translateY(1px);
 }
 
 .retry-button:focus-visible,
-.primary-button:focus-visible {
+.primary-button:focus-visible,
+.secondary-button:focus-visible,
+.row-action-button:focus-visible {
   outline: 3px solid #9fb889;
   outline-offset: 2px;
 }
@@ -261,17 +268,46 @@
   cursor: wait;
 }
 
+.secondary-button,
+.row-action-button {
+  border-color: #c8d0c0;
+  background: #ffffff;
+  color: #2d3429;
+}
+
+.secondary-button:hover,
+.row-action-button:hover {
+  border-color: #78916a;
+  background: #f2f6ee;
+}
+
+.secondary-button:disabled {
+  color: #747d6f;
+  cursor: wait;
+}
+
+.row-action-button[aria-pressed="true"] {
+  border-color: #2d4f2a;
+  background: #e5efdd;
+  color: #203b1d;
+}
+
 .product-table {
   display: grid;
 }
 
 .product-row {
   display: grid;
-  grid-template-columns: minmax(18rem, 1.45fr) minmax(8rem, 0.5fr) minmax(8rem, 0.55fr) minmax(10rem, 0.7fr);
+  grid-template-columns: minmax(18rem, 1.45fr) minmax(8rem, 0.5fr) minmax(8rem, 0.55fr) minmax(10rem, 0.7fr) minmax(6rem, 0.35fr);
   gap: 1rem;
   align-items: center;
   padding: 1rem clamp(1rem, 3vw, 1.4rem);
   border-bottom: 1px solid #ecefe8;
+}
+
+.product-row-selected {
+  background: #fbfcf8;
+  box-shadow: inset 4px 0 0 #6b8f59;
 }
 
 .product-row:last-child {
