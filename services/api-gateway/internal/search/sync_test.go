@@ -95,18 +95,27 @@ func TestHandleProductUpdatedPropagatesReaderFailure(t *testing.T) {
 
 func TestMeilisearchIndexerUpsertsProductDocument(t *testing.T) {
 	now := time.Date(2026, 6, 15, 14, 0, 0, 0, time.UTC)
-	var method string
-	var path string
+	var paths []string
 	var authorization string
 	var documents []ProductDocument
+	var settings map[string][]string
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		method = request.Method
-		path = request.URL.String()
+		paths = append(paths, request.Method+" "+request.URL.String())
 		authorization = request.Header.Get("Authorization")
-		if err := json.NewDecoder(request.Body).Decode(&documents); err != nil {
-			t.Fatalf("decode request body: %v", err)
+		switch request.Method {
+		case http.MethodPatch:
+			if err := json.NewDecoder(request.Body).Decode(&settings); err != nil {
+				t.Fatalf("decode settings body: %v", err)
+			}
+			response.WriteHeader(http.StatusAccepted)
+		case http.MethodPost:
+			if err := json.NewDecoder(request.Body).Decode(&documents); err != nil {
+				t.Fatalf("decode request body: %v", err)
+			}
+			response.WriteHeader(http.StatusAccepted)
+		default:
+			t.Fatalf("unexpected method %s", request.Method)
 		}
-		response.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
 	baseURL, err := url.Parse(server.URL)
@@ -119,16 +128,28 @@ func TestMeilisearchIndexerUpsertsProductDocument(t *testing.T) {
 		t.Fatalf("upsert product: %v", err)
 	}
 
-	if method != http.MethodPost {
-		t.Fatalf("method = %q", method)
-	}
-	if path != "/indexes/products/documents?primaryKey=id" {
-		t.Fatalf("path = %q", path)
+	if len(paths) != 2 ||
+		paths[0] != "PATCH /indexes/products/settings" ||
+		paths[1] != "POST /indexes/products/documents?primaryKey=id" {
+		t.Fatalf("paths = %#v", paths)
 	}
 	if authorization != "Bearer search-key" {
 		t.Fatalf("authorization = %q", authorization)
 	}
-	if len(documents) != 1 || documents[0].ID != "prod_12345678" || documents[0].InformationText == "" || documents[0].Price.AmountCents != 12900 {
+	if len(settings["filterableAttributes"]) != 2 ||
+		settings["filterableAttributes"][0] != "categorySlugs" ||
+		settings["filterableAttributes"][1] != "categoryKeys" {
+		t.Fatalf("settings = %#v", settings)
+	}
+	if len(documents) != 1 ||
+		documents[0].ID != "prod_12345678" ||
+		documents[0].InformationText == "" ||
+		documents[0].Price.AmountCents != 12900 ||
+		documents[0].PriceAmountCents != 12900 ||
+		len(documents[0].CategorySlugs) != 1 ||
+		documents[0].CategorySlugs[0] != "chairs" ||
+		len(documents[0].CategoryKeys) != 1 ||
+		documents[0].CategoryKeys[0] != "chairs\tChairs" {
 		t.Fatalf("documents = %#v", documents)
 	}
 }
@@ -160,6 +181,7 @@ func validSearchRecord(now time.Time) product.ProductRecord {
 		Slug:        "arc-chair",
 		Description: "Configurable chair.",
 		Price:       product.ProductPrice{AmountCents: 12900, Currency: "USD"},
+		Categories:  []product.ProductCategory{{Slug: "chairs", Name: "Chairs"}},
 		InformationSections: []product.InformationSection{
 			{Title: "Materials", Body: "Oak and wool."},
 		},

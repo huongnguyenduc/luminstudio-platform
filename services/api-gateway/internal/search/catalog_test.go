@@ -17,16 +17,25 @@ import (
 )
 
 type productSearcherStub struct {
-	result ProductSearchResult
-	err    error
-	query  ProductSearchQuery
-	calls  int
+	result     ProductSearchResult
+	categories []product.ProductCategory
+	err        error
+	query      ProductSearchQuery
+	calls      int
 }
 
 func (stub *productSearcherStub) SearchProducts(_ context.Context, query ProductSearchQuery) (ProductSearchResult, error) {
 	stub.calls++
 	stub.query = query
 	return stub.result, stub.err
+}
+
+func (stub *productSearcherStub) ListCategories(_ context.Context) ([]product.ProductCategory, error) {
+	stub.calls++
+	if stub.err != nil {
+		return nil, stub.err
+	}
+	return stub.categories, nil
 }
 
 type catalogProductReaderStub struct {
@@ -79,6 +88,7 @@ func TestListCatalogProductsReturnsCustomerSafeItems(t *testing.T) {
 			Slug:             "arc-chair",
 			Description:      "Configurable chair.",
 			Price:            product.ProductPrice{AmountCents: 12900, Currency: "USD"},
+			Categories:       []product.ProductCategory{{Slug: "chairs", Name: "Chairs"}},
 			InformationText:  "admin index text",
 			ProcessingStatus: product.ProcessingCompleted,
 			SpriteAsset: &product.ObjectRef{
@@ -115,8 +125,74 @@ func TestListCatalogProductsReturnsCustomerSafeItems(t *testing.T) {
 	if got.Items[0].Price.AmountCents != 12900 || got.Items[0].Price.Currency != "USD" {
 		t.Fatalf("price missing from customer item: %#v", got.Items[0].Price)
 	}
+	if len(got.Items[0].Categories) != 1 || got.Items[0].Categories[0].Slug != "chairs" {
+		t.Fatalf("categories missing from customer item: %#v", got.Items[0].Categories)
+	}
 	if strings.Contains(recorder.Body.String(), "informationText") {
 		t.Fatalf("customer response leaked index-only text: %s", recorder.Body.String())
+	}
+}
+
+func TestListCatalogCategoriesReturnsTaxonomy(t *testing.T) {
+	searcher := &productSearcherStub{categories: []product.ProductCategory{
+		{Slug: "chairs", Name: "Chairs"},
+		{Slug: "lighting", Name: "Lighting"},
+	}}
+	handler := NewHandler(searcher)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/categories", nil)
+
+	handler.ListCatalogCategories(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	var got CategoryListResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode categories response: %v", err)
+	}
+	if len(got.Categories) != 2 || got.Categories[0].Slug != "chairs" {
+		t.Fatalf("categories = %#v", got.Categories)
+	}
+}
+
+func TestListCategoryProductsFiltersAndSorts(t *testing.T) {
+	searcher := &productSearcherStub{result: ProductSearchResult{Total: 0}}
+	handler := NewHandler(searcher)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/categories/chairs/products?sort=price_asc&limit=8&offset=16", nil)
+	request.SetPathValue("slug", "chairs")
+
+	handler.ListCategoryProducts(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if searcher.query != (ProductSearchQuery{CategorySlug: "chairs", Sort: "price_asc", Limit: 8, Offset: 16}) {
+		t.Fatalf("query = %#v", searcher.query)
+	}
+	var got CatalogSearchResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode catalog response: %v", err)
+	}
+	if got.CategorySlug != "chairs" || got.Sort != "price_asc" {
+		t.Fatalf("category response metadata = %#v", got)
+	}
+}
+
+func TestListCategoryProductsRejectsInvalidSort(t *testing.T) {
+	handler := NewHandler(&productSearcherStub{})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/categories/chairs/products?sort=popular", nil)
+	request.SetPathValue("slug", "chairs")
+
+	handler.ListCategoryProducts(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
 	}
 }
 
@@ -362,6 +438,7 @@ func ProductRecordWithSprite(size int64) product.ProductRecord {
 		Slug:             "arc-chair",
 		Description:      "Configurable chair.",
 		Price:            product.ProductPrice{AmountCents: 12900, Currency: "USD"},
+		Categories:       []product.ProductCategory{{Slug: "chairs", Name: "Chairs"}},
 		CreatedAt:        now,
 		UpdatedAt:        now,
 		MeshColorConfig:  product.MeshColorConfig{"mesh_body": {Default: "#FFFFFF", Allowed: []string{"#FFFFFF", "#FF0000"}}},
@@ -442,6 +519,8 @@ func TestMeilisearchSearcherSearchesProducts(t *testing.T) {
 				Name:             "Arc Chair",
 				Slug:             "arc-chair",
 				Description:      "Configurable chair.",
+				Price:            product.ProductPrice{AmountCents: 12900, Currency: "USD"},
+				Categories:       []product.ProductCategory{{Slug: "chairs", Name: "Chairs"}},
 				ProcessingStatus: product.ProcessingCompleted,
 				UpdatedAt:        now,
 			}},
@@ -455,7 +534,7 @@ func TestMeilisearchSearcherSearchesProducts(t *testing.T) {
 	}
 	searcher := NewMeilisearchSearcher(baseURL, "search-key", time.Second)
 
-	result, err := searcher.SearchProducts(context.Background(), ProductSearchQuery{Query: "chaor", Limit: 10, Offset: 20})
+	result, err := searcher.SearchProducts(context.Background(), ProductSearchQuery{Query: "chaor", CategorySlug: "chairs", Sort: "price_desc", Limit: 10, Offset: 20})
 	if err != nil {
 		t.Fatalf("search products: %v", err)
 	}
@@ -472,7 +551,53 @@ func TestMeilisearchSearcherSearchesProducts(t *testing.T) {
 	if payload["q"] != "chaor" || payload["limit"] != float64(10) || payload["offset"] != float64(20) {
 		t.Fatalf("payload = %#v", payload)
 	}
+	if payload["filter"] != "categorySlugs = \"chairs\"" {
+		t.Fatalf("filter payload = %#v", payload)
+	}
+	sortPayload, ok := payload["sort"].([]any)
+	if !ok || len(sortPayload) != 1 || sortPayload[0] != "priceAmountCents:desc" {
+		t.Fatalf("payload = %#v", payload)
+	}
 	if result.Total != 3 || len(result.Hits) != 1 || result.Hits[0].ID != "prod_12345678" {
 		t.Fatalf("result = %#v", result)
+	}
+}
+
+func TestMeilisearchSearcherListsCategories(t *testing.T) {
+	var payload map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		_ = json.NewEncoder(response).Encode(map[string]any{
+			"facetDistribution": map[string]map[string]int{
+				"categoryKeys": {
+					"lighting\tLighting": 2,
+					"chairs\tChairs":     1,
+				},
+			},
+		})
+	}))
+	defer server.Close()
+	baseURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("parse test URL: %v", err)
+	}
+	searcher := NewMeilisearchSearcher(baseURL, "search-key", time.Second)
+
+	categories, err := searcher.ListCategories(context.Background())
+	if err != nil {
+		t.Fatalf("list categories: %v", err)
+	}
+
+	if payload["limit"] != float64(0) {
+		t.Fatalf("payload = %#v", payload)
+	}
+	facets, ok := payload["facets"].([]any)
+	if !ok || len(facets) != 1 || facets[0] != "categoryKeys" {
+		t.Fatalf("payload = %#v", payload)
+	}
+	if len(categories) != 2 || categories[0].Slug != "chairs" || categories[1].Slug != "lighting" {
+		t.Fatalf("categories = %#v", categories)
 	}
 }

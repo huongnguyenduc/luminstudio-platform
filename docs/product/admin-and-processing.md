@@ -141,10 +141,16 @@ propagates it through `product.updated` search synchronization, and returns it
 from customer catalog and product-detail responses. Checkout, payments,
 authentication, authorization, backend cart APIs, inventory checks, discount
 engines, tax, shipping, and seller settlement remain deferred.
+`US-042` adds customer-facing categories to product drafts and records with
+stable slugs and display names. The API persists those category arrays on the
+authoritative product row, propagates category metadata and filter slugs into
+Meilisearch, exposes `GET /catalog/categories`, and exposes
+`GET /catalog/categories/{slug}/products` with pagination plus `newest`,
+`price_asc`, `price_desc`, and `name_asc` sort values. Flutter Category tab UI
+and live backend proof remain deferred.
 
-Authentication, authorization, product delete workflows, customer
-category taxonomy, sorting, signed object URLs, Flutter 3D viewer behavior,
-cart persistence, retry/outbox semantics, and dead-letter handling remain
+Authentication, authorization, product delete workflows, Flutter Category tab
+UI, signed object URLs, retry/outbox semantics, and dead-letter handling remain
 deferred.
 
 ## Processing Pipeline

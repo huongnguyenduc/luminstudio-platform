@@ -18,6 +18,9 @@ func validDraft() ProductDraft {
 			Currency:             "USD",
 			CompareAtAmountCents: &compareAt,
 		},
+		Categories: []ProductCategory{
+			{Slug: "chairs", Name: "Chairs"},
+		},
 		InformationSections: []InformationSection{
 			{Title: "Materials", Body: "Powder coated steel.", CollapsedByDefault: true},
 		},
@@ -79,6 +82,20 @@ func TestProductDraftValidateRejectsContractViolations(t *testing.T) {
 				draft.Price.CompareAtAmountCents = &compareAt
 			},
 			want: "compareAtAmountCents",
+		},
+		{
+			name: "bad category slug",
+			mutate: func(draft *ProductDraft) {
+				draft.Categories[0].Slug = "Chairs"
+			},
+			want: "category slug",
+		},
+		{
+			name: "duplicate category slug",
+			mutate: func(draft *ProductDraft) {
+				draft.Categories = append(draft.Categories, ProductCategory{Slug: "chairs", Name: "Seating"})
+			},
+			want: "unique",
 		},
 		{
 			name: "empty section title",

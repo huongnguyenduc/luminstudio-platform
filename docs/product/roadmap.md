@@ -194,6 +194,14 @@ Selected work:
   product detail, signed object URLs, device-tier GLB selection, cart
   persistence, auth, Flutter Bazel rules, live backend proof, or live device
   proof.
+- `US-042 Customer Category Taxonomy And Sorting API` adds category slug/name
+  arrays to product drafts and records, propagates category metadata into the
+  derived Meilisearch product document, and exposes
+  `GET /catalog/categories` plus
+  `GET /catalog/categories/{slug}/products?sort=...` through the Go API
+  gateway without adding Flutter Category tab UI, checkout, payments,
+  authentication, authorization, inventory checks, backend cart APIs, signed
+  object URLs, live backend proof, or live device proof.
 
 ## Phase 4: 3D Detail And Cart
 

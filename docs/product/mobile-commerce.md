@@ -145,6 +145,17 @@ authorization, backend cart APIs, inventory checks, discount engines, tax,
 shipping, settlement, live backend proof, live device proof, and direct service
 access remain deferred.
 
+`US-042` defines the first customer-facing category taxonomy API. Product
+drafts and records may include up to eight category slug/name pairs. Search sync
+indexes those categories into Meilisearch, and the Go API exposes
+`GET /catalog/categories` plus
+`GET /catalog/categories/{slug}/products?sort=newest|price_asc|price_desc|name_asc`
+through the gateway. Category product results reuse the catalog pagination
+envelope and still keep mobile clients behind the API boundary. Flutter
+Category tab UI, checkout, payments, authentication, authorization, inventory
+checks, backend cart APIs, live backend proof, live device proof, and direct
+service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display

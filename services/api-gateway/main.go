@@ -92,6 +92,8 @@ func routes(readiness health.Readiness, productHandler product.Handler, searchHa
 	mux.HandleFunc("GET /admin/products/{id}", productHandler.GetProduct)
 	mux.HandleFunc("PUT /admin/products/{id}", productHandler.UpdateProduct)
 	mux.HandleFunc("POST /admin/products/{id}/source-glb", productHandler.UploadProductSource)
+	mux.HandleFunc("GET /catalog/categories", searchHandler.ListCatalogCategories)
+	mux.HandleFunc("GET /catalog/categories/{slug}/products", searchHandler.ListCategoryProducts)
 	mux.HandleFunc("GET /catalog/products", searchHandler.ListCatalogProducts)
 	mux.HandleFunc("GET /catalog/products/{id}", searchHandler.GetCatalogProductDetail)
 	mux.HandleFunc("GET /catalog/products/{id}/model", searchHandler.GetCatalogProductModel)

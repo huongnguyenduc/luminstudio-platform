@@ -29,6 +29,13 @@ func TestNewInsertProductArgsEncodesValidatedDraft(t *testing.T) {
 	if price.AmountCents != 12900 || price.Currency != "USD" {
 		t.Fatalf("unexpected price: %#v", price)
 	}
+	var categories []ProductCategory
+	if err := json.Unmarshal(args.Categories, &categories); err != nil {
+		t.Fatalf("categories were not JSON: %v", err)
+	}
+	if len(categories) != 1 || categories[0].Slug != "chairs" {
+		t.Fatalf("unexpected categories: %#v", categories)
+	}
 	var meshConfig MeshColorConfig
 	if err := json.Unmarshal(args.MeshColorConfig, &meshConfig); err != nil {
 		t.Fatalf("mesh config was not JSON: %v", err)
@@ -94,6 +101,13 @@ func TestNewUpdateProductArgsEncodesValidatedDraft(t *testing.T) {
 	}
 	if price.AmountCents != 12900 || price.Currency != "USD" {
 		t.Fatalf("unexpected price: %#v", price)
+	}
+	var categories []ProductCategory
+	if err := json.Unmarshal(args.Categories, &categories); err != nil {
+		t.Fatalf("categories were not JSON: %v", err)
+	}
+	if len(categories) != 1 || categories[0].Name != "Chairs" {
+		t.Fatalf("unexpected categories: %#v", categories)
 	}
 }
 

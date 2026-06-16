@@ -93,15 +93,19 @@ func NewMeilisearchIndexer(baseURL *url.URL, apiKey string, timeout time.Duratio
 }
 
 type ProductDocument struct {
-	ID               string                   `json:"id"`
-	Name             string                   `json:"name"`
-	Slug             string                   `json:"slug"`
-	Description      string                   `json:"description"`
-	Price            product.ProductPrice     `json:"price"`
-	InformationText  string                   `json:"informationText,omitempty"`
-	ProcessingStatus product.ProcessingStatus `json:"processingStatus"`
-	SpriteAsset      *product.ObjectRef       `json:"spriteAsset,omitempty"`
-	UpdatedAt        time.Time                `json:"updatedAt"`
+	ID               string                    `json:"id"`
+	Name             string                    `json:"name"`
+	Slug             string                    `json:"slug"`
+	Description      string                    `json:"description"`
+	Price            product.ProductPrice      `json:"price"`
+	PriceAmountCents int64                     `json:"priceAmountCents"`
+	Categories       []product.ProductCategory `json:"categories,omitempty"`
+	CategorySlugs    []string                  `json:"categorySlugs,omitempty"`
+	CategoryKeys     []string                  `json:"categoryKeys,omitempty"`
+	InformationText  string                    `json:"informationText,omitempty"`
+	ProcessingStatus product.ProcessingStatus  `json:"processingStatus"`
+	SpriteAsset      *product.ObjectRef        `json:"spriteAsset,omitempty"`
+	UpdatedAt        time.Time                 `json:"updatedAt"`
 }
 
 func NewProductDocument(record product.ProductRecord) ProductDocument {
@@ -109,12 +113,22 @@ func NewProductDocument(record product.ProductRecord) ProductDocument {
 	for _, section := range record.InformationSections {
 		sectionBodies = append(sectionBodies, section.Title, section.Body)
 	}
+	categorySlugs := make([]string, 0, len(record.Categories))
+	categoryKeys := make([]string, 0, len(record.Categories))
+	for _, category := range record.Categories {
+		categorySlugs = append(categorySlugs, category.Slug)
+		categoryKeys = append(categoryKeys, category.Slug+"\t"+category.Name)
+	}
 	return ProductDocument{
 		ID:               record.ID,
 		Name:             record.Name,
 		Slug:             record.Slug,
 		Description:      record.Description,
 		Price:            record.Price,
+		PriceAmountCents: record.Price.AmountCents,
+		Categories:       record.Categories,
+		CategorySlugs:    categorySlugs,
+		CategoryKeys:     categoryKeys,
 		InformationText:  strings.Join(sectionBodies, "\n"),
 		ProcessingStatus: record.ProcessingStatus,
 		SpriteAsset:      record.SpriteAsset,
@@ -128,6 +142,9 @@ func (indexer MeilisearchIndexer) UpsertProduct(ctx context.Context, record prod
 	}
 	if indexer.apiKey == "" {
 		return errors.New("Meilisearch API key is not configured")
+	}
+	if err := indexer.configureProductIndex(ctx); err != nil {
+		return err
 	}
 	payload, err := json.Marshal([]ProductDocument{NewProductDocument(record)})
 	if err != nil {
@@ -155,6 +172,38 @@ func (indexer MeilisearchIndexer) UpsertProduct(ctx context.Context, record prod
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(response.Body, 1024))
 		return fmt.Errorf("Meilisearch returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(body)))
+	}
+	return nil
+}
+
+func (indexer MeilisearchIndexer) configureProductIndex(ctx context.Context) error {
+	settings := map[string]any{
+		"filterableAttributes": []string{"categorySlugs", "categoryKeys"},
+		"sortableAttributes":   []string{"priceAmountCents", "updatedAt", "name"},
+	}
+	payload, err := json.Marshal(settings)
+	if err != nil {
+		return fmt.Errorf("marshal product index settings: %w", err)
+	}
+
+	target := *indexer.baseURL
+	target.Path = strings.TrimRight(target.Path, "/") + "/indexes/" + productIndexUID + "/settings"
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodPatch, target.String(), bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Authorization", "Bearer "+indexer.apiKey)
+	request.Header.Set("Content-Type", "application/json")
+
+	response, err := indexer.httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(response.Body, 1024))
+		return fmt.Errorf("Meilisearch settings returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(body)))
 	}
 	return nil
 }

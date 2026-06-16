@@ -78,8 +78,12 @@ renders as selectable material swatches backed by local Flutter state. The
 selected configuration can now be added to a locally persisted Flutter cart, and
 the Cart tab renders stored quantity, selected colors, selection state,
 selected subtotal, and savings from the API-owned display pricing contract.
-Category taxonomy, signed object URLs, checkout, payment, inventory, discount
-engines, and auth remain deferred.
+`US-042` adds customer category taxonomy and category product
+sorting routes through `GET /catalog/categories` and
+`GET /catalog/categories/{slug}/products`, backed by product category metadata
+in the derived Meilisearch index.
+Flutter Category tab UI, signed object URLs, checkout, payment, inventory,
+discount engines, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -361,6 +365,12 @@ Product pricing contract and cart totals verification:
 
 ```bash
 bash scripts/verify-us-041.sh
+```
+
+Customer category taxonomy and sorting API verification:
+
+```bash
+bash scripts/verify-us-042.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

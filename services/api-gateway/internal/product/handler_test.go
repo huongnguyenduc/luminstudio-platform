@@ -639,6 +639,7 @@ func validRecord(now time.Time) ProductRecord {
 		Slug:                draft.Slug,
 		Description:         draft.Description,
 		Price:               draft.Price,
+		Categories:          draft.Categories,
 		InformationSections: draft.InformationSections,
 		MeshColorConfig:     draft.MeshColorConfig,
 		SourceAsset:         draft.SourceAsset,

@@ -12,8 +12,8 @@ later stories, but generated output must not replace these contract sources.
 - `common.schema.json`: shared identifiers, object storage references, and mesh
   color configuration.
 - `product.schema.json`: initial product draft, persisted product record,
-  customer catalog item, catalog search response, and product detail response
-  shapes.
+  product category, customer catalog item, category list, catalog search
+  response, and product detail response shapes.
 - `events.schema.json`: NATS event envelope and payload shapes for
   `product.updated`, `3d.task.created`, and `3d.task.completed`.
 

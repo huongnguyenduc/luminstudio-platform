@@ -44,6 +44,13 @@ persists it on PostgreSQL product rows, propagates it into Meilisearch product
 documents, and returns it from customer catalog/search/detail responses. This
 does not add checkout, payments, authentication, authorization, backend cart
 APIs, inventory checks, or discount engines.
+`US-042` adds category slug/name pairs to product drafts and records. The API
+persists them on PostgreSQL product rows, propagates category metadata,
+filterable category slugs, and sortable price amounts into Meilisearch, and
+exposes `GET /catalog/categories` plus
+`GET /catalog/categories/{slug}/products?sort=...` through the gateway without
+adding Flutter Category tab UI, checkout, payments, auth, inventory, or backend
+cart APIs.
 
 Run native tests:
 
@@ -135,4 +142,10 @@ Verify product pricing contract and cart totals from the repository root:
 
 ```bash
 bash scripts/verify-us-041.sh
+```
+
+Verify customer category taxonomy and sorting API from the repository root:
+
+```bash
+bash scripts/verify-us-042.sh
 ```

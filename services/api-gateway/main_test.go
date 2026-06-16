@@ -74,6 +74,7 @@ func routeProductRecord(now time.Time) product.ProductRecord {
 		Slug:             "arc-chair",
 		Description:      "Configurable chair.",
 		Price:            product.ProductPrice{AmountCents: 12900, Currency: "USD"},
+		Categories:       []product.ProductCategory{{Slug: "chairs", Name: "Chairs"}},
 		MeshColorConfig:  product.MeshColorConfig{"mesh_body": {Default: "#FFFFFF", Allowed: []string{"#FFFFFF"}}},
 		CreatedAt:        now,
 		UpdatedAt:        now,
@@ -92,10 +93,15 @@ func (productSearcherRouteStub) SearchProducts(_ context.Context, query search.P
 			Slug:             "arc-chair",
 			Description:      "Configurable chair.",
 			Price:            product.ProductPrice{AmountCents: 12900, Currency: "USD"},
+			Categories:       []product.ProductCategory{{Slug: "chairs", Name: "Chairs"}},
 			ProcessingStatus: product.ProcessingCompleted,
 			UpdatedAt:        time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC),
 		}},
 	}, nil
+}
+
+func (productSearcherRouteStub) ListCategories(_ context.Context) ([]product.ProductCategory, error) {
+	return []product.ProductCategory{{Slug: "chairs", Name: "Chairs"}}, nil
 }
 
 func testRoutes() http.Handler {
@@ -195,6 +201,28 @@ func TestRoutesExposeAdminProductSourceUpload(t *testing.T) {
 func TestRoutesExposeCatalogProducts(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/catalog/products", nil)
+
+	testRoutes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeCatalogCategories(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/categories", nil)
+
+	testRoutes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeCatalogCategoryProducts(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/categories/chairs/products?sort=newest", nil)
 
 	testRoutes().ServeHTTP(recorder, request)
 

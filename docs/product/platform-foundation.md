@@ -195,6 +195,13 @@ lets the local Flutter cart calculate selected subtotal and savings from stored
 price snapshots without introducing checkout, payment, auth, inventory,
 backend cart APIs, direct storage/search/message access, Flutter Bazel rules,
 or live device proof.
+`US-042` adds the first category taxonomy and sorting API boundary. Product
+drafts and records can carry category slug/name pairs, the search-sync document
+stores category metadata plus filter slugs and sortable price amounts, and the
+Go API exposes `GET /catalog/categories` plus
+`GET /catalog/categories/{slug}/products` without introducing Flutter Category
+tab UI, checkout, payment, auth, inventory, backend cart APIs, direct
+storage/search/message access, Flutter Bazel rules, or live device proof.
 
 ## Boundary Rules
 

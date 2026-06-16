@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ const (
 
 type ProductSearcher interface {
 	SearchProducts(ctx context.Context, query ProductSearchQuery) (ProductSearchResult, error)
+	ListCategories(ctx context.Context) ([]product.ProductCategory, error)
 }
 
 type CatalogProductReader interface {
@@ -39,9 +41,11 @@ type ModelAssetStore interface {
 }
 
 type ProductSearchQuery struct {
-	Query  string
-	Limit  int
-	Offset int
+	Query        string
+	CategorySlug string
+	Sort         string
+	Limit        int
+	Offset       int
 }
 
 type ProductSearchResult struct {
@@ -50,22 +54,29 @@ type ProductSearchResult struct {
 }
 
 type CatalogItem struct {
-	ID               string                   `json:"id"`
-	Name             string                   `json:"name"`
-	Slug             string                   `json:"slug"`
-	Description      string                   `json:"description"`
-	Price            product.ProductPrice     `json:"price"`
-	ProcessingStatus product.ProcessingStatus `json:"processingStatus"`
-	SpriteAsset      *product.ObjectRef       `json:"spriteAsset,omitempty"`
-	UpdatedAt        time.Time                `json:"updatedAt"`
+	ID               string                    `json:"id"`
+	Name             string                    `json:"name"`
+	Slug             string                    `json:"slug"`
+	Description      string                    `json:"description"`
+	Price            product.ProductPrice      `json:"price"`
+	Categories       []product.ProductCategory `json:"categories,omitempty"`
+	ProcessingStatus product.ProcessingStatus  `json:"processingStatus"`
+	SpriteAsset      *product.ObjectRef        `json:"spriteAsset,omitempty"`
+	UpdatedAt        time.Time                 `json:"updatedAt"`
 }
 
 type CatalogSearchResponse struct {
-	Items  []CatalogItem `json:"items"`
-	Total  int           `json:"total"`
-	Limit  int           `json:"limit"`
-	Offset int           `json:"offset"`
-	Query  string        `json:"query,omitempty"`
+	Items        []CatalogItem `json:"items"`
+	Total        int           `json:"total"`
+	Limit        int           `json:"limit"`
+	Offset       int           `json:"offset"`
+	Query        string        `json:"query,omitempty"`
+	CategorySlug string        `json:"categorySlug,omitempty"`
+	Sort         string        `json:"sort,omitempty"`
+}
+
+type CategoryListResponse struct {
+	Categories []product.ProductCategory `json:"categories"`
 }
 
 type ProductDetailResponse struct {
@@ -74,6 +85,7 @@ type ProductDetailResponse struct {
 	Slug                string                       `json:"slug"`
 	Description         string                       `json:"description"`
 	Price               product.ProductPrice         `json:"price"`
+	Categories          []product.ProductCategory    `json:"categories,omitempty"`
 	InformationSections []product.InformationSection `json:"informationSections"`
 	MeshColorConfig     product.MeshColorConfig      `json:"meshColorConfig,omitempty"`
 	ProcessingStatus    product.ProcessingStatus     `json:"processingStatus"`
@@ -119,6 +131,23 @@ func (handler Handler) SearchCatalogProducts(response http.ResponseWriter, reque
 	handler.search(response, request, true)
 }
 
+func (handler Handler) ListCatalogCategories(response http.ResponseWriter, request *http.Request) {
+	if handler.searcher == nil {
+		writeError(response, http.StatusServiceUnavailable, "catalog search is not configured")
+		return
+	}
+	categories, err := handler.searcher.ListCategories(request.Context())
+	if err != nil {
+		writeError(response, http.StatusBadGateway, "could not list catalog categories")
+		return
+	}
+	writeJSON(response, http.StatusOK, CategoryListResponse{Categories: categories})
+}
+
+func (handler Handler) ListCategoryProducts(response http.ResponseWriter, request *http.Request) {
+	handler.search(response, request, false)
+}
+
 func (handler Handler) GetCatalogProductDetail(response http.ResponseWriter, request *http.Request) {
 	if handler.productReader == nil {
 		writeError(response, http.StatusServiceUnavailable, "catalog products are not configured")
@@ -157,6 +186,7 @@ func (handler Handler) GetCatalogProductDetail(response http.ResponseWriter, req
 		Slug:                record.Slug,
 		Description:         record.Description,
 		Price:               record.Price,
+		Categories:          record.Categories,
 		InformationSections: record.InformationSections,
 		MeshColorConfig:     record.MeshColorConfig,
 		ProcessingStatus:    record.ProcessingStatus,
@@ -341,17 +371,20 @@ func (handler Handler) search(response http.ResponseWriter, request *http.Reques
 			Slug:             hit.Slug,
 			Description:      hit.Description,
 			Price:            hit.Price,
+			Categories:       hit.Categories,
 			ProcessingStatus: hit.ProcessingStatus,
 			SpriteAsset:      hit.SpriteAsset,
 			UpdatedAt:        hit.UpdatedAt,
 		})
 	}
 	writeJSON(response, http.StatusOK, CatalogSearchResponse{
-		Items:  items,
-		Total:  result.Total,
-		Limit:  query.Limit,
-		Offset: query.Offset,
-		Query:  query.Query,
+		Items:        items,
+		Total:        result.Total,
+		Limit:        query.Limit,
+		Offset:       query.Offset,
+		Query:        query.Query,
+		CategorySlug: query.CategorySlug,
+		Sort:         query.Sort,
 	})
 }
 
@@ -364,6 +397,14 @@ func productSearchQueryFromRequest(request *http.Request, requireQuery bool) (Pr
 	if len(query) > maxSearchQueryBytes {
 		return ProductSearchQuery{}, fmt.Errorf("q must be at most %d bytes", maxSearchQueryBytes)
 	}
+	categorySlug := strings.TrimSpace(request.PathValue("slug"))
+	if categorySlug != "" && !product.ValidSlug(categorySlug) {
+		return ProductSearchQuery{}, errors.New("category slug must match the v1 category slug contract")
+	}
+	sortValue, err := productSortFromRequest(values)
+	if err != nil {
+		return ProductSearchQuery{}, err
+	}
 
 	limit, err := boundedIntQuery(values, "limit", defaultCatalogLimit, 1, maxCatalogLimit)
 	if err != nil {
@@ -373,7 +414,20 @@ func productSearchQueryFromRequest(request *http.Request, requireQuery bool) (Pr
 	if err != nil {
 		return ProductSearchQuery{}, err
 	}
-	return ProductSearchQuery{Query: query, Limit: limit, Offset: offset}, nil
+	return ProductSearchQuery{Query: query, CategorySlug: categorySlug, Sort: sortValue, Limit: limit, Offset: offset}, nil
+}
+
+func productSortFromRequest(values url.Values) (string, error) {
+	sortValue := strings.TrimSpace(values.Get("sort"))
+	if sortValue == "" {
+		return "", nil
+	}
+	switch sortValue {
+	case "newest", "price_asc", "price_desc", "name_asc":
+		return sortValue, nil
+	default:
+		return "", errors.New("sort must be newest, price_asc, price_desc, or name_asc")
+	}
 }
 
 func boundedIntQuery(values url.Values, name string, defaultValue, minimum, maximum int) (int, error) {
@@ -412,11 +466,18 @@ func (searcher MeilisearchSearcher) SearchProducts(ctx context.Context, query Pr
 		return ProductSearchResult{}, errors.New("Meilisearch API key is not configured")
 	}
 
-	payload, err := json.Marshal(map[string]any{
+	payload := map[string]any{
 		"q":      query.Query,
 		"limit":  query.Limit,
 		"offset": query.Offset,
-	})
+	}
+	if query.CategorySlug != "" {
+		payload["filter"] = fmt.Sprintf("categorySlugs = %q", query.CategorySlug)
+	}
+	if sortExpr, ok := sortExpression(query.Sort); ok {
+		payload["sort"] = []string{sortExpr}
+	}
+	encodedPayload, err := json.Marshal(payload)
 	if err != nil {
 		return ProductSearchResult{}, fmt.Errorf("marshal product search request: %w", err)
 	}
@@ -424,7 +485,7 @@ func (searcher MeilisearchSearcher) SearchProducts(ctx context.Context, query Pr
 	target := *searcher.baseURL
 	target.Path = strings.TrimRight(target.Path, "/") + "/indexes/" + productIndexUID + "/search"
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, target.String(), bytes.NewReader(payload))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, target.String(), bytes.NewReader(encodedPayload))
 	if err != nil {
 		return ProductSearchResult{}, err
 	}
@@ -458,6 +519,87 @@ func (searcher MeilisearchSearcher) SearchProducts(ctx context.Context, query Pr
 		total = *decoded.TotalHits
 	}
 	return ProductSearchResult{Hits: decoded.Hits, Total: total}, nil
+}
+
+func (searcher MeilisearchSearcher) ListCategories(ctx context.Context) ([]product.ProductCategory, error) {
+	if searcher.baseURL == nil || searcher.baseURL.Host == "" {
+		return nil, errors.New("Meilisearch URL is not configured")
+	}
+	if searcher.apiKey == "" {
+		return nil, errors.New("Meilisearch API key is not configured")
+	}
+
+	payload, err := json.Marshal(map[string]any{
+		"q":      "",
+		"limit":  0,
+		"offset": 0,
+		"facets": []string{"categoryKeys"},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshal category list request: %w", err)
+	}
+
+	target := *searcher.baseURL
+	target.Path = strings.TrimRight(target.Path, "/") + "/indexes/" + productIndexUID + "/search"
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, target.String(), bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Authorization", "Bearer "+searcher.apiKey)
+	request.Header.Set("Content-Type", "application/json")
+
+	response, err := searcher.httpClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(response.Body, 1024))
+		return nil, fmt.Errorf("Meilisearch returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var decoded struct {
+		FacetDistribution map[string]map[string]int `json:"facetDistribution"`
+	}
+	decoder := json.NewDecoder(response.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&decoded); err != nil {
+		return nil, fmt.Errorf("decode category list response: %w", err)
+	}
+	bySlug := map[string]product.ProductCategory{}
+	for key := range decoded.FacetDistribution["categoryKeys"] {
+		slug, name, ok := strings.Cut(key, "\t")
+		if ok && slug != "" && name != "" {
+			bySlug[slug] = product.ProductCategory{Slug: slug, Name: name}
+		}
+	}
+	categories := make([]product.ProductCategory, 0, len(bySlug))
+	for _, category := range bySlug {
+		categories = append(categories, category)
+	}
+	sort.Slice(categories, func(i, j int) bool {
+		if categories[i].Name == categories[j].Name {
+			return categories[i].Slug < categories[j].Slug
+		}
+		return categories[i].Name < categories[j].Name
+	})
+	return categories, nil
+}
+
+func sortExpression(sortValue string) (string, bool) {
+	switch sortValue {
+	case "newest":
+		return "updatedAt:desc", true
+	case "price_asc":
+		return "priceAmountCents:asc", true
+	case "price_desc":
+		return "priceAmountCents:desc", true
+	case "name_asc":
+		return "name:asc", true
+	default:
+		return "", false
+	}
 }
 
 func writeJSON(response http.ResponseWriter, status int, payload any) {

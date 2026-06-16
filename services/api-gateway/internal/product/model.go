@@ -40,6 +40,11 @@ type ProductPrice struct {
 	CompareAtAmountCents *int64 `json:"compareAtAmountCents,omitempty"`
 }
 
+type ProductCategory struct {
+	Slug string `json:"slug"`
+	Name string `json:"name"`
+}
+
 type MeshColorOption struct {
 	Default string   `json:"default"`
 	Allowed []string `json:"allowed"`
@@ -52,6 +57,7 @@ type ProductDraft struct {
 	Slug                string               `json:"slug"`
 	Description         string               `json:"description"`
 	Price               ProductPrice         `json:"price"`
+	Categories          []ProductCategory    `json:"categories,omitempty"`
 	InformationSections []InformationSection `json:"informationSections"`
 	MeshColorConfig     MeshColorConfig      `json:"meshColorConfig,omitempty"`
 	SourceAsset         *ObjectRef           `json:"sourceAsset,omitempty"`
@@ -63,6 +69,7 @@ type ProductRecord struct {
 	Slug                string               `json:"slug"`
 	Description         string               `json:"description"`
 	Price               ProductPrice         `json:"price"`
+	Categories          []ProductCategory    `json:"categories,omitempty"`
 	InformationSections []InformationSection `json:"informationSections"`
 	MeshColorConfig     MeshColorConfig      `json:"meshColorConfig,omitempty"`
 	SourceAsset         *ObjectRef           `json:"sourceAsset,omitempty"`
@@ -92,6 +99,10 @@ func ValidProductID(id string) bool {
 	return productIDPattern.MatchString(id)
 }
 
+func ValidSlug(slug string) bool {
+	return slugPattern.MatchString(slug)
+}
+
 func (draft ProductDraft) Validate() error {
 	if err := validateText("name", draft.Name, 1, 160); err != nil {
 		return err
@@ -104,6 +115,9 @@ func (draft ProductDraft) Validate() error {
 	}
 	if err := draft.Price.validate(); err != nil {
 		return fmt.Errorf("price: %w", err)
+	}
+	if err := validateCategories(draft.Categories); err != nil {
+		return err
 	}
 	for index, section := range draft.InformationSections {
 		if err := section.validate(); err != nil {
@@ -132,6 +146,7 @@ func (record ProductRecord) Validate() error {
 		Slug:                record.Slug,
 		Description:         record.Description,
 		Price:               record.Price,
+		Categories:          record.Categories,
 		InformationSections: record.InformationSections,
 		MeshColorConfig:     record.MeshColorConfig,
 		SourceAsset:         record.SourceAsset,
@@ -156,6 +171,26 @@ func (record ProductRecord) Validate() error {
 	}
 	if record.UpdatedAt.Before(record.CreatedAt) {
 		return errors.New("updatedAt must not be before createdAt")
+	}
+	return nil
+}
+
+func validateCategories(categories []ProductCategory) error {
+	if len(categories) > 8 {
+		return errors.New("categories must contain at most 8 entries")
+	}
+	seen := map[string]struct{}{}
+	for index, category := range categories {
+		if category.Slug == "" || len(category.Slug) > 120 || !slugPattern.MatchString(category.Slug) {
+			return fmt.Errorf("categories[%d]: slug must match the v1 category slug contract", index)
+		}
+		if err := validateText("name", category.Name, 1, 80); err != nil {
+			return fmt.Errorf("categories[%d]: %w", index, err)
+		}
+		if _, ok := seen[category.Slug]; ok {
+			return fmt.Errorf("categories[%d]: slug must be unique", index)
+		}
+		seen[category.Slug] = struct{}{}
 	}
 	return nil
 }

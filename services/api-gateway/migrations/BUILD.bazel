@@ -3,6 +3,7 @@ filegroup(
     srcs = [
         "001_create_products.sql",
         "002_add_product_pricing.sql",
+        "003_add_product_categories.sql",
     ],
     visibility = ["//visibility:public"],
 )
