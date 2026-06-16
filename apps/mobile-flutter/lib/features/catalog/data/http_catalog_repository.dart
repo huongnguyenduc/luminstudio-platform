@@ -20,4 +20,12 @@ class HttpCatalogRepository implements CatalogRepository {
   }) {
     return _client.searchProducts(query, limit: limit, offset: offset);
   }
+
+  @override
+  Future<CatalogProductDetail> getProductDetail(
+    String productId, {
+    required ProductModelTier tier,
+  }) {
+    return _client.getProductDetail(productId, tier: tier);
+  }
 }

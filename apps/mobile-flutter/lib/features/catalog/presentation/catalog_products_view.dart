@@ -4,8 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/rendering.dart';
+import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
+import 'package:lumin_studio_mobile/features/catalog/domain/device_tier.dart';
+import 'package:lumin_studio_mobile/features/catalog/domain/get_catalog_product_detail.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/catalog_cubit.dart';
+import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/product_detail_cubit.dart';
+import 'package:lumin_studio_mobile/features/catalog/presentation/product_detail_view.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 const _previewActivationDelay = Duration(seconds: 3);
@@ -539,6 +544,23 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
     _refreshMeasuredVisibility();
   }
 
+  void _openProductDetail() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => BlocProvider(
+          create: (context) => ProductDetailCubit(
+            productId: widget.product.id,
+            getCatalogProductDetail: GetCatalogProductDetail(
+              context.read<CatalogRepository>(),
+            ),
+            deviceTierResolver: context.read<DeviceTierResolver>(),
+          )..load(),
+          child: const ProductDetailPage(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -550,75 +572,88 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
       key: ValueKey<String>('catalog-product-visibility-${product.id}'),
       onVisibilityChanged: _handleVisibilityChanged,
       child: Semantics(
-        button: false,
+        button: true,
         label: 'Catalog product ${product.name}',
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 112),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
+        child: Material(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            onTap: _openProductDetail,
             borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                alignment: Alignment.center,
-                clipBehavior: Clip.hardEdge,
-                decoration: BoxDecoration(
-                  color: product.hasPreview
-                      ? theme.colorScheme.primaryContainer
-                      : theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
-                ),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: _previewActive && previewUri != null
-                      ? _SpriteSheetPreview(
-                          key: ValueKey<String>('preview-${product.id}'),
-                          uri: previewUri,
-                          productName: product.name,
-                        )
-                      : Icon(
-                          product.hasPreview
-                              ? Icons.view_in_ar
-                              : Icons.view_in_ar_outlined,
-                          color: theme.colorScheme.primary,
-                        ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      product.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      product.hasPreview ? '360 preview ready' : statusLabel,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.primary,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 112),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      color: product.hasPreview
+                          ? theme.colorScheme.primaryContainer
+                          : theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
                       ),
                     ),
-                  ],
-                ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: _previewActive && previewUri != null
+                          ? _SpriteSheetPreview(
+                              key: ValueKey<String>('preview-${product.id}'),
+                              uri: previewUri,
+                              productName: product.name,
+                            )
+                          : Icon(
+                              product.hasPreview
+                                  ? Icons.view_in_ar
+                                  : Icons.view_in_ar_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          product.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          product.hasPreview
+                              ? '360 preview ready'
+                              : statusLabel,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.chevron_right,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

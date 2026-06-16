@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lumin_studio_mobile/app/app.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.dart';
+import 'package:lumin_studio_mobile/features/catalog/domain/device_tier.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -293,6 +294,85 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('home tab opens product detail with the resolved model tier', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withProducts(2);
+
+    await tester.pumpWidget(
+      LuminStudioApp(
+        catalogRepository: repository,
+        deviceTierResolver: const FixedDeviceTierResolver(
+          ProductModelTier.high,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Product 1'));
+    await tester.pumpAndSettle();
+
+    expect(repository.lastDetailProductId, 'prod_1');
+    expect(repository.lastDetailTier, ProductModelTier.high);
+    expect(find.text('Materials'), findsOneWidget);
+    expect(find.text('Glazed ceramic and brass.'), findsOneWidget);
+    expect(find.text('Model tier: high'), findsOneWidget);
+    expect(
+      find.textContaining('/catalog/products/prod_1/model?tier=high'),
+      findsOneWidget,
+    );
+    expect(find.text('mesh_body'), findsOneWidget);
+  });
+
+  testWidgets('product detail exposes failure and retry states', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withProducts(1)
+      ..shouldFailDetail = true;
+
+    await tester.pumpWidget(
+      LuminStudioApp(
+        catalogRepository: repository,
+        deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Product 1'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Product detail is unavailable'), findsOneWidget);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Model tier: low'), findsOneWidget);
+  });
+
+  testWidgets('home tab retains product detail route when switching tabs', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      LuminStudioApp(
+        catalogRepository: _FakeCatalogRepository.withProducts(2),
+        deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Product 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Model tier: low'), findsOneWidget);
+
+    await tester.tap(find.text('Category'));
+    await tester.pumpAndSettle();
+    expect(find.text('No categories yet'), findsOneWidget);
+
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    expect(find.text('Model tier: low'), findsOneWidget);
+  });
 }
 
 Future<void> _loadMoreThroughHome(WidgetTester tester) async {
@@ -339,7 +419,10 @@ class _FakeCatalogRepository implements CatalogRepository {
   bool shouldFail;
   bool shouldFailSearch = false;
   bool shouldFailNextPage = false;
+  bool shouldFailDetail = false;
   String? lastSearchQuery;
+  String? lastDetailProductId;
+  ProductModelTier? lastDetailTier;
   final List<int> listOffsets = [];
   final List<int> searchOffsets = [];
 
@@ -391,6 +474,64 @@ class _FakeCatalogRepository implements CatalogRepository {
     }
     return searchPage;
   }
+
+  @override
+  Future<CatalogProductDetail> getProductDetail(
+    String productId, {
+    required ProductModelTier tier,
+  }) async {
+    lastDetailProductId = productId;
+    lastDetailTier = tier;
+    if (shouldFailDetail) {
+      shouldFailDetail = false;
+      throw StateError('detail unavailable');
+    }
+    return _catalogProductDetail(productId, tier);
+  }
+}
+
+CatalogProductDetail _catalogProductDetail(
+  String productId,
+  ProductModelTier tier,
+) {
+  return CatalogProductDetail(
+    id: productId,
+    name: 'Product ${productId.split('_').last}',
+    slug: 'product-${productId.split('_').last}',
+    description: 'Customer-safe detail for $productId',
+    informationSections: const [
+      CatalogInformationSection(
+        title: 'Materials',
+        body: 'Glazed ceramic and brass.',
+      ),
+    ],
+    meshColorConfig: const [
+      CatalogMeshColorOptions(
+        meshId: 'mesh_body',
+        defaultColor: '#FFFFFF',
+        allowedColors: ['#FFFFFF', '#0F172A'],
+      ),
+    ],
+    processingStatus: 'completed',
+    modelTier: tier,
+    modelAsset: CatalogObjectRef(
+      bucket: tier == ProductModelTier.high
+          ? 'lumin-source-glb'
+          : 'lumin-optimized-glb',
+      key: 'products/$productId/model.glb',
+      contentType: 'model/gltf-binary',
+    ),
+    modelUri: Uri.parse(
+      'http://api.test/catalog/products/$productId/model?tier=${tier.wireName}',
+    ),
+    spriteAsset: const CatalogObjectRef(
+      bucket: 'lumin-360-sprites',
+      key: 'products/prod_1/prod_1_360_sprite.jpg',
+      contentType: 'image/jpeg',
+    ),
+    spriteUri: Uri.parse('http://api.test/catalog/products/$productId/sprite'),
+    updatedAt: DateTime.utc(2026, 6, 16, 12),
+  );
 }
 
 CatalogProductsPage _catalogPage(int count, {String namePrefix = 'Product'}) {

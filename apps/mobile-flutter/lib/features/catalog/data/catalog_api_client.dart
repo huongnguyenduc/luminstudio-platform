@@ -36,6 +36,39 @@ class CatalogApiClient {
     );
   }
 
+  Future<CatalogProductDetail> getProductDetail(
+    String productId, {
+    required ProductModelTier tier,
+  }) async {
+    final uri = _baseUri.replace(
+      path: _joinPath(
+        _baseUri.path,
+        '/catalog/products/${Uri.encodeComponent(productId)}',
+      ),
+      queryParameters: {'tier': tier.wireName},
+    );
+    final request = await _httpClient.getUrl(uri);
+    request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+    final response = await request.close();
+    final body = await utf8.decodeStream(response);
+
+    if (response.statusCode != HttpStatus.ok) {
+      throw CatalogApiException(
+        'Catalog detail API returned HTTP ${response.statusCode}',
+      );
+    }
+
+    final decoded = jsonDecode(body);
+    if (decoded is! Map<String, Object?>) {
+      throw const CatalogApiException(
+        'Catalog detail API returned an invalid body',
+      );
+    }
+    return ProductDetailDto.fromJson(
+      decoded,
+    ).toDomain(routeUriFor: _catalogRouteUri);
+  }
+
   Future<CatalogProductsPage> _fetchCatalogPage({
     required String routePath,
     required Map<String, String> queryParameters,
@@ -71,6 +104,16 @@ class CatalogApiClient {
         '/catalog/products/${Uri.encodeComponent(productId)}/sprite',
       ),
       queryParameters: null,
+    );
+  }
+
+  Uri _catalogRouteUri(String routePath) {
+    final parsed = Uri.parse(routePath);
+    return _baseUri.replace(
+      path: _joinPath(_baseUri.path, parsed.path),
+      queryParameters: parsed.queryParameters.isEmpty
+          ? null
+          : parsed.queryParameters,
     );
   }
 
@@ -227,6 +270,177 @@ class CatalogObjectRefDto {
       sizeBytes: sizeBytes,
     );
   }
+}
+
+class ProductDetailDto {
+  const ProductDetailDto({
+    required this.id,
+    required this.name,
+    required this.slug,
+    required this.description,
+    required this.informationSections,
+    required this.meshColorConfig,
+    required this.processingStatus,
+    required this.modelTier,
+    required this.updatedAt,
+    this.modelAsset,
+    this.modelUrl,
+    this.spriteAsset,
+    this.spriteUrl,
+  });
+
+  final String id;
+  final String name;
+  final String slug;
+  final String description;
+  final List<CatalogInformationSectionDto> informationSections;
+  final List<CatalogMeshColorOptionsDto> meshColorConfig;
+  final String processingStatus;
+  final ProductModelTier modelTier;
+  final CatalogObjectRefDto? modelAsset;
+  final String? modelUrl;
+  final CatalogObjectRefDto? spriteAsset;
+  final String? spriteUrl;
+  final DateTime updatedAt;
+
+  factory ProductDetailDto.fromJson(Map<String, Object?> json) {
+    final sections = json['informationSections'];
+    if (sections is! List<Object?>) {
+      throw const CatalogApiException('informationSections must be an array');
+    }
+
+    return ProductDetailDto(
+      id: _expectString(json['id'], 'id'),
+      name: _expectString(json['name'], 'name'),
+      slug: _expectString(json['slug'], 'slug'),
+      description: _expectString(json['description'], 'description'),
+      informationSections: [
+        for (final section in sections)
+          CatalogInformationSectionDto.fromJson(
+            _expectMap(section, 'information section'),
+          ),
+      ],
+      meshColorConfig: _parseMeshColorConfig(json['meshColorConfig']),
+      processingStatus: _expectString(
+        json['processingStatus'],
+        'processingStatus',
+      ),
+      modelTier: ProductModelTier.parse(
+        _expectString(json['modelTier'], 'modelTier'),
+      ),
+      modelAsset: json['modelAsset'] == null
+          ? null
+          : CatalogObjectRefDto.fromJson(
+              _expectMap(json['modelAsset'], 'modelAsset'),
+            ),
+      modelUrl: _expectOptionalString(json['modelUrl'], 'modelUrl'),
+      spriteAsset: json['spriteAsset'] == null
+          ? null
+          : CatalogObjectRefDto.fromJson(
+              _expectMap(json['spriteAsset'], 'spriteAsset'),
+            ),
+      spriteUrl: _expectOptionalString(json['spriteUrl'], 'spriteUrl'),
+      updatedAt: DateTime.parse(_expectString(json['updatedAt'], 'updatedAt')),
+    );
+  }
+
+  CatalogProductDetail toDomain({Uri Function(String routePath)? routeUriFor}) {
+    return CatalogProductDetail(
+      id: id,
+      name: name,
+      slug: slug,
+      description: description,
+      informationSections: [
+        for (final section in informationSections) section.toDomain(),
+      ],
+      meshColorConfig: [
+        for (final options in meshColorConfig) options.toDomain(),
+      ],
+      processingStatus: processingStatus,
+      modelTier: modelTier,
+      modelAsset: modelAsset?.toDomain(),
+      modelUri: modelUrl == null ? null : routeUriFor?.call(modelUrl!),
+      spriteAsset: spriteAsset?.toDomain(),
+      spriteUri: spriteUrl == null ? null : routeUriFor?.call(spriteUrl!),
+      updatedAt: updatedAt,
+    );
+  }
+}
+
+class CatalogInformationSectionDto {
+  const CatalogInformationSectionDto({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  factory CatalogInformationSectionDto.fromJson(Map<String, Object?> json) {
+    return CatalogInformationSectionDto(
+      title: _expectString(json['title'], 'title'),
+      body: _expectString(json['body'], 'body'),
+    );
+  }
+
+  CatalogInformationSection toDomain() {
+    return CatalogInformationSection(title: title, body: body);
+  }
+}
+
+class CatalogMeshColorOptionsDto {
+  const CatalogMeshColorOptionsDto({
+    required this.meshId,
+    required this.defaultColor,
+    required this.allowedColors,
+  });
+
+  final String meshId;
+  final String defaultColor;
+  final List<String> allowedColors;
+
+  factory CatalogMeshColorOptionsDto.fromJson(
+    String meshId,
+    Map<String, Object?> json,
+  ) {
+    final allowed = json['allowed'];
+    if (allowed is! List<Object?>) {
+      throw CatalogApiException(
+        'meshColorConfig.$meshId.allowed must be an array',
+      );
+    }
+
+    return CatalogMeshColorOptionsDto(
+      meshId: meshId,
+      defaultColor: _expectString(
+        json['default'],
+        'meshColorConfig.$meshId.default',
+      ),
+      allowedColors: [
+        for (final color in allowed)
+          _expectString(color, 'meshColorConfig.$meshId.allowed color'),
+      ],
+    );
+  }
+
+  CatalogMeshColorOptions toDomain() {
+    return CatalogMeshColorOptions(
+      meshId: meshId,
+      defaultColor: defaultColor,
+      allowedColors: allowedColors,
+    );
+  }
+}
+
+List<CatalogMeshColorOptionsDto> _parseMeshColorConfig(Object? value) {
+  if (value == null) {
+    return const [];
+  }
+  final config = _expectMap(value, 'meshColorConfig');
+  return [
+    for (final entry in config.entries)
+      CatalogMeshColorOptionsDto.fromJson(
+        entry.key,
+        _expectMap(entry.value, 'meshColorConfig.${entry.key}'),
+      ),
+  ];
 }
 
 Map<String, Object?> _expectMap(Object? value, String name) {

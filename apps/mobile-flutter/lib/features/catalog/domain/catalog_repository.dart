@@ -8,4 +8,9 @@ abstract interface class CatalogRepository {
     int limit = 20,
     int offset = 0,
   });
+
+  Future<CatalogProductDetail> getProductDetail(
+    String productId, {
+    required ProductModelTier tier,
+  });
 }

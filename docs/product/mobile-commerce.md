@@ -103,6 +103,16 @@ output, and the high tier uses the source GLB. Flutter device-tier detection,
 the Flutter 3D viewer, material color editing, related products, signed object
 URLs, cart persistence, and direct service access remain deferred.
 
+`US-037` connects Flutter to that product-detail boundary. Tapping a Home
+catalog product opens a detail screen, the app derives a low/high model tier
+from local device characteristics, and the repository requests
+`GET /catalog/products/{id}?tier=low|high` through the Go API base URL. The
+screen renders loading, failure/retry, and ready states with seller-provided
+sections, mesh color configuration, selected model tier, gateway model route,
+and optional sprite route metadata. The interactive Flutter 3D viewer,
+material color editing, related products, signed object URLs, cart persistence,
+and direct service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, selected mesh colors,

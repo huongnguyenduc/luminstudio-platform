@@ -215,6 +215,14 @@ Selected work:
   detection, a Flutter 3D viewer, material color editing, related products,
   signed object URLs, cart persistence, auth, retry/outbox behavior, or live
   K3d proof.
+- `US-037 Flutter Product Detail And Device Tier Integration` opens a Flutter
+  product detail screen from Home catalog cards, derives a `low` or `high`
+  device tier, and requests `GET /catalog/products/{id}?tier=low|high` through
+  the existing Go API boundary. The screen renders loading, failure/retry, and
+  ready states with seller-provided sections, mesh color configuration, and
+  model/sprite route metadata without adding an interactive 3D viewer, material
+  color editing, related products, signed object URLs, cart persistence, auth,
+  Flutter Bazel rules, live backend proof, or live device proof.
 
 ## Deferred
 

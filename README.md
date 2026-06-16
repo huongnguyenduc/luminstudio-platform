@@ -64,12 +64,16 @@ results through the same API boundary. The Go API now exposes processed
 360-degree sprite assets through `GET /catalog/products/{id}/sprite`, streaming
 JPEG objects from MinIO only after the authoritative product row is completed.
 The Flutter Home tab now activates those sprite previews after a card remains
-at least 80% visible and idle for three seconds. Category taxonomy, product
-detail UI, signed object URLs, cart persistence, and auth remain deferred. The
-Go API now also exposes product detail and tiered model bytes through
+at least 80% visible and idle for three seconds. The Go API now also exposes
+product detail and tiered model bytes through
 `GET /catalog/products/{id}?tier=low|high` and
 `GET /catalog/products/{id}/model?tier=low|high`, keeping source and optimized
-GLB access behind the gateway after checking the authoritative product row.
+GLB access behind the gateway after checking the authoritative product row. The
+Flutter Home tab now opens a product detail screen from catalog cards, derives
+a low/high model tier inside the app, and renders seller-provided information
+sections, mesh color configuration, and gateway model/sprite route metadata.
+Category taxonomy, an interactive 3D viewer, material editing, signed object
+URLs, cart persistence, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -321,6 +325,12 @@ Customer product detail and tiered model access API verification:
 
 ```bash
 bash scripts/verify-us-036.sh
+```
+
+Flutter product detail and device tier integration verification:
+
+```bash
+bash scripts/verify-us-037.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

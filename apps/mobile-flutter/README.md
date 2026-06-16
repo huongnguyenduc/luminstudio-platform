@@ -15,12 +15,15 @@ paginates both catalog and search result lists through the existing Go API
 API now exposes completed sprite JPEGs at
 `GET /catalog/products/{id}/sprite`; the Flutter Home tab activates those
 sprite previews after a product card remains at least 80% visible and idle for
-three seconds. Category taxonomy, sorting, product detail, cart persistence,
-and executable Bazel Flutter targets remain deferred.
+three seconds.
 The Go API now also exposes product detail and tiered model routes through
 `GET /catalog/products/{id}?tier=low|high` and
-`GET /catalog/products/{id}/model?tier=low|high`, but Flutter device-tier
-detection and the 3D product viewer remain deferred.
+`GET /catalog/products/{id}/model?tier=low|high`. The Home tab now opens a
+product detail screen from catalog cards, derives a low/high model tier, and
+renders seller-provided sections, mesh color configuration, and gateway
+model/sprite route metadata without direct storage access. Category taxonomy,
+sorting, the interactive 3D product viewer, material editing, cart
+persistence, and executable Bazel Flutter targets remain deferred.
 
 Verify the shell from the repository root:
 
@@ -50,4 +53,10 @@ Verify 360-degree catalog preview activation from the repository root:
 
 ```bash
 bash scripts/verify-us-035.sh
+```
+
+Verify product detail and device tier integration from the repository root:
+
+```bash
+bash scripts/verify-us-037.sh
 ```

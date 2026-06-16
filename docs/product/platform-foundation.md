@@ -165,6 +165,13 @@ the authoritative PostgreSQL row. The model route streams completed low-tier
 optimized GLB output or high-tier source GLB bytes from MinIO without exposing
 direct storage access, signed URLs, Flutter viewer behavior, cart persistence,
 or live device proof.
+`US-037` connects the Flutter Home tab to the product-detail boundary. Catalog
+cards now open a detail screen that resolves a low/high model tier locally and
+requests product detail through the Go API repository/use-case boundary. The
+screen displays seller-provided sections, mesh color configuration, and
+gateway model/sprite route metadata while keeping direct storage/search/message
+access, interactive viewer behavior, cart persistence, Flutter Bazel rules,
+and live device proof deferred.
 
 ## Boundary Rules
 
