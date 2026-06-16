@@ -190,8 +190,20 @@ smoke creates a priced categorized product, uploads `resources/pet_tag.glb`,
 waits for worker completion, and proves catalog, search, category, product
 detail, sprite, and low/high model routes through the Go API gateway.
 
-Authentication, authorization, product delete workflows, signed object URLs,
-retry/outbox semantics, and dead-letter handling remain deferred.
+`US-051` adds the first backend cart persistence foundation. The Go API stores
+anonymous cart snapshots in PostgreSQL and exposes `POST /cart`,
+`GET /cart/{id}`, and `PUT /cart/{id}`. Cart create and update read
+authoritative product rows, validate selected mesh colors against each
+product's configured allowed colors, snapshot product name, category, price,
+processing status, and updated time, and recompute totals before persistence.
+This does not publish events or add checkout, payments, authentication,
+authorization, inventory checks, order fulfillment, seller settlement, signed
+object URLs, Flutter integration, retry/outbox semantics, or dead-letter
+handling.
+
+Authentication, authorization, product delete workflows, checkout, payments,
+inventory checks, signed object URLs, retry/outbox semantics, and dead-letter
+handling remain deferred.
 
 ## Processing Pipeline
 

@@ -325,6 +325,189 @@
         }
       }
     },
+    "CartItemInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "productId",
+        "quantity",
+        "selected"
+      ],
+      "properties": {
+        "productId": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "selectedColors": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "common.schema.json#/$defs/HexColor"
+          },
+          "propertyNames": {
+            "$ref": "common.schema.json#/$defs/MeshId"
+          }
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "selected": {
+          "type": "boolean"
+        }
+      }
+    },
+    "CartUpsertRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/CartItemInput"
+          }
+        }
+      }
+    },
+    "CartItemSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "productId",
+        "productName",
+        "price",
+        "quantity",
+        "selected",
+        "productUpdatedAt",
+        "productProcessingStatus"
+      ],
+      "properties": {
+        "productId": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "productName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
+        },
+        "categories": {
+          "type": "array",
+          "default": [],
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/ProductCategory"
+          }
+        },
+        "selectedColors": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "common.schema.json#/$defs/HexColor"
+          },
+          "propertyNames": {
+            "$ref": "common.schema.json#/$defs/MeshId"
+          }
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "selected": {
+          "type": "boolean"
+        },
+        "productUpdatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        },
+        "productProcessingStatus": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "queued",
+            "processing",
+            "completed",
+            "failed"
+          ]
+        }
+      }
+    },
+    "CartTotals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selectedItemCount",
+        "selectedQuantity",
+        "selectedAmountCents",
+        "selectedSavingsCents",
+        "mixedCurrency"
+      ],
+      "properties": {
+        "selectedItemCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selectedQuantity": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "selectedAmountCents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selectedCompareAtAmountCents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selectedSavingsCents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mixedCurrency": {
+          "type": "boolean"
+        }
+      }
+    },
+    "CartRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "items",
+        "totals",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/CartId"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/CartItemSnapshot"
+          }
+        },
+        "totals": {
+          "$ref": "#/$defs/CartTotals"
+        },
+        "createdAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        },
+        "updatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        }
+      }
+    },
     "ProductDetailResponse": {
       "type": "object",
       "additionalProperties": false,

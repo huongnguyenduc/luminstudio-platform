@@ -191,12 +191,25 @@ selection, Add to cart, and Cart subtotal rendering. It does not add checkout,
 payments, authentication, authorization, inventory checks, backend cart APIs,
 signed object URLs, new public contracts, or direct service access.
 
+`US-051` adds the first backend cart API foundation. The Go API defines v1 cart
+contracts, persists anonymous cart snapshots in PostgreSQL, and exposes
+`POST /cart`, `GET /cart/{id}`, and `PUT /cart/{id}`. Cart create/update
+requests send product ids, selected mesh colors, quantity, and selection state;
+the API reads authoritative product rows, validates selected colors against the
+configured mesh color options, snapshots product name, category, price,
+processing status, and updated time, and recomputes totals server-side. Flutter
+integration, checkout, payments, authentication, authorization, inventory
+checks, tax, shipping, order fulfillment, signed object URLs, live backend
+proof, live device proof, and direct service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display
 price snapshot, selected mesh colors, quantity, and selection state. The cart
 recalculates selected subtotal and savings immediately when quantity or
 selection changes. Totals are shown only when selected items share one currency.
+The backend cart foundation stores the same customer-visible item shape behind
+the Go API after validating products and selected colors against PostgreSQL.
 
 Initial storage shape:
 
@@ -212,5 +225,6 @@ Initial storage shape:
 }
 ```
 
-Discount engines, inventory checks, tax, shipping, checkout, payments, and auth
-are not defined by the current product contract.
+Discount engines, inventory checks, tax, shipping, checkout, payments, auth,
+orders, and Flutter backend-cart synchronization are not defined by the current
+product contract.

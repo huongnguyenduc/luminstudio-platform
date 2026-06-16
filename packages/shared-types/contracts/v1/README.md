@@ -1,8 +1,8 @@
 # Shared Contract Version 1
 
 This directory contains the first source-of-truth contracts for product
-administration, customer catalog/search responses, GLB asset intake, and
-asynchronous processing events.
+administration, customer catalog/search responses, backend cart snapshots, GLB
+asset intake, and asynchronous processing events.
 
 The files are JSON Schema sources. Generated language bindings may be added by
 later stories, but generated output must not replace these contract sources.
@@ -13,7 +13,8 @@ later stories, but generated output must not replace these contract sources.
   color configuration.
 - `product.schema.json`: initial product draft, persisted product record,
   product category, customer catalog item, category list, catalog search
-  response, and product detail response shapes.
+  response, product detail response, cart upsert request, and cart record
+  shapes.
 - `events.schema.json`: NATS event envelope and payload shapes for
   `product.updated`, `3d.task.created`, and `3d.task.completed`.
 

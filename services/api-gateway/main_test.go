@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"lumin.studio/services/api-gateway/internal/cart"
 	"lumin.studio/services/api-gateway/internal/product"
 	"lumin.studio/services/api-gateway/internal/search"
 )
@@ -109,6 +110,7 @@ func testRoutes() http.Handler {
 		readyStub{},
 		product.NewHandler(productCreatorStub{}),
 		search.NewHandler(productSearcherRouteStub{}),
+		cart.NewHandler(cartStoreRouteStub{record: routeCartRecord(time.Date(2026, 6, 16, 12, 0, 0, 0, time.UTC))}, productCreatorStub{}),
 	)
 }
 
@@ -191,7 +193,7 @@ func TestRoutesExposeAdminProductSourceUpload(t *testing.T) {
 		WithSourceAssetStore(sourceAssetStoreRouteStub{ref: sourceRef}).
 		WithEventPublisher(eventPublisherRouteStub{})
 
-	routes(readyStub{}, handler, search.NewHandler(productSearcherRouteStub{})).ServeHTTP(recorder, request)
+	routes(readyStub{}, handler, search.NewHandler(productSearcherRouteStub{}), cart.NewHandler(cartStoreRouteStub{}, productCreatorStub{})).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusAccepted {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusAccepted, recorder.Body.String())
@@ -249,7 +251,7 @@ func TestRoutesExposeCatalogProductSprite(t *testing.T) {
 		WithCatalogProductReader(productCreatorStub{}).
 		WithSpriteAssetStore(spriteAssetStoreRouteStub{body: []byte{0xff, 0xd8, 0xff}})
 
-	routes(readyStub{}, product.NewHandler(productCreatorStub{}), searchHandler).ServeHTTP(recorder, request)
+	routes(readyStub{}, product.NewHandler(productCreatorStub{}), searchHandler, cart.NewHandler(cartStoreRouteStub{}, productCreatorStub{})).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
@@ -265,7 +267,7 @@ func TestRoutesExposeCatalogProductDetail(t *testing.T) {
 	searchHandler := search.NewHandler(productSearcherRouteStub{}).
 		WithCatalogProductReader(productCreatorStub{})
 
-	routes(readyStub{}, product.NewHandler(productCreatorStub{}), searchHandler).ServeHTTP(recorder, request)
+	routes(readyStub{}, product.NewHandler(productCreatorStub{}), searchHandler, cart.NewHandler(cartStoreRouteStub{}, productCreatorStub{})).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
@@ -282,13 +284,85 @@ func TestRoutesExposeCatalogProductModel(t *testing.T) {
 		WithCatalogProductReader(productCreatorStub{}).
 		WithModelAssetStore(modelAssetStoreRouteStub{body: []byte("glb")})
 
-	routes(readyStub{}, product.NewHandler(productCreatorStub{}), searchHandler).ServeHTTP(recorder, request)
+	routes(readyStub{}, product.NewHandler(productCreatorStub{}), searchHandler, cart.NewHandler(cartStoreRouteStub{}, productCreatorStub{})).ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
 	}
 	if recorder.Header().Get("Content-Type") != "model/gltf-binary" {
 		t.Fatalf("content-type = %q", recorder.Header().Get("Content-Type"))
+	}
+}
+
+func TestRoutesExposeCartCreate(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	body := `{"items":[{"productId":"prod_12345678","selectedColors":{"mesh_body":"#FFFFFF"},"quantity":1,"selected":true}]}`
+	request := httptest.NewRequest(http.MethodPost, "/cart", strings.NewReader(body))
+
+	testRoutes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusCreated, recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeCartGet(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/cart/cart_12345678", nil)
+
+	testRoutes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+}
+
+func TestRoutesExposeCartUpdate(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	body := `{"items":[{"productId":"prod_12345678","selectedColors":{"mesh_body":"#FFFFFF"},"quantity":2,"selected":true}]}`
+	request := httptest.NewRequest(http.MethodPut, "/cart/cart_12345678", strings.NewReader(body))
+
+	testRoutes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+}
+
+type cartStoreRouteStub struct {
+	record cart.Record
+}
+
+func (stub cartStoreRouteStub) InsertCart(_ context.Context, _ string, _ []cart.ItemSnapshot, _ time.Time) (cart.Record, error) {
+	return stub.record, nil
+}
+
+func (stub cartStoreRouteStub) UpdateCart(_ context.Context, _ string, _ []cart.ItemSnapshot, _ time.Time) (cart.Record, error) {
+	return stub.record, nil
+}
+
+func (stub cartStoreRouteStub) GetCart(_ context.Context, _ string) (cart.Record, error) {
+	return stub.record, nil
+}
+
+func routeCartRecord(now time.Time) cart.Record {
+	items := []cart.ItemSnapshot{{
+		ProductID:               "prod_12345678",
+		ProductName:             "Arc Chair",
+		Price:                   product.ProductPrice{AmountCents: 12900, Currency: "USD"},
+		Categories:              []product.ProductCategory{{Slug: "chairs", Name: "Chairs"}},
+		SelectedColors:          map[string]string{"mesh_body": "#FFFFFF"},
+		Quantity:                1,
+		Selected:                true,
+		ProductUpdatedAt:        now,
+		ProductProcessingStatus: product.ProcessingCompleted,
+	}}
+	return cart.Record{
+		ID:        "cart_12345678",
+		Items:     items,
+		Totals:    cart.CalculateTotals(items),
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 }
 

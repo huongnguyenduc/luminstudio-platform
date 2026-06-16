@@ -8,6 +8,10 @@
       "type": "string",
       "pattern": "^prod_[A-Za-z0-9][A-Za-z0-9_-]{7,63}$"
     },
+    "CartId": {
+      "type": "string",
+      "pattern": "^cart_[A-Za-z0-9][A-Za-z0-9_-]{7,63}$"
+    },
     "ProcessingTaskId": {
       "type": "string",
       "pattern": "^task_[A-Za-z0-9][A-Za-z0-9_-]{7,63}$"

@@ -57,6 +57,13 @@ sprite metadata. `US-049` proves one live processed product through admin
 creation, source upload, worker completion, catalog/search/category queries,
 product detail, sprite streaming, and low/high model streaming behind the API
 gateway.
+`US-051` adds the first backend cart API foundation. The API persists anonymous
+cart snapshots in PostgreSQL and exposes `POST /cart`, `GET /cart/{id}`, and
+`PUT /cart/{id}`. Cart create and update validate requested product ids and
+selected mesh colors against authoritative product rows, snapshot product name,
+category, price, processing status, and updated time, and recompute totals
+server-side without adding Flutter integration, checkout, payments, auth,
+inventory, orders, or signed object URLs.
 
 Run native tests:
 
@@ -160,4 +167,10 @@ Verify the live processed product catalog smoke from the repository root:
 
 ```bash
 bash scripts/verify-us-049.sh
+```
+
+Verify the backend cart API foundation from the repository root:
+
+```bash
+bash scripts/verify-us-051.sh
 ```

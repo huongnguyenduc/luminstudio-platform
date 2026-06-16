@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"lumin.studio/services/api-gateway/internal/cart"
 	"lumin.studio/services/api-gateway/internal/health"
 	"lumin.studio/services/api-gateway/internal/platform"
 	"lumin.studio/services/api-gateway/internal/processing"
@@ -43,6 +44,7 @@ func run(getenv func(string) string) error {
 	defer checker.Close()
 
 	productStore := product.NewStore(checker.Postgres())
+	cartStore := cart.NewStore(checker.Postgres())
 	eventPublisher := product.NewNATSPublisher(config.NATSURL, config.DependencyTimeout)
 	searchSyncer := search.NewSyncer(
 		productStore,
@@ -73,6 +75,7 @@ func run(getenv func(string) string) error {
 				WithCatalogProductReader(productStore).
 				WithSpriteAssetStore(search.NewMinIOSpriteAssetStore(checker.MinIO())).
 				WithModelAssetStore(search.NewMinIOModelAssetStore(checker.MinIO())),
+			cart.NewHandler(cartStore, productStore),
 		),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -84,7 +87,7 @@ func run(getenv func(string) string) error {
 	return nil
 }
 
-func routes(readiness health.Readiness, productHandler product.Handler, searchHandler search.Handler) http.Handler {
+func routes(readiness health.Readiness, productHandler product.Handler, searchHandler search.Handler, cartHandler cart.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", health.Handler)
 	mux.Handle("GET /readyz", health.ReadinessHandler(readiness))
@@ -100,6 +103,9 @@ func routes(readiness health.Readiness, productHandler product.Handler, searchHa
 	mux.HandleFunc("GET /catalog/products/{id}/model", searchHandler.GetCatalogProductModel)
 	mux.HandleFunc("GET /catalog/products/{id}/sprite", searchHandler.GetCatalogProductSprite)
 	mux.HandleFunc("GET /catalog/search", searchHandler.SearchCatalogProducts)
+	mux.HandleFunc("POST /cart", cartHandler.CreateCart)
+	mux.HandleFunc("GET /cart/{id}", cartHandler.GetCart)
+	mux.HandleFunc("PUT /cart/{id}", cartHandler.UpdateCart)
 	return mux
 }
 

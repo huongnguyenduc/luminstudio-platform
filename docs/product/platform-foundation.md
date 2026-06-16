@@ -250,6 +250,11 @@ catalog document reflects completed processing state and sprite metadata.
 `US-050` adds local iOS simulator proof for the existing Flutter customer
 commerce flow against a live Go API gateway selected by
 `LUMIN_US050_API_BASE_URL`.
+`US-051` adds the first backend cart API foundation. The Go API persists
+anonymous cart snapshots in PostgreSQL behind `POST /cart`, `GET /cart/{id}`,
+and `PUT /cart/{id}`, validating requested products and selected colors against
+authoritative product rows while leaving Flutter integration, checkout,
+payment, auth, inventory, order fulfillment, and live platform proof deferred.
 
 ## Boundary Rules
 

@@ -316,3 +316,22 @@ Selected work:
 - Authentication and authorization.
 - Payments, checkout, and order fulfillment.
 - Production hosting topology beyond the existing local K3d environment.
+
+## Phase 5: Backend Cart And Checkout Foundation
+
+Goal: move from local cart proof toward API-owned cart state before checkout,
+payments, inventory, and account identity are selected.
+
+- Epic `E14`: Backend cart contract and persistence.
+
+Selected work:
+
+- `US-051 Customer Backend Cart API Contract And Persistence Foundation` defines
+  v1 cart contracts, stores anonymous server-side cart snapshots in PostgreSQL,
+  and exposes `POST /cart`, `GET /cart/{id}`, and `PUT /cart/{id}` through the
+  Go API gateway. The API validates product existence and selected mesh colors
+  against authoritative product rows, snapshots product name, category, price,
+  processing status, and updated time, and recomputes cart totals without adding
+  Flutter integration, checkout, payments, authentication, authorization,
+  inventory checks, discount engines, tax, shipping, order fulfillment, signed
+  object URLs, live backend proof, or live device proof.

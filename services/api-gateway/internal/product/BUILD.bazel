@@ -12,6 +12,7 @@ go_library(
     importpath = "lumin.studio/services/api-gateway/internal/product",
     visibility = [
         "//services/api-gateway:__pkg__",
+        "//services/api-gateway/internal/cart:__pkg__",
 		"//services/api-gateway/internal/processing:__pkg__",
         "//services/api-gateway/internal/search:__pkg__",
     ],

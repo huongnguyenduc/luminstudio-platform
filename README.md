@@ -99,7 +99,11 @@ refresh behavior. The Web Admin now also uploads selected product source
 `.glb` files through `POST /admin/products/{id}/source-glb` with client-side
 file validation, uploading, success, and failure states. Signed object URLs,
 checkout, payment, inventory, discount engines, auth, and admin delete UI remain
-deferred.
+deferred. `US-051` now exposes the first backend cart foundation through
+`POST /cart`, `GET /cart/{id}`, and `PUT /cart/{id}`; it persists anonymous cart
+snapshots in PostgreSQL after validating product existence and selected mesh
+colors against authoritative product rows, while leaving Flutter synchronization,
+checkout, payment, inventory, order fulfillment, and auth deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -435,6 +439,12 @@ Live Flutter customer commerce smoke verification:
 
 ```bash
 LUMIN_US050_API_BASE_URL=http://127.0.0.1:8080 bash scripts/verify-us-050.sh
+```
+
+Backend cart API foundation verification:
+
+```bash
+bash scripts/verify-us-051.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and
