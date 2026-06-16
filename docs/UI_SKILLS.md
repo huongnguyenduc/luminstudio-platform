@@ -1,6 +1,6 @@
 # UI Skill Routing
 
-The repository includes optional UI design skills under `.agents/skills/`.
+The repository includes optional UI design skills under `.codex/skills/`.
 Use them for user-visible web and mobile work, but keep product docs, stories,
 architecture rules, and executable validation as the authoritative contract.
 
@@ -42,9 +42,9 @@ architecture rules, and executable validation as the authoritative contract.
 | Google Stitch design-system file | `design-system-generation` | `stitch-design-taste` | Use only when Stitch or a `DESIGN.md` deliverable is requested. |
 | Exhaustive generated deliverables | `output-completeness` | `full-output-enforcement` | Output discipline only; it does not choose a visual direction. |
 
-The two mobile implementation providers live under `.agent/skills/`; the new
-visual-direction providers live under `.agents/skills/`. Always follow the
-path reported by Harness rather than assuming the directories are equivalent.
+The mobile implementation and visual-direction providers live under
+`.codex/skills/`. Always follow the path reported by Harness rather than
+assuming legacy skill directories are still equipped.
 
 ## Selection Rules
 

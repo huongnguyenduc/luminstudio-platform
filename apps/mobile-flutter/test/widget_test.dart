@@ -306,7 +306,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.listOffsets, containsAll(<int>[0, 2]));
-    expect(find.text('Product 4'), findsOneWidget);
+    expect(find.text('Product 3'), findsOneWidget);
   });
 
   testWidgets('home tab activates a visible idle 360 sprite preview', (
@@ -386,6 +386,7 @@ void main() {
       find.byKey(const ValueKey<String>('fake-model-viewer-prod_1')),
       findsOneWidget,
     );
+    expect(find.text('Model tier: high'), findsOneWidget);
     await tester.drag(
       find.byKey(const PageStorageKey<String>('product-detail-scroll')),
       const Offset(0, -360),
@@ -393,12 +394,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Materials'), findsOneWidget);
     expect(find.text('Glazed ceramic and brass.'), findsOneWidget);
-    expect(find.text('Model tier: high'), findsOneWidget);
-    expect(
-      find.textContaining('/catalog/products/prod_1/model?tier=high'),
-      findsOneWidget,
-    );
-    expect(find.text('mesh_body'), findsOneWidget);
+    expect(find.textContaining('/catalog/products/prod_1/model'), findsNothing);
+    expect(find.text('Body'), findsOneWidget);
   });
 
   testWidgets('product detail renders the injected interactive model viewer', (
@@ -528,7 +525,7 @@ void main() {
       expect(find.text('Subtotal USD 129.00'), findsOneWidget);
       expect(find.text('Savings USD 30.00'), findsOneWidget);
       expect(find.text('Product 1'), findsOneWidget);
-      expect(find.text('mesh_body: #0F172A'), findsOneWidget);
+      expect(find.text('Body: #0F172A'), findsOneWidget);
     },
   );
 
@@ -564,7 +561,7 @@ void main() {
     expect(find.text('1 in cart, 1 selected'), findsOneWidget);
     expect(find.text('Subtotal USD 129.00'), findsOneWidget);
     expect(find.text('Savings USD 30.00'), findsOneWidget);
-    expect(find.text('mesh_body: #0F172A'), findsOneWidget);
+    expect(find.text('Body: #0F172A'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Increase prod_1 quantity'));
     await tester.pumpAndSettle();

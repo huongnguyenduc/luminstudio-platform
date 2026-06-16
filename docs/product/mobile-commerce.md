@@ -220,6 +220,17 @@ payments, authentication, authorization, inventory checks, tax, shipping, order
 fulfillment, signed object URLs, new cart contracts, and direct service access
 remain deferred.
 
+`US-054` refines the existing Flutter commerce UI after live cart sync proof.
+Catalog cards now expose category, price, preview readiness, and a clearer
+detail affordance. Product Detail keeps model tier and preview readiness visible
+without exposing internal model or sprite routes, moves customization closer to
+the purchase decision, and keeps Add to cart available as a persistent bottom
+action. Cart now presents a clearer summary, customer-friendly color swatches,
+friendly mesh labels, and compact quantity controls. Checkout, payments,
+authentication, authorization, inventory checks, tax, shipping, order
+fulfillment, signed object URLs, new backend contracts, and direct service
+access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display
@@ -230,7 +241,9 @@ The backend cart foundation stores the same customer-visible item shape behind
 the Go API after validating products and selected colors against PostgreSQL.
 Flutter now syncs its default cart repository with that API and retains the
 local snapshot as a fallback cache. Live simulator proof now covers backend cart
-create, update, saved id, and backend hydration for the Flutter Cart tab.
+create, update, saved id, and backend hydration for the Flutter Cart tab. The
+Cart tab now renders friendlier summary, swatch, mesh-label, and quantity
+controls while preserving the existing cart API and local fallback behavior.
 
 Initial storage shape:
 

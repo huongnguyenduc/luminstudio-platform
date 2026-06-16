@@ -147,26 +147,51 @@ class _CartSummary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(Icons.shopping_bag, color: theme.colorScheme.primary),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  '${state.totalQuantity} in cart, ${state.selectedQuantity} selected',
-                  style: theme.textTheme.titleMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Cart summary', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${state.totalQuantity} in cart, ${state.selectedQuantity} selected',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
           if (totals != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Subtotal ${_formatMoney(totals.subtotalCents, totals.currency)}',
-              key: const ValueKey<String>('cart-subtotal'),
-              style: theme.textTheme.titleSmall,
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Selected total',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Text(
+                  'Subtotal ${_formatMoney(totals.subtotalCents, totals.currency)}',
+                  key: const ValueKey<String>('cart-subtotal'),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
             if (totals.savingsCents > 0) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 'Savings ${_formatMoney(totals.savingsCents, totals.currency)}',
                 key: const ValueKey<String>('cart-savings'),
@@ -214,15 +239,17 @@ class _CartItemTile extends StatelessWidget {
 
     return Container(
       key: ValueKey<String>('cart-item-${item.productId}'),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Checkbox(
                 value: item.isSelected,
@@ -237,63 +264,90 @@ class _CartItemTile extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  item.productName,
-                  style: theme.textTheme.titleMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.productName, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_formatMoney(item.amountCents, item.currency)} each',
+                      key: ValueKey<String>('cart-price-${item.productId}'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            '${_formatMoney(item.amountCents, item.currency)} each',
-            key: ValueKey<String>('cart-price-${item.productId}'),
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               for (final color in item.selectedColors.entries)
-                Chip(
+                _CartColorChip(
                   key: ValueKey<String>(
                     'cart-color-${item.productId}-${color.key}-${color.value}',
                   ),
-                  label: Text('${color.key}: ${color.value}'),
+                  name: color.key,
+                  value: color.value,
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
-              IconButton(
-                tooltip: 'Decrease ${item.productId} quantity',
-                onPressed: item.quantity > 1 && !isMutating
-                    ? () {
-                        context.read<CartCubit>().decrement(item.productId);
-                      }
-                    : null,
-                icon: const Icon(Icons.remove_circle_outline),
-              ),
-              SizedBox(
-                width: 56,
-                child: Center(
-                  child: Text(
-                    '${item.quantity}',
-                    key: ValueKey<String>('cart-qty-${item.productId}'),
-                    style: theme.textTheme.titleMedium,
-                  ),
+              Text(
+                'Quantity',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              IconButton(
-                tooltip: 'Increase ${item.productId} quantity',
-                onPressed: isMutating
-                    ? null
-                    : () {
-                        context.read<CartCubit>().increment(item.productId);
-                      },
-                icon: const Icon(Icons.add_circle_outline),
+              const Spacer(),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'Decrease ${item.productId} quantity',
+                      onPressed: item.quantity > 1 && !isMutating
+                          ? () {
+                              context.read<CartCubit>().decrement(
+                                item.productId,
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.remove),
+                    ),
+                    SizedBox(
+                      width: 44,
+                      child: Center(
+                        child: Text(
+                          '${item.quantity}',
+                          key: ValueKey<String>('cart-qty-${item.productId}'),
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Increase ${item.productId} quantity',
+                      onPressed: isMutating
+                          ? null
+                          : () {
+                              context.read<CartCubit>().increment(
+                                item.productId,
+                              );
+                            },
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -301,6 +355,68 @@ class _CartItemTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CartColorChip extends StatelessWidget {
+  const _CartColorChip({
+    required super.key,
+    required this.name,
+    required this.value,
+  });
+
+  final String name;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = _parseHexColor(value);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color ?? theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('${_friendlyMeshName(name)}: $value'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color? _parseHexColor(String raw) {
+    final normalized = raw.startsWith('#') ? raw.substring(1) : raw;
+    if (normalized.length != 6) {
+      return null;
+    }
+    final value = int.tryParse(normalized, radix: 16);
+    return value == null ? null : Color(0xFF000000 | value);
+  }
+}
+
+String _friendlyMeshName(String meshId) {
+  final normalized = meshId
+      .replaceFirst(RegExp('^mesh_'), '')
+      .replaceAll('_', ' ');
+  if (normalized.isEmpty) {
+    return meshId;
+  }
+  return normalized[0].toUpperCase() + normalized.substring(1);
 }
 
 String _formatMoney(int cents, String currency) {

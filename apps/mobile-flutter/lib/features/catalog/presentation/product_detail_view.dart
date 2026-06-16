@@ -35,6 +35,12 @@ class ProductDetailPage extends StatelessWidget {
                 selectedMeshColors: state.selectedMeshColors,
               ),
             },
+            bottomNavigationBar: state.status == ProductDetailStatus.ready
+                ? _ProductDetailBottomBar(
+                    detail: state.detail!,
+                    selectedMeshColors: state.selectedMeshColors,
+                  )
+                : null,
           );
         },
       ),
@@ -110,8 +116,10 @@ class _ProductDetailReady extends StatelessWidget {
       label: 'Product detail for ${detail.name}',
       child: ListView(
         key: const PageStorageKey<String>('product-detail-scroll'),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
+          _ProductDetailHighlights(detail: detail),
+          const SizedBox(height: 14),
           _InteractiveModelPanel(detail: detail),
           const SizedBox(height: 18),
           Text(detail.name, style: theme.textTheme.headlineSmall),
@@ -125,20 +133,16 @@ class _ProductDetailReady extends StatelessWidget {
               color: theme.colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 16),
-          _ModelAccessPanel(detail: detail),
           const SizedBox(height: 20),
-          if (detail.informationSections.isNotEmpty) ...[
-            Text('Information', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            for (final section in detail.informationSections) ...[
-              _InformationSection(section: section),
-              const SizedBox(height: 10),
-            ],
-          ],
           if (detail.meshColorConfig.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text('Configurable colors', style: theme.textTheme.titleMedium),
+            Text('Customize color', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Choose the finish before adding this item to your cart.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 8),
             for (final options in detail.meshColorConfig) ...[
               _MeshColorOptions(
@@ -149,24 +153,15 @@ class _ProductDetailReady extends StatelessWidget {
               const SizedBox(height: 10),
             ],
           ],
-          const SizedBox(height: 18),
-          BlocBuilder<CartCubit, CartState>(
-            builder: (context, cartState) {
-              return FilledButton.icon(
-                key: const ValueKey<String>('add-selected-product-to-cart'),
-                onPressed: cartState.isMutating
-                    ? null
-                    : () {
-                        context.read<CartCubit>().addProduct(
-                          detail,
-                          selectedMeshColors,
-                        );
-                      },
-                icon: const Icon(Icons.add_shopping_cart),
-                label: const Text('Add to cart'),
-              );
-            },
-          ),
+          if (detail.informationSections.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text('Product information', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            for (final section in detail.informationSections) ...[
+              _InformationSection(section: section),
+              const SizedBox(height: 10),
+            ],
+          ],
         ],
       ),
     );
@@ -177,6 +172,16 @@ String _formatMoney(int cents, String currency) {
   final whole = cents ~/ 100;
   final fraction = (cents % 100).toString().padLeft(2, '0');
   return '$currency $whole.$fraction';
+}
+
+String _friendlyMeshName(String meshId) {
+  final normalized = meshId
+      .replaceFirst(RegExp('^mesh_'), '')
+      .replaceAll('_', ' ');
+  if (normalized.isEmpty) {
+    return meshId;
+  }
+  return normalized[0].toUpperCase() + normalized.substring(1);
 }
 
 class _InteractiveModelPanel extends StatelessWidget {
@@ -197,46 +202,136 @@ class _InteractiveModelPanel extends StatelessWidget {
   }
 }
 
-class _ModelAccessPanel extends StatelessWidget {
-  const _ModelAccessPanel({required this.detail});
+class _ProductDetailHighlights extends StatelessWidget {
+  const _ProductDetailHighlights({required this.detail});
 
   final CatalogProductDetail detail;
 
   @override
   Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _HighlightChip(
+          icon: Icons.view_in_ar,
+          label: 'Model tier: ${detail.modelTier.wireName}',
+        ),
+        if (detail.spriteUri != null)
+          const _HighlightChip(
+            icon: Icons.threesixty,
+            label: '360 preview ready',
+          ),
+        if (detail.categories.isNotEmpty)
+          _HighlightChip(
+            icon: Icons.category_outlined,
+            label: detail.categories.first.name,
+          ),
+      ],
+    );
+  }
+}
+
+class _HighlightChip extends StatelessWidget {
+  const _HighlightChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: theme.colorScheme.primary),
+            const SizedBox(width: 6),
+            Text(label, style: theme.textTheme.labelLarge),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductDetailBottomBar extends StatelessWidget {
+  const _ProductDetailBottomBar({
+    required this.detail,
+    required this.selectedMeshColors,
+  });
+
+  final CatalogProductDetail detail;
+  final Map<String, String> selectedMeshColors;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
             children: [
-              Icon(Icons.view_in_ar, color: theme.colorScheme.primary),
-              const SizedBox(width: 10),
-              Text(
-                'Model tier: ${detail.modelTier.wireName}',
-                style: theme.textTheme.titleMedium,
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatMoney(
+                        detail.price.amountCents,
+                        detail.price.currency,
+                      ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    Text(
+                      '${selectedMeshColors.length} custom choices',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              BlocBuilder<CartCubit, CartState>(
+                builder: (context, cartState) {
+                  return FilledButton.icon(
+                    key: const ValueKey<String>('add-selected-product-to-cart'),
+                    onPressed: cartState.isMutating
+                        ? null
+                        : () {
+                            context.read<CartCubit>().addProduct(
+                              detail,
+                              selectedMeshColors,
+                            );
+                          },
+                    icon: const Icon(Icons.add_shopping_cart),
+                    label: const Text('Add to cart'),
+                  );
+                },
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          if (detail.modelUri != null)
-            Text(
-              'Model route: ${detail.modelUri!.path}?${detail.modelUri!.query}',
-            )
-          else
-            const Text('Model route unavailable'),
-          if (detail.spriteUri != null) ...[
-            const SizedBox(height: 6),
-            Text('Sprite route: ${detail.spriteUri!.path}'),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -290,7 +385,10 @@ class _MeshColorOptions extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(options.meshId, style: theme.textTheme.titleSmall),
+          Text(
+            _friendlyMeshName(options.meshId),
+            style: theme.textTheme.titleSmall,
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,

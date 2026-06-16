@@ -153,7 +153,7 @@ class _CatalogScaffold extends StatelessWidget {
     return ListView(
       key: scrollKey,
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
       children: [
         _CatalogSearchField(controller: searchController),
         const SizedBox(height: 16),
@@ -301,7 +301,7 @@ class _CatalogList extends StatelessWidget {
     return ListView.separated(
       key: scrollKey,
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
       itemBuilder: (context, index) {
         if (index == 0) {
           return _CatalogSearchField(controller: searchController);
@@ -567,6 +567,9 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
     final product = widget.product;
     final statusLabel = product.processingStatus.replaceAll('_', ' ');
     final previewUri = product.spritePreviewUri;
+    final categoryLabel = product.categories.isEmpty
+        ? null
+        : product.categories.first.name;
 
     return VisibilityDetector(
       key: ValueKey<String>('catalog-product-visibility-${product.id}'),
@@ -575,27 +578,27 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
         button: true,
         label: 'Catalog product ${product.name}',
         child: Material(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
           child: InkWell(
             onTap: _openProductDetail,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             child: Container(
-              constraints: const BoxConstraints(minHeight: 112),
+              constraints: const BoxConstraints(minHeight: 116),
               padding: const EdgeInsets.all(16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 64,
-                    height: 64,
+                    width: 72,
+                    height: 78,
                     alignment: Alignment.center,
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(
                       color: product.hasPreview
                           ? theme.colorScheme.primaryContainer
                           : theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: theme.colorScheme.outlineVariant,
                       ),
@@ -621,6 +624,17 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (categoryLabel != null) ...[
+                          Text(
+                            categoryLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
                         Text(
                           product.name,
                           maxLines: 2,
@@ -635,21 +649,46 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
                           style: theme.textTheme.bodyMedium,
                         ),
                         const SizedBox(height: 10),
-                        Text(
-                          product.hasPreview
-                              ? '360 preview ready'
-                              : statusLabel,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              _formatMoney(
+                                product.price.amountCents,
+                                product.price.currency,
+                              ),
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            _ProductStatusPill(
+                              label: product.hasPreview
+                                  ? '360 preview ready'
+                                  : statusLabel,
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Icon(
-                    Icons.chevron_right,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.chevron_right,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 28),
+                      Text(
+                        'View',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -659,6 +698,39 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
       ),
     );
   }
+}
+
+class _ProductStatusPill extends StatelessWidget {
+  const _ProductStatusPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _formatMoney(int cents, String currency) {
+  final whole = cents ~/ 100;
+  final fraction = (cents % 100).toString().padLeft(2, '0');
+  return '$currency $whole.$fraction';
 }
 
 class _SpriteSheetPreview extends StatefulWidget {

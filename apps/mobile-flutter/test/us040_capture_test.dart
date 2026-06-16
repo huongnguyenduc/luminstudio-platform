@@ -34,7 +34,7 @@ void main() {
 
     expect(find.text('Product 1'), findsOneWidget);
     expect(find.text('Subtotal USD 258.00'), findsOneWidget);
-    expect(find.text('mesh_body: #0F172A'), findsOneWidget);
+    expect(find.text('Body: #0F172A'), findsOneWidget);
 
     await expectLater(
       find.byType(MaterialApp),

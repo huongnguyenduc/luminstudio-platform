@@ -14,7 +14,7 @@ register_skill() {
   local scan="$5"
 
   if grep -q "\"name\": \"${name}\"" <<<"$registry"; then
-    return
+    scripts/bin/harness-cli tool remove --name "$name"
   fi
 
   scripts/bin/harness-cli tool register \
@@ -28,74 +28,74 @@ register_skill() {
 }
 
 register_skill brandkit \
-  skill:.agents/skills/brandkit \
+  skill:.codex/skills/brandkit \
   "Premium brand identity and brand-kit image direction" \
   brand-design \
-  .agents/skills/brandkit/SKILL.md
+  .codex/skills/brandkit/SKILL.md
 register_skill design-taste-frontend \
-  skill:.agents/skills/design-taste-frontend \
+  skill:.codex/skills/design-taste-frontend \
   "Anti-generic frontend direction for landing editorial and redesign work" \
   web-ui-design \
-  .agents/skills/design-taste-frontend/SKILL.md
+  .codex/skills/design-taste-frontend/SKILL.md
 register_skill full-output-enforcement \
-  skill:.agents/skills/full-output-enforcement \
+  skill:.codex/skills/full-output-enforcement \
   "Complete unabridged output discipline for multi-file UI deliverables" \
   output-completeness \
-  .agents/skills/full-output-enforcement/SKILL.md
+  .codex/skills/full-output-enforcement/SKILL.md
 register_skill gpt-taste \
-  skill:.agents/skills/gpt-taste \
+  skill:.codex/skills/gpt-taste \
   "Experimental motion-rich Awwwards-style frontend direction" \
   web-ui-design \
-  .agents/skills/gpt-taste/SKILL.md
+  .codex/skills/gpt-taste/SKILL.md
 register_skill high-end-visual-design \
-  skill:.agents/skills/high-end-visual-design \
+  skill:.codex/skills/high-end-visual-design \
   "Premium agency-style web visual and motion direction" \
   web-ui-design \
-  .agents/skills/high-end-visual-design/SKILL.md
+  .codex/skills/high-end-visual-design/SKILL.md
 register_skill image-to-code \
-  skill:.agents/skills/image-to-code \
+  skill:.codex/skills/image-to-code \
   "Image-first web design reference generation and implementation guidance" \
   web-image-to-code \
-  .agents/skills/image-to-code/SKILL.md
+  .codex/skills/image-to-code/SKILL.md
 register_skill imagegen-frontend-mobile \
-  skill:.agents/skills/imagegen-frontend-mobile \
+  skill:.codex/skills/imagegen-frontend-mobile \
   "Premium mobile screen and flow concept image direction" \
   mobile-ui-design \
-  .agents/skills/imagegen-frontend-mobile/SKILL.md
+  .codex/skills/imagegen-frontend-mobile/SKILL.md
 register_skill imagegen-frontend-web \
-  skill:.agents/skills/imagegen-frontend-web \
+  skill:.codex/skills/imagegen-frontend-web \
   "Section-specific web concept image direction" \
   web-ui-concept \
-  .agents/skills/imagegen-frontend-web/SKILL.md
+  .codex/skills/imagegen-frontend-web/SKILL.md
 register_skill industrial-brutalist-ui \
-  skill:.agents/skills/industrial-brutalist-ui \
+  skill:.codex/skills/industrial-brutalist-ui \
   "Industrial brutalist and telemetry-heavy web interface direction" \
   web-ui-design \
-  .agents/skills/industrial-brutalist-ui/SKILL.md
+  .codex/skills/industrial-brutalist-ui/SKILL.md
 register_skill minimalist-ui \
-  skill:.agents/skills/minimalist-ui \
+  skill:.codex/skills/minimalist-ui \
   "Minimal editorial and utilitarian web interface direction" \
   web-ui-design \
-  .agents/skills/minimalist-ui/SKILL.md
+  .codex/skills/minimalist-ui/SKILL.md
 register_skill redesign-existing-projects \
-  skill:.agents/skills/redesign-existing-projects \
+  skill:.codex/skills/redesign-existing-projects \
   "Audit-first visual redesign guidance that preserves existing behavior" \
   ui-redesign \
-  .agents/skills/redesign-existing-projects/SKILL.md
+  .codex/skills/redesign-existing-projects/SKILL.md
 register_skill stitch-design-taste \
-  skill:.agents/skills/stitch-design-taste \
+  skill:.codex/skills/stitch-design-taste \
   "Generate premium semantic DESIGN.md guidance for Google Stitch" \
   design-system-generation \
-  .agents/skills/stitch-design-taste/SKILL.md
+  .codex/skills/stitch-design-taste/SKILL.md
 register_skill flutter-expert \
-  skill:.agent/skills/flutter-expert \
+  skill:.codex/skills/flutter-expert \
   "Flutter UI architecture implementation testing and performance guidance" \
   mobile-ui-implementation \
-  .agent/skills/flutter-expert/SKILL.md
+  .codex/skills/flutter-expert/SKILL.md
 register_skill mobile-developer \
-  skill:.agent/skills/mobile-developer \
+  skill:.codex/skills/mobile-developer \
   "Cross-platform mobile and native integration implementation guidance" \
   mobile-ui-implementation \
-  .agent/skills/mobile-developer/SKILL.md
+  .codex/skills/mobile-developer/SKILL.md
 
 scripts/bin/harness-cli tool check

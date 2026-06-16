@@ -351,3 +351,11 @@ Selected work:
   from the backend snapshot without adding checkout, payments, authentication,
   authorization, inventory checks, tax, shipping, order fulfillment, signed
   object URLs, direct platform access, or new cart contracts.
+- `US-054 Flutter Customer UI UX Polish` refines the existing customer Flutter
+  commerce surfaces after live cart sync proof. Catalog cards show category,
+  price, preview readiness, and a clearer detail affordance; Product Detail
+  hides internal asset routes and keeps Add to cart persistent; Cart renders
+  friendlier summaries, swatches, mesh labels, and quantity controls without
+  adding checkout, payments, authentication, authorization, inventory checks,
+  tax, shipping, order fulfillment, signed object URLs, new backend contracts,
+  or direct platform access.
