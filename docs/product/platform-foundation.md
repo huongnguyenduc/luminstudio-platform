@@ -221,6 +221,12 @@ calls `GET /admin/products` through the Go API boundary and renders product
 list loading, empty, failure/retry, and ready states without adding product
 create, edit, delete, source GLB upload, auth, direct platform access, or live
 backend proof.
+`US-046` adds the first product create workflow to the Web Admin shell. The
+React app posts v1 product drafts to `POST /admin/products`, validates the
+admin form before submit, renders inline success and failure states, and
+refreshes the list through `GET /admin/products` without adding edit, delete,
+source GLB upload, auth, direct platform access, backend contract changes, or
+live backend proof.
 
 ## Boundary Rules
 

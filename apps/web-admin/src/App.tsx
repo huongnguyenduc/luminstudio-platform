@@ -13,6 +13,30 @@ export type ProductCategory = {
   name: string;
 };
 
+export type InformationSection = {
+  title: string;
+  body: string;
+  collapsedByDefault?: boolean;
+};
+
+export type MeshColorConfig = Record<
+  string,
+  {
+    default: string;
+    allowed: string[];
+  }
+>;
+
+export type ProductDraft = {
+  name: string;
+  slug: string;
+  description: string;
+  price: ProductPrice;
+  categories?: ProductCategory[];
+  informationSections: InformationSection[];
+  meshColorConfig?: MeshColorConfig;
+};
+
 export type ProductRecord = {
   id: string;
   name: string;
@@ -29,12 +53,45 @@ export type ProductListState =
   | { status: "error"; message: string }
   | { status: "ready"; products: ProductRecord[] };
 
+export type ProductCreateState =
+  | { status: "idle" }
+  | { status: "submitting" }
+  | { status: "success"; productName: string }
+  | { status: "error"; message: string };
+
+export type ProductFormValues = {
+  name: string;
+  slug: string;
+  description: string;
+  amountCents: string;
+  currency: string;
+  compareAtAmountCents: string;
+  categoriesJson: string;
+  informationSectionsJson: string;
+  meshColorConfigJson: string;
+};
+
 const statusLabels: Record<string, string> = {
   not_started: "Not started",
   queued: "Queued",
   processing: "Processing",
   completed: "Completed",
   failed: "Failed",
+};
+
+const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const currencyPattern = /^[A-Z]{3}$/;
+
+const defaultFormValues: ProductFormValues = {
+  name: "",
+  slug: "",
+  description: "",
+  amountCents: "",
+  currency: "USD",
+  compareAtAmountCents: "",
+  categoriesJson: "[]",
+  informationSectionsJson: "[]",
+  meshColorConfigJson: "{}",
 };
 
 export function adminProductsUrl(apiBaseUrl = import.meta.env.VITE_API_BASE_URL) {
@@ -63,6 +120,133 @@ export async function fetchAdminProducts(
   return data as ProductRecord[];
 }
 
+export async function createAdminProduct(
+  draft: ProductDraft,
+  apiBaseUrl = import.meta.env.VITE_API_BASE_URL,
+): Promise<ProductRecord> {
+  const response = await fetch(adminProductsUrl(apiBaseUrl), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(draft),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Product create request failed with HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as ProductRecord;
+}
+
+export function buildProductDraft(values: ProductFormValues): ProductDraft {
+  const name = values.name.trim();
+  const slug = values.slug.trim();
+  const description = values.description.trim();
+  const currency = values.currency.trim();
+
+  if (!name) {
+    throw new Error("Name is required.");
+  }
+  if (!description) {
+    throw new Error("Description is required.");
+  }
+  if (!slugPattern.test(slug)) {
+    throw new Error("Slug must use lowercase letters, numbers, and hyphens.");
+  }
+  if (!currencyPattern.test(currency)) {
+    throw new Error("Currency must be a three-letter uppercase code.");
+  }
+
+  const amountCents = parseIntegerCents(values.amountCents, "amountCents");
+  const compareAtAmountCents =
+    values.compareAtAmountCents.trim() === ""
+      ? undefined
+      : parseIntegerCents(values.compareAtAmountCents, "compareAtAmountCents");
+
+  if (
+    compareAtAmountCents !== undefined &&
+    compareAtAmountCents <= amountCents
+  ) {
+    throw new Error("Compare-at price must be greater than the display price.");
+  }
+
+  const categories = parseJsonField<ProductCategory[]>(
+    values.categoriesJson,
+    "categories",
+    "array",
+  );
+  const informationSections = parseJsonField<InformationSection[]>(
+    values.informationSectionsJson,
+    "informationSections",
+    "array",
+  );
+  const meshColorConfig = parseJsonField<MeshColorConfig>(
+    values.meshColorConfigJson,
+    "meshColorConfig",
+    "object",
+  );
+
+  return {
+    name,
+    slug,
+    description,
+    price: {
+      amountCents,
+      currency,
+      ...(compareAtAmountCents === undefined ? {} : { compareAtAmountCents }),
+    },
+    categories,
+    informationSections,
+    ...(Object.keys(meshColorConfig).length === 0 ? {} : { meshColorConfig }),
+  };
+}
+
+function parseIntegerCents(value: string, field: string) {
+  const trimmed = value.trim();
+  if (!/^[0-9]+$/.test(trimmed)) {
+    throw new Error(`${field} must be a positive integer cent amount.`);
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${field} must be a positive integer cent amount.`);
+  }
+
+  return parsed;
+}
+
+function parseJsonField<T>(
+  value: string,
+  field: string,
+  expected: "array" | "object",
+): T {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return (expected === "array" ? [] : {}) as T;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed) as unknown;
+  } catch {
+    throw new Error(`${field} must be valid JSON.`);
+  }
+
+  if (expected === "array" && !Array.isArray(parsed)) {
+    throw new Error(`${field} must be a JSON array.`);
+  }
+  if (
+    expected === "object" &&
+    (parsed === null || Array.isArray(parsed) || typeof parsed !== "object")
+  ) {
+    throw new Error(`${field} must be a JSON object.`);
+  }
+
+  return parsed as T;
+}
+
 export function formatPrice(price: ProductPrice) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -81,9 +265,40 @@ export function formatDateTime(value: string) {
 }
 
 export function App() {
-  const [state, setState] = useProducts();
+  const [state, reloadProducts] = useProducts();
+  const [createState, setCreateState] = React.useState<ProductCreateState>({
+    status: "idle",
+  });
 
-  return <ProductListPage state={state} onRetry={() => void setState()} />;
+  const createProduct = React.useCallback(
+    async (values: ProductFormValues) => {
+      setCreateState({ status: "submitting" });
+      try {
+        const draft = buildProductDraft(values);
+        const product = await createAdminProduct(draft);
+        setCreateState({ status: "success", productName: product.name });
+        await reloadProducts();
+      } catch (error) {
+        setCreateState({
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Product create request failed",
+        });
+      }
+    },
+    [reloadProducts],
+  );
+
+  return (
+    <ProductListPage
+      state={state}
+      createState={createState}
+      onCreate={(values) => void createProduct(values)}
+      onRetry={() => void reloadProducts()}
+    />
+  );
 }
 
 function useProducts(): [ProductListState, () => Promise<void>] {
@@ -116,9 +331,13 @@ function useProducts(): [ProductListState, () => Promise<void>] {
 
 export function ProductListPage({
   state,
+  createState = { status: "idle" },
+  onCreate = () => undefined,
   onRetry,
 }: {
   state: ProductListState;
+  createState?: ProductCreateState;
+  onCreate?: (values: ProductFormValues) => void;
   onRetry: () => void;
 }) {
   return (
@@ -142,6 +361,8 @@ export function ProductListPage({
         <ProductCount state={state} />
       </section>
 
+      <ProductCreatePanel createState={createState} onCreate={onCreate} />
+
       <section className="product-panel" aria-labelledby="products-title">
         <div className="panel-heading">
           <div>
@@ -157,6 +378,185 @@ export function ProductListPage({
         <ProductListContent state={state} />
       </section>
     </main>
+  );
+}
+
+export function ProductCreatePanel({
+  createState,
+  onCreate,
+}: {
+  createState: ProductCreateState;
+  onCreate: (values: ProductFormValues) => void;
+}) {
+  const [values, setValues] =
+    React.useState<ProductFormValues>(defaultFormValues);
+  const [localError, setLocalError] = React.useState<string | null>(null);
+  const disabled = createState.status === "submitting";
+
+  function updateField(field: keyof ProductFormValues, value: string) {
+    setValues((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLocalError(null);
+
+    try {
+      buildProductDraft(values);
+    } catch (error) {
+      setLocalError(
+        error instanceof Error ? error.message : "Product draft is invalid.",
+      );
+      return;
+    }
+
+    onCreate(values);
+  }
+
+  return (
+    <section className="create-panel" aria-labelledby="create-title">
+      <div className="panel-heading create-heading">
+        <div>
+          <p className="eyebrow">Create product</p>
+          <h2 id="create-title">New product draft</h2>
+        </div>
+        {createState.status === "submitting" ? (
+          <span className="submit-status">Saving draft</span>
+        ) : null}
+      </div>
+
+      <form className="product-form" onSubmit={handleSubmit}>
+        <div className="form-grid">
+          <label>
+            <span>Name</span>
+            <input
+              name="name"
+              value={values.name}
+              onChange={(event) => updateField("name", event.target.value)}
+              disabled={disabled}
+              autoComplete="off"
+            />
+          </label>
+          <label>
+            <span>Slug</span>
+            <input
+              name="slug"
+              value={values.slug}
+              onChange={(event) => updateField("slug", event.target.value)}
+              disabled={disabled}
+              autoComplete="off"
+              placeholder="matte-ceramic-pet-tag"
+            />
+          </label>
+          <label className="wide-field">
+            <span>Description</span>
+            <textarea
+              name="description"
+              value={values.description}
+              onChange={(event) =>
+                updateField("description", event.target.value)
+              }
+              disabled={disabled}
+              rows={3}
+            />
+          </label>
+          <label>
+            <span>Amount cents</span>
+            <input
+              name="amountCents"
+              inputMode="numeric"
+              value={values.amountCents}
+              onChange={(event) =>
+                updateField("amountCents", event.target.value)
+              }
+              disabled={disabled}
+              placeholder="12900"
+            />
+          </label>
+          <label>
+            <span>Currency</span>
+            <input
+              name="currency"
+              value={values.currency}
+              onChange={(event) => updateField("currency", event.target.value)}
+              disabled={disabled}
+              maxLength={3}
+            />
+          </label>
+          <label>
+            <span>Compare-at cents</span>
+            <input
+              name="compareAtAmountCents"
+              inputMode="numeric"
+              value={values.compareAtAmountCents}
+              onChange={(event) =>
+                updateField("compareAtAmountCents", event.target.value)
+              }
+              disabled={disabled}
+              placeholder="15900"
+            />
+          </label>
+          <label className="wide-field">
+            <span>Categories JSON</span>
+            <textarea
+              name="categoriesJson"
+              value={values.categoriesJson}
+              onChange={(event) =>
+                updateField("categoriesJson", event.target.value)
+              }
+              disabled={disabled}
+              rows={3}
+            />
+          </label>
+          <label className="wide-field">
+            <span>Information sections JSON</span>
+            <textarea
+              name="informationSectionsJson"
+              value={values.informationSectionsJson}
+              onChange={(event) =>
+                updateField("informationSectionsJson", event.target.value)
+              }
+              disabled={disabled}
+              rows={4}
+            />
+          </label>
+          <label className="wide-field">
+            <span>Mesh color config JSON</span>
+            <textarea
+              name="meshColorConfigJson"
+              value={values.meshColorConfigJson}
+              onChange={(event) =>
+                updateField("meshColorConfigJson", event.target.value)
+              }
+              disabled={disabled}
+              rows={4}
+            />
+          </label>
+        </div>
+
+        {localError ? (
+          <p className="form-message form-message-error" role="alert">
+            {localError}
+          </p>
+        ) : null}
+        {createState.status === "error" ? (
+          <p className="form-message form-message-error" role="alert">
+            {createState.message}
+          </p>
+        ) : null}
+        {createState.status === "success" ? (
+          <p className="form-message form-message-success" role="status">
+            Created {createState.productName}.
+          </p>
+        ) : null}
+
+        <div className="form-actions">
+          <button className="primary-button" type="submit" disabled={disabled}>
+            {disabled ? "Saving" : "Create product"}
+          </button>
+        </div>
+      </form>
+    </section>
   );
 }
 

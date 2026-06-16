@@ -145,6 +145,12 @@ Selected work:
   the Go API boundary and rendering loading, empty, failure/retry, and ready
   states without adding product create, edit, delete, source GLB upload, auth,
   direct platform access, or live backend proof.
+- `US-046 Web Admin Product Create API Integration` extends the React Web
+  Admin product workflow with a create form that submits v1 product drafts to
+  `POST /admin/products`, validates client-side fields and JSON sections,
+  renders inline success/failure states, and refreshes the product list without
+  adding edit, delete, source GLB upload, auth, direct platform access, backend
+  contract changes, or live backend proof.
 
 ## Phase 3: Mobile Catalog And Search
 

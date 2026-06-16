@@ -90,8 +90,11 @@ The Flutter Category tab now consumes those routes with category selection,
 sorting, paginated product results, incremental retry, scroll-to-top, and
 product detail navigation. The Web Admin now consumes
 `GET /admin/products` with loading, empty, failure/retry, and ready states for
-persisted product records. Signed object URLs, checkout, payment, inventory,
-discount engines, auth, and admin create/edit/upload UI remain deferred.
+persisted product records. The Web Admin now also creates product drafts
+through `POST /admin/products` with client-side draft validation, submitting,
+success, and failure states, then refreshes the product list after a successful
+create. Signed object URLs, checkout, payment, inventory, discount engines,
+auth, and admin edit/delete/upload UI remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -397,6 +400,12 @@ Web Admin product list API integration verification:
 
 ```bash
 bash scripts/verify-us-045.sh
+```
+
+Web Admin product create API integration verification:
+
+```bash
+bash scripts/verify-us-046.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and

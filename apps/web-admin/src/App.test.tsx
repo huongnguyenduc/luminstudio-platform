@@ -1,10 +1,14 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ProductCreatePanel,
   ProductListPage,
   adminProductsUrl,
+  buildProductDraft,
+  createAdminProduct,
   formatPrice,
+  type ProductFormValues,
   type ProductRecord,
 } from "./App";
 
@@ -28,6 +32,25 @@ const product: ProductRecord = {
   processingStatus: "completed",
 };
 
+const validFormValues: ProductFormValues = {
+  name: "Matte ceramic pet tag",
+  slug: "matte-ceramic-pet-tag",
+  description: "Configurable tag with processed 3D assets.",
+  amountCents: "12900",
+  currency: "USD",
+  compareAtAmountCents: "15900",
+  categoriesJson: '[{"slug":"pets","name":"Pets"}]',
+  informationSectionsJson:
+    '[{"title":"Materials","body":"Ceramic body with brass ring."}]',
+  meshColorConfigJson:
+    '{"mesh_body":{"default":"#FFFFFF","allowed":["#FFFFFF","#111111"]}}',
+};
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
 describe("adminProductsUrl", () => {
   it("builds the admin product route from the configured API base URL", () => {
     expect(adminProductsUrl("http://localhost:8080/")).toBe(
@@ -37,6 +60,76 @@ describe("adminProductsUrl", () => {
 
   it("uses same-origin API routing when no base URL is configured", () => {
     expect(adminProductsUrl("")).toBe("/admin/products");
+  });
+});
+
+describe("buildProductDraft", () => {
+  it("builds the v1 product draft body from form values", () => {
+    expect(buildProductDraft(validFormValues)).toEqual({
+      name: "Matte ceramic pet tag",
+      slug: "matte-ceramic-pet-tag",
+      description: "Configurable tag with processed 3D assets.",
+      price: {
+        amountCents: 12900,
+        currency: "USD",
+        compareAtAmountCents: 15900,
+      },
+      categories: [{ slug: "pets", name: "Pets" }],
+      informationSections: [
+        { title: "Materials", body: "Ceramic body with brass ring." },
+      ],
+      meshColorConfig: {
+        mesh_body: {
+          default: "#FFFFFF",
+          allowed: ["#FFFFFF", "#111111"],
+        },
+      },
+    });
+  });
+
+  it("rejects invalid slug and malformed JSON before submit", () => {
+    expect(() =>
+      buildProductDraft({ ...validFormValues, slug: "Bad Slug" }),
+    ).toThrow("Slug must use lowercase letters");
+
+    expect(() =>
+      buildProductDraft({ ...validFormValues, categoriesJson: "{}" }),
+    ).toThrow("categories must be a JSON array");
+  });
+});
+
+describe("createAdminProduct", () => {
+  it("posts the product draft to the admin create route", async () => {
+    const draft = buildProductDraft(validFormValues);
+    const fetchMock = vi.fn(async () => {
+      return new Response(JSON.stringify(product), {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(createAdminProduct(draft, "http://localhost:8080/")).resolves.toEqual(
+      product,
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8080/admin/products",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify(draft),
+      }),
+    );
+    const [, requestInit] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(requestInit).toMatchObject({
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    });
   });
 });
 
@@ -94,5 +187,53 @@ describe("ProductListPage", () => {
     expect(markup).toContain("$129.00");
     expect(markup).toContain("Completed");
     expect(markup).toContain("Pets");
+  });
+});
+
+describe("ProductCreatePanel", () => {
+  it("renders the create form", () => {
+    const markup = renderToStaticMarkup(
+      <ProductCreatePanel
+        createState={{ status: "idle" }}
+        onCreate={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("New product draft");
+    expect(markup).toContain("Categories JSON");
+    expect(markup).toContain("Create product");
+  });
+
+  it("renders submitting and success states", () => {
+    const submittingMarkup = renderToStaticMarkup(
+      <ProductCreatePanel
+        createState={{ status: "submitting" }}
+        onCreate={() => undefined}
+      />,
+    );
+    const successMarkup = renderToStaticMarkup(
+      <ProductCreatePanel
+        createState={{ status: "success", productName: product.name }}
+        onCreate={() => undefined}
+      />,
+    );
+
+    expect(submittingMarkup).toContain("Saving draft");
+    expect(submittingMarkup).toContain("Saving");
+    expect(successMarkup).toContain("Created Matte ceramic pet tag.");
+  });
+
+  it("renders create failure inline", () => {
+    const markup = renderToStaticMarkup(
+      <ProductCreatePanel
+        createState={{
+          status: "error",
+          message: "Product create request failed with HTTP 400",
+        }}
+        onCreate={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Product create request failed with HTTP 400");
   });
 });
