@@ -16,6 +16,13 @@ later stories, but generated output must not replace these contract sources.
 - `events.schema.json`: NATS event envelope and payload shapes for
   `product.updated`, `3d.task.created`, and `3d.task.completed`.
 
+## Binary Asset Routes
+
+- `GET /catalog/products/{id}/sprite` streams an `image/jpeg` 360-degree sprite
+  for completed products whose catalog item contains a `lumin-360-sprites`
+  object reference. The response body is binary, so it is documented here
+  rather than modeled as a JSON Schema object.
+
 ## Non-Goals
 
 These contracts do not implement HTTP routes, database migrations, NATS

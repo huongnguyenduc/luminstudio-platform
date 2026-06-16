@@ -125,11 +125,13 @@ The Go API now exposes the first customer-facing catalog/search boundary:
 Meilisearch `products` index from inside the API gateway and return customer
 catalog item fields plus optional sprite asset references. Clients remain behind
 the API boundary and do not connect directly to Meilisearch, PostgreSQL, MinIO,
-or NATS.
+or NATS. The API also exposes `GET /catalog/products/{id}/sprite` to stream the
+completed product's 360-degree sprite JPEG from MinIO after checking the
+authoritative product row.
 
 Authentication, authorization, product delete workflows, customer
-category taxonomy, sorting, signed object URLs, retry/outbox semantics, and
-dead-letter handling remain deferred.
+category taxonomy, sorting, signed object URLs, Flutter preview activation,
+retry/outbox semantics, and dead-letter handling remain deferred.
 
 ## Processing Pipeline
 

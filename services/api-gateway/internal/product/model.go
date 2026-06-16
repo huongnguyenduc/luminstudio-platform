@@ -79,6 +79,10 @@ var (
 	}
 )
 
+func ValidProductID(id string) bool {
+	return productIDPattern.MatchString(id)
+}
+
 func (draft ProductDraft) Validate() error {
 	if err := validateText("name", draft.Name, 1, 160); err != nil {
 		return err

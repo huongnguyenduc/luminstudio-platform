@@ -40,6 +40,12 @@ repository/use-case boundary. Category taxonomy, sorting controls, 360-degree
 preview activation, product detail, signed object URLs, cart persistence, and
 direct service access remain deferred.
 
+`US-034` exposes processed 360-degree sprite assets through the Go API route
+`GET /catalog/products/{id}/sprite`. The route streams a JPEG only when the
+authoritative product record is completed and has a sprite asset in
+`lumin-360-sprites`. Flutter preview activation, product detail, signed object
+URLs, cart persistence, and direct service access remain deferred.
+
 ## 360-Degree Catalog Preview
 
 When a product item remains more than 80% visible and scrolling has stopped for
@@ -65,7 +71,9 @@ reference when the processed product document has one.
 The Flutter Home tab now submits customer search queries to that API route and
 renders the returned catalog cards without connecting directly to Meilisearch.
 It also paginates both catalog browsing and search result lists through the
-same Go API boundary.
+same Go API boundary. Processed sprite previews are retrieved through
+`GET /catalog/products/{id}/sprite`; mobile clients still do not access MinIO
+directly.
 
 ## Product Detail And Device Tier
 

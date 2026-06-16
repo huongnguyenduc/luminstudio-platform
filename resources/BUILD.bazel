@@ -5,4 +5,9 @@ filegroup(
     srcs = ["pet_tag.glb"],
 )
 
+filegroup(
+    name = "pet_tag_360_sprite",
+    srcs = ["pet_tag_360_sprite.jpg"],
+)
+
 exports_files(["pet_tag_description.md"])

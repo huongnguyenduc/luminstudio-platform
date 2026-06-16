@@ -17,7 +17,7 @@ go_library(
     deps = [
         "//services/api-gateway/internal/health",
         "//services/api-gateway/internal/platform",
-		"//services/api-gateway/internal/processing",
+        "//services/api-gateway/internal/processing",
         "//services/api-gateway/internal/product",
         "//services/api-gateway/internal/search",
     ],

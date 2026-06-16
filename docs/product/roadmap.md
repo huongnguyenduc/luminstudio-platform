@@ -180,6 +180,12 @@ Selected work:
   retry state without adding category taxonomy, sorting controls, 360-degree
   preview activation, product detail, signed object URLs, cart persistence,
   auth, Flutter Bazel rules, or live device proof.
+- `US-034 Customer Sprite Preview Asset Access API` exposes
+  `GET /catalog/products/{id}/sprite` through the Go API gateway. The route
+  reads the authoritative PostgreSQL product row, requires completed processing
+  and a 360-degree sprite asset reference, and streams the JPEG from MinIO
+  without adding Flutter preview activation, product detail, signed object URLs,
+  category taxonomy, cart persistence, auth, or live K3d proof.
 
 ## Phase 4: 3D Detail And Cart
 

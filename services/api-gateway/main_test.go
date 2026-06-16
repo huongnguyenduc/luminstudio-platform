@@ -32,7 +32,16 @@ func (productCreatorStub) UpdateProduct(_ context.Context, _ string, _ product.P
 }
 
 func (productCreatorStub) GetProduct(_ context.Context, _ string) (product.ProductRecord, error) {
-	return routeProductRecord(time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)), nil
+	record := routeProductRecord(time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC))
+	size := int64(3)
+	record.ProcessingStatus = product.ProcessingCompleted
+	record.SpriteAsset = &product.ObjectRef{
+		Bucket:      "lumin-360-sprites",
+		Key:         "prod_12345678_360_sprite.jpg",
+		ContentType: "image/jpeg",
+		SizeBytes:   &size,
+	}
+	return record, nil
 }
 
 func (productCreatorStub) ListProducts(_ context.Context) ([]product.ProductRecord, error) {
@@ -191,6 +200,23 @@ func TestRoutesExposeCatalogSearch(t *testing.T) {
 	}
 }
 
+func TestRoutesExposeCatalogProductSprite(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678/sprite", nil)
+	searchHandler := search.NewHandler(productSearcherRouteStub{}).
+		WithCatalogProductReader(productCreatorStub{}).
+		WithSpriteAssetStore(spriteAssetStoreRouteStub{body: []byte{0xff, 0xd8, 0xff}})
+
+	routes(readyStub{}, product.NewHandler(productCreatorStub{}), searchHandler).ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if recorder.Header().Get("Content-Type") != "image/jpeg" {
+		t.Fatalf("content-type = %q", recorder.Header().Get("Content-Type"))
+	}
+}
+
 type sourceAssetStoreRouteStub struct {
 	ref product.ObjectRef
 }
@@ -207,6 +233,14 @@ func (eventPublisherRouteStub) PublishProductUpdated(context.Context, product.Pr
 
 func (eventPublisherRouteStub) PublishProcessingTaskCreated(context.Context, product.TaskCreatedEvent) error {
 	return nil
+}
+
+type spriteAssetStoreRouteStub struct {
+	body []byte
+}
+
+func (stub spriteAssetStoreRouteStub) GetSpriteAsset(_ context.Context, _ product.ObjectRef) (io.ReadCloser, error) {
+	return io.NopCloser(strings.NewReader(string(stub.body))), nil
 }
 
 func TestPortFromEnv(t *testing.T) {

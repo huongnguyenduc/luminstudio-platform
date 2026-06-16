@@ -59,8 +59,12 @@ and navigation state. The Flutter Home tab now loads catalog product cards from
 the Go API `GET /catalog/products` boundary with loading, empty, failure, and
 ready states. The Flutter Home tab also submits catalog searches to the Go API
 `GET /catalog/search?q=...` boundary with loading, empty, failure/retry, clear,
-and ready states. Category taxonomy, 360-degree preview activation, product
-detail, signed object URLs, cart persistence, and auth remain deferred.
+and ready states. The Flutter Home tab also paginates catalog and search
+results through the same API boundary. The Go API now exposes processed
+360-degree sprite assets through `GET /catalog/products/{id}/sprite`, streaming
+JPEG objects from MinIO only after the authoritative product row is completed.
+Category taxonomy, 360-degree preview activation, product detail, signed object
+URLs, cart persistence, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -294,6 +298,12 @@ Flutter catalog pagination and infinite scroll verification:
 
 ```bash
 bash scripts/verify-us-033.sh
+```
+
+Customer sprite preview asset access verification:
+
+```bash
+bash scripts/verify-us-034.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

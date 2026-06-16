@@ -30,7 +30,10 @@ processing status, publishes `product.updated`, and publishes
 and marks the product processing state as completed. Customer-facing
 `GET /catalog/products` and `GET /catalog/search?q=...` routes now query the
 derived Meilisearch `products` index through the API gateway and return v1
-catalog card response shapes. Retry/outbox semantics remain deferred.
+catalog card response shapes. The API also streams completed customer
+360-degree sprite JPEGs from MinIO through
+`GET /catalog/products/{id}/sprite`, after checking the authoritative product
+row. Retry/outbox semantics remain deferred.
 
 Run native tests:
 
@@ -103,4 +106,10 @@ Verify customer catalog/search API routes from the repository root:
 
 ```bash
 bash scripts/verify-us-029.sh
+```
+
+Verify customer sprite preview asset access from the repository root:
+
+```bash
+bash scripts/verify-us-034.sh
 ```

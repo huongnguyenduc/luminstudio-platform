@@ -11,9 +11,12 @@ repository/use-case boundary. The Home tab also submits catalog searches to the
 Go API `GET /catalog/search?q=...` route through the same boundary and renders
 loading, empty, failure/retry, clear, and result states. The Home tab now
 paginates both catalog and search result lists through the existing Go API
-`limit` and `offset` parameters with inline load-more retry behavior. Category
-taxonomy, sorting, 360-degree previews, product detail, cart persistence, and
-executable Bazel Flutter targets remain deferred.
+`limit` and `offset` parameters with inline load-more retry behavior. The Go
+API now exposes completed sprite JPEGs at
+`GET /catalog/products/{id}/sprite` for a later Flutter preview activation
+story. Category taxonomy, sorting, 360-degree preview activation, product
+detail, cart persistence, and executable Bazel Flutter targets remain
+deferred.
 
 Verify the shell from the repository root:
 

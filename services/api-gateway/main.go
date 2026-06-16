@@ -68,7 +68,9 @@ func run(getenv func(string) string) error {
 			product.NewHandler(productStore).
 				WithSourceAssetStore(product.NewMinIOSourceAssetStore(checker.MinIO())).
 				WithEventPublisher(product.NewNATSPublisher(config.NATSURL, config.DependencyTimeout)),
-			search.NewHandler(search.NewMeilisearchSearcher(config.MeilisearchURL, config.MeilisearchKey, config.DependencyTimeout)),
+			search.NewHandler(search.NewMeilisearchSearcher(config.MeilisearchURL, config.MeilisearchKey, config.DependencyTimeout)).
+				WithCatalogProductReader(productStore).
+				WithSpriteAssetStore(search.NewMinIOSpriteAssetStore(checker.MinIO())),
 		),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -90,6 +92,7 @@ func routes(readiness health.Readiness, productHandler product.Handler, searchHa
 	mux.HandleFunc("PUT /admin/products/{id}", productHandler.UpdateProduct)
 	mux.HandleFunc("POST /admin/products/{id}/source-glb", productHandler.UploadProductSource)
 	mux.HandleFunc("GET /catalog/products", searchHandler.ListCatalogProducts)
+	mux.HandleFunc("GET /catalog/products/{id}/sprite", searchHandler.GetCatalogProductSprite)
 	mux.HandleFunc("GET /catalog/search", searchHandler.SearchCatalogProducts)
 	return mux
 }

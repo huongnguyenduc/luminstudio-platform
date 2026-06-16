@@ -145,6 +145,12 @@ append behavior, end-of-list messaging, and inline retry for incremental load
 failures, without adding category behavior, sorting controls, 360-degree
 preview activation, product detail, cart persistence, Flutter Bazel rules, or
 live device proof.
+`US-034` adds the first customer sprite asset access route,
+`GET /catalog/products/{id}/sprite`, through the Go API gateway. The route
+checks the authoritative PostgreSQL product row and streams only completed
+`lumin-360-sprites` JPEG assets from MinIO, without adding signed URLs, direct
+client storage access, Flutter preview activation, product detail, auth, or
+live K3d proof.
 
 ## Boundary Rules
 

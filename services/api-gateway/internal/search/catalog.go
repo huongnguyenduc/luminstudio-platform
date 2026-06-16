@@ -26,6 +26,14 @@ type ProductSearcher interface {
 	SearchProducts(ctx context.Context, query ProductSearchQuery) (ProductSearchResult, error)
 }
 
+type CatalogProductReader interface {
+	GetProduct(ctx context.Context, id string) (product.ProductRecord, error)
+}
+
+type SpriteAssetStore interface {
+	GetSpriteAsset(ctx context.Context, ref product.ObjectRef) (io.ReadCloser, error)
+}
+
 type ProductSearchQuery struct {
 	Query  string
 	Limit  int
@@ -56,11 +64,23 @@ type CatalogSearchResponse struct {
 }
 
 type Handler struct {
-	searcher ProductSearcher
+	searcher      ProductSearcher
+	productReader CatalogProductReader
+	spriteAssets  SpriteAssetStore
 }
 
 func NewHandler(searcher ProductSearcher) Handler {
 	return Handler{searcher: searcher}
+}
+
+func (handler Handler) WithCatalogProductReader(reader CatalogProductReader) Handler {
+	handler.productReader = reader
+	return handler
+}
+
+func (handler Handler) WithSpriteAssetStore(store SpriteAssetStore) Handler {
+	handler.spriteAssets = store
+	return handler
 }
 
 func (handler Handler) ListCatalogProducts(response http.ResponseWriter, request *http.Request) {
@@ -69,6 +89,60 @@ func (handler Handler) ListCatalogProducts(response http.ResponseWriter, request
 
 func (handler Handler) SearchCatalogProducts(response http.ResponseWriter, request *http.Request) {
 	handler.search(response, request, true)
+}
+
+func (handler Handler) GetCatalogProductSprite(response http.ResponseWriter, request *http.Request) {
+	if handler.productReader == nil || handler.spriteAssets == nil {
+		writeError(response, http.StatusServiceUnavailable, "catalog sprite assets are not configured")
+		return
+	}
+
+	id := request.PathValue("id")
+	if !product.ValidProductID(id) {
+		writeError(response, http.StatusBadRequest, "id must match the v1 product id contract")
+		return
+	}
+	record, err := handler.productReader.GetProduct(request.Context(), id)
+	if err != nil {
+		if errors.Is(err, product.ErrProductNotFound) {
+			writeError(response, http.StatusNotFound, "product not found")
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not read product")
+		return
+	}
+	if record.ProcessingStatus != product.ProcessingCompleted || record.SpriteAsset == nil {
+		writeError(response, http.StatusNotFound, "sprite asset not found")
+		return
+	}
+	if record.SpriteAsset.Bucket != "lumin-360-sprites" {
+		writeError(response, http.StatusBadGateway, "sprite asset uses an unsupported bucket")
+		return
+	}
+
+	asset, err := handler.spriteAssets.GetSpriteAsset(request.Context(), *record.SpriteAsset)
+	if err != nil {
+		writeError(response, http.StatusBadGateway, "could not read sprite asset")
+		return
+	}
+	defer asset.Close()
+
+	contentType := record.SpriteAsset.ContentType
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+	response.Header().Set("Content-Type", contentType)
+	response.Header().Set("Cache-Control", "public, max-age=300")
+	if record.SpriteAsset.ETag != "" {
+		response.Header().Set("ETag", record.SpriteAsset.ETag)
+	}
+	if record.SpriteAsset.SizeBytes != nil {
+		response.Header().Set("Content-Length", strconv.FormatInt(*record.SpriteAsset.SizeBytes, 10))
+	}
+	response.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(response, asset); err != nil {
+		return
+	}
 }
 
 func (handler Handler) search(response http.ResponseWriter, request *http.Request, requireQuery bool) {

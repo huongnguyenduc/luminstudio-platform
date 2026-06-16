@@ -1,9 +1,11 @@
 package search
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -25,6 +27,31 @@ func (stub *productSearcherStub) SearchProducts(_ context.Context, query Product
 	stub.calls++
 	stub.query = query
 	return stub.result, stub.err
+}
+
+type catalogProductReaderStub struct {
+	record product.ProductRecord
+	err    error
+	id     string
+}
+
+func (stub *catalogProductReaderStub) GetProduct(_ context.Context, id string) (product.ProductRecord, error) {
+	stub.id = id
+	return stub.record, stub.err
+}
+
+type spriteAssetStoreStub struct {
+	body []byte
+	ref  product.ObjectRef
+	err  error
+}
+
+func (stub *spriteAssetStoreStub) GetSpriteAsset(_ context.Context, ref product.ObjectRef) (io.ReadCloser, error) {
+	stub.ref = ref
+	if stub.err != nil {
+		return nil, stub.err
+	}
+	return io.NopCloser(bytes.NewReader(stub.body)), nil
 }
 
 func TestListCatalogProductsReturnsCustomerSafeItems(t *testing.T) {
@@ -75,6 +102,90 @@ func TestListCatalogProductsReturnsCustomerSafeItems(t *testing.T) {
 	}
 }
 
+func TestGetCatalogProductSpriteStreamsCompletedSprite(t *testing.T) {
+	size := int64(3)
+	reader := &catalogProductReaderStub{record: ProductRecordWithSprite(size)}
+	store := &spriteAssetStoreStub{body: []byte{0xff, 0xd8, 0xff}}
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(reader).
+		WithSpriteAssetStore(store)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678/sprite", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetCatalogProductSprite(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if reader.id != "prod_12345678" {
+		t.Fatalf("reader id = %q", reader.id)
+	}
+	if store.ref.Bucket != "lumin-360-sprites" || store.ref.Key != "prod_12345678_360_sprite.jpg" {
+		t.Fatalf("store ref = %#v", store.ref)
+	}
+	if recorder.Header().Get("Content-Type") != "image/jpeg" {
+		t.Fatalf("content-type = %q", recorder.Header().Get("Content-Type"))
+	}
+	if recorder.Header().Get("Content-Length") != "3" {
+		t.Fatalf("content-length = %q", recorder.Header().Get("Content-Length"))
+	}
+	if !bytes.Equal(recorder.Body.Bytes(), []byte{0xff, 0xd8, 0xff}) {
+		t.Fatalf("body = %v", recorder.Body.Bytes())
+	}
+}
+
+func TestGetCatalogProductSpriteRejectsInvalidID(t *testing.T) {
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(&catalogProductReaderStub{}).
+		WithSpriteAssetStore(&spriteAssetStoreStub{})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/bad/sprite", nil)
+	request.SetPathValue("id", "bad")
+
+	handler.GetCatalogProductSprite(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+}
+
+func TestGetCatalogProductSpriteRequiresCompletedSprite(t *testing.T) {
+	record := ProductRecordWithSprite(3)
+	record.ProcessingStatus = product.ProcessingQueued
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(&catalogProductReaderStub{record: record}).
+		WithSpriteAssetStore(&spriteAssetStoreStub{body: []byte("sprite")})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678/sprite", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetCatalogProductSprite(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNotFound)
+	}
+}
+
+func TestGetCatalogProductSpriteReportsStorageFailure(t *testing.T) {
+	handler := NewHandler(&productSearcherStub{}).
+		WithCatalogProductReader(&catalogProductReaderStub{record: ProductRecordWithSprite(3)}).
+		WithSpriteAssetStore(&spriteAssetStoreStub{err: errors.New("minio unavailable")})
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/catalog/products/prod_12345678/sprite", nil)
+	request.SetPathValue("id", "prod_12345678")
+
+	handler.GetCatalogProductSprite(recorder, request)
+
+	if recorder.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadGateway)
+	}
+}
+
 func TestSearchCatalogProductsRequiresQuery(t *testing.T) {
 	searcher := &productSearcherStub{}
 	handler := NewHandler(searcher)
@@ -89,6 +200,25 @@ func TestSearchCatalogProductsRequiresQuery(t *testing.T) {
 	}
 	if searcher.calls != 0 {
 		t.Fatalf("searcher calls = %d, want 0", searcher.calls)
+	}
+}
+
+func ProductRecordWithSprite(size int64) product.ProductRecord {
+	now := time.Date(2026, 6, 16, 9, 0, 0, 0, time.UTC)
+	return product.ProductRecord{
+		ID:               "prod_12345678",
+		Name:             "Arc Chair",
+		Slug:             "arc-chair",
+		Description:      "Configurable chair.",
+		CreatedAt:        now,
+		UpdatedAt:        now,
+		ProcessingStatus: product.ProcessingCompleted,
+		SpriteAsset: &product.ObjectRef{
+			Bucket:      "lumin-360-sprites",
+			Key:         "prod_12345678_360_sprite.jpg",
+			ContentType: "image/jpeg",
+			SizeBytes:   &size,
+		},
 	}
 }
 
