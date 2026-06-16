@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 
 abstract interface class DeviceTierResolver {
@@ -23,6 +23,10 @@ class DefaultDeviceTierResolver implements DeviceTierResolver {
 
   @override
   ProductModelTier resolve() {
+    if (kIsWeb) {
+      return ProductModelTier.low;
+    }
+
     final platform = Platform.operatingSystem;
     final display = PlatformDispatcher.instance.views.isEmpty
         ? null

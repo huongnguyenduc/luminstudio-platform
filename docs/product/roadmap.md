@@ -230,6 +230,12 @@ Selected work:
   material color editing, related products, signed object URLs, cart
   persistence, auth, Flutter Bazel rules, live backend proof, or live device
   proof.
+- `US-039 Flutter Material Color Selection` lets the product detail screen
+  initialize and update selected material colors from the existing
+  `meshColorConfig` response. Allowed colors render as accessible touch swatches
+  and selected colors stay in `ProductDetailCubit` state for later cart use
+  without adding cart persistence, related products, signed object URLs, auth,
+  Flutter Bazel rules, live backend proof, or live device proof.
 
 ## Deferred
 

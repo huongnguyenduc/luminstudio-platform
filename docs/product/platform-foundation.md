@@ -178,6 +178,11 @@ existing detail response and enables rotate/zoom controls through the chosen
 WebView-backed Flutter bridge, while keeping material editing, cart
 persistence, direct storage/search/message access, Flutter Bazel rules, and
 live device proof deferred.
+`US-039` adds customer material color selection to the same detail screen using
+the existing `meshColorConfig` response. Selection remains local Flutter state
+inside `ProductDetailCubit`, keeps direct storage/search/message access out of
+the app, and leaves cart persistence, Flutter Bazel rules, and live device
+proof deferred.
 
 ## Boundary Rules
 

@@ -120,6 +120,13 @@ selected Flutter viewer bridge. Material color editing, related products,
 signed object URLs, cart persistence, live backend proof, live device proof,
 and direct service access remain deferred.
 
+`US-039` turns Product Detail mesh color configuration into customer-selectable
+material swatches. Each mesh initializes to its configured default color, only
+allowed colors can be selected, and the selected color map remains in
+`ProductDetailCubit` state for later cart use. Related products, signed object
+URLs, cart persistence, live backend proof, live device proof, and direct
+service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, selected mesh colors,

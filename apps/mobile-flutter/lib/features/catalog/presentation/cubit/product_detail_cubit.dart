@@ -11,6 +11,7 @@ class ProductDetailState {
     required this.tier,
     this.status = ProductDetailStatus.initial,
     this.detail,
+    this.selectedMeshColors = const <String, String>{},
     this.message,
   });
 
@@ -18,11 +19,13 @@ class ProductDetailState {
   final ProductModelTier tier;
   final ProductDetailStatus status;
   final CatalogProductDetail? detail;
+  final Map<String, String> selectedMeshColors;
   final String? message;
 
   ProductDetailState copyWith({
     ProductDetailStatus? status,
     CatalogProductDetail? detail,
+    Map<String, String>? selectedMeshColors,
     String? message,
   }) {
     return ProductDetailState(
@@ -30,6 +33,7 @@ class ProductDetailState {
       tier: tier,
       status: status ?? this.status,
       detail: detail ?? this.detail,
+      selectedMeshColors: selectedMeshColors ?? this.selectedMeshColors,
       message: message,
     );
   }
@@ -62,6 +66,7 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
         state.copyWith(
           status: ProductDetailStatus.ready,
           detail: detail,
+          selectedMeshColors: _defaultMeshColors(detail),
           message: null,
         ),
       );
@@ -73,5 +78,38 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
         ),
       );
     }
+  }
+
+  void selectMeshColor(String meshId, String color) {
+    final detail = state.detail;
+    if (detail == null) {
+      return;
+    }
+
+    final options = detail.meshColorConfig.where(
+      (option) => option.meshId == meshId,
+    );
+    if (options.isEmpty || !options.first.allowedColors.contains(color)) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        selectedMeshColors: <String, String>{
+          ...state.selectedMeshColors,
+          meshId: color,
+        },
+        message: state.message,
+      ),
+    );
+  }
+
+  Map<String, String> _defaultMeshColors(CatalogProductDetail detail) {
+    return <String, String>{
+      for (final options in detail.meshColorConfig)
+        options.meshId: options.allowedColors.contains(options.defaultColor)
+            ? options.defaultColor
+            : options.allowedColors.first,
+    };
   }
 }

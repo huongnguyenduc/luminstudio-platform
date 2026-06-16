@@ -364,6 +364,48 @@ void main() {
     );
   });
 
+  testWidgets('product detail lets customers select configured mesh colors', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withProducts(1);
+
+    await tester.pumpWidget(
+      LuminStudioApp(
+        catalogRepository: repository,
+        deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
+        productModelViewerBuilder: _fakeProductModelViewerBuilder,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Product 1'));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const PageStorageKey<String>('product-detail-scroll')),
+      const Offset(0, -360),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel('mesh_body color #FFFFFF default selected'),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('mesh-color-mesh_body-#0F172A')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel('mesh_body color #0F172A selected'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('mesh_body color #FFFFFF default selected'),
+      findsNothing,
+    );
+  });
+
   testWidgets(
     'product detail renders unavailable model state without a model route',
     (WidgetTester tester) async {

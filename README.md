@@ -73,8 +73,9 @@ Flutter Home tab now opens a product detail screen from catalog cards, derives
 a low/high model tier inside the app, and renders seller-provided information
 sections, mesh color configuration, and gateway model/sprite route metadata.
 The Flutter product detail screen now renders that gateway model route through
-an interactive rotate/zoom viewer. Category taxonomy, material editing, signed
-object URLs, cart persistence, and auth remain deferred.
+an interactive rotate/zoom viewer. Product detail mesh color configuration now
+renders as selectable material swatches backed by local Flutter state. Category
+taxonomy, signed object URLs, cart persistence, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -338,6 +339,12 @@ Flutter interactive 3D viewer verification:
 
 ```bash
 bash scripts/verify-us-038.sh
+```
+
+Flutter material color selection verification:
+
+```bash
+bash scripts/verify-us-039.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

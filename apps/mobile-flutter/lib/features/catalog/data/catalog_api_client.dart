@@ -1,15 +1,15 @@
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:http/http.dart' as http;
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 
 class CatalogApiClient {
-  CatalogApiClient({required Uri baseUri, HttpClient? httpClient})
+  CatalogApiClient({required Uri baseUri, http.Client? httpClient})
     : _baseUri = baseUri,
-      _httpClient = httpClient ?? HttpClient();
+      _httpClient = httpClient ?? http.Client();
 
   final Uri _baseUri;
-  final HttpClient _httpClient;
+  final http.Client _httpClient;
 
   Future<CatalogProductsPage> listProducts({
     int limit = 20,
@@ -47,18 +47,18 @@ class CatalogApiClient {
       ),
       queryParameters: {'tier': tier.wireName},
     );
-    final request = await _httpClient.getUrl(uri);
-    request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-    final response = await request.close();
-    final body = await utf8.decodeStream(response);
+    final response = await _httpClient.get(
+      uri,
+      headers: const {'accept': 'application/json'},
+    );
 
-    if (response.statusCode != HttpStatus.ok) {
+    if (response.statusCode != 200) {
       throw CatalogApiException(
         'Catalog detail API returned HTTP ${response.statusCode}',
       );
     }
 
-    final decoded = jsonDecode(body);
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (decoded is! Map<String, Object?>) {
       throw const CatalogApiException(
         'Catalog detail API returned an invalid body',
@@ -77,18 +77,18 @@ class CatalogApiClient {
       path: _joinPath(_baseUri.path, routePath),
       queryParameters: queryParameters,
     );
-    final request = await _httpClient.getUrl(uri);
-    request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-    final response = await request.close();
-    final body = await utf8.decodeStream(response);
+    final response = await _httpClient.get(
+      uri,
+      headers: const {'accept': 'application/json'},
+    );
 
-    if (response.statusCode != HttpStatus.ok) {
+    if (response.statusCode != 200) {
       throw CatalogApiException(
         'Catalog API returned HTTP ${response.statusCode}',
       );
     }
 
-    final decoded = jsonDecode(body);
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (decoded is! Map<String, Object?>) {
       throw const CatalogApiException('Catalog API returned an invalid body');
     }

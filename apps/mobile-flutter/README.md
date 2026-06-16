@@ -23,8 +23,10 @@ product detail screen from catalog cards, derives a low/high model tier, and
 renders seller-provided sections, mesh color configuration, and gateway
 model/sprite route metadata without direct storage access. The product detail
 screen now renders the selected gateway model route with an interactive
-rotate/zoom 3D viewer. Category taxonomy, sorting, material editing, cart
-persistence, and executable Bazel Flutter targets remain deferred.
+rotate/zoom 3D viewer. Product detail mesh color configuration now renders as
+selectable material swatches backed by local Flutter state. Category taxonomy,
+sorting, cart persistence, and executable Bazel Flutter targets remain
+deferred.
 
 Verify the shell from the repository root:
 
@@ -66,4 +68,10 @@ Verify the interactive 3D product viewer from the repository root:
 
 ```bash
 bash scripts/verify-us-038.sh
+```
+
+Verify material color selection from the repository root:
+
+```bash
+bash scripts/verify-us-039.sh
 ```

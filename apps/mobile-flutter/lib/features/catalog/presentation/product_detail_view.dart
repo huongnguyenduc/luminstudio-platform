@@ -23,6 +23,7 @@ class ProductDetailPage extends StatelessWidget {
             ),
             ProductDetailStatus.ready => _ProductDetailReady(
               detail: state.detail!,
+              selectedMeshColors: state.selectedMeshColors,
             ),
           },
         );
@@ -83,9 +84,13 @@ class _ProductDetailFailure extends StatelessWidget {
 }
 
 class _ProductDetailReady extends StatelessWidget {
-  const _ProductDetailReady({required this.detail});
+  const _ProductDetailReady({
+    required this.detail,
+    required this.selectedMeshColors,
+  });
 
   final CatalogProductDetail detail;
+  final Map<String, String> selectedMeshColors;
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +123,11 @@ class _ProductDetailReady extends StatelessWidget {
             Text('Configurable colors', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             for (final options in detail.meshColorConfig) ...[
-              _MeshColorOptions(options: options),
+              _MeshColorOptions(
+                options: options,
+                selectedColor:
+                    selectedMeshColors[options.meshId] ?? options.defaultColor,
+              ),
               const SizedBox(height: 10),
             ],
           ],
@@ -220,9 +229,10 @@ class _InformationSection extends StatelessWidget {
 }
 
 class _MeshColorOptions extends StatelessWidget {
-  const _MeshColorOptions({required this.options});
+  const _MeshColorOptions({required this.options, required this.selectedColor});
 
   final CatalogMeshColorOptions options;
+  final String selectedColor;
 
   @override
   Widget build(BuildContext context) {
@@ -246,8 +256,10 @@ class _MeshColorOptions extends StatelessWidget {
             children: [
               for (final color in options.allowedColors)
                 _ColorSwatch(
+                  meshId: options.meshId,
                   color: color,
                   isDefault: color == options.defaultColor,
+                  isSelected: color == selectedColor,
                 ),
             ],
           ),
@@ -258,33 +270,88 @@ class _MeshColorOptions extends StatelessWidget {
 }
 
 class _ColorSwatch extends StatelessWidget {
-  const _ColorSwatch({required this.color, required this.isDefault});
+  const _ColorSwatch({
+    required this.meshId,
+    required this.color,
+    required this.isDefault,
+    required this.isSelected,
+  });
 
+  final String meshId;
   final String color;
   final bool isDefault;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final parsed = int.tryParse(color.substring(1), radix: 16);
+    final parsed = _parseHexColor(color);
+    final swatchColor = parsed == null
+        ? theme.colorScheme.surface
+        : Color(0xFF000000 | parsed);
+    final iconColor = _iconColorFor(swatchColor);
+    final label =
+        '$meshId color $color${isDefault ? ' default' : ''}${isSelected ? ' selected' : ''}';
 
-    return Tooltip(
-      message: isDefault ? '$color default' : color,
-      child: Container(
-        width: 44,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: parsed == null
-              ? theme.colorScheme.surface
-              : Color(0xFF000000 | parsed),
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: InkWell(
+          key: ValueKey<String>('mesh-color-$meshId-$color'),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: theme.colorScheme.outline),
+          onTap: () {
+            context.read<ProductDetailCubit>().selectMeshColor(meshId, color);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: swatchColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline,
+                width: isSelected ? 3 : 1,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withValues(
+                          alpha: 0.26,
+                        ),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: isSelected
+                ? Icon(Icons.check, size: 18, color: iconColor)
+                : null,
+          ),
         ),
-        child: isDefault
-            ? Icon(Icons.check, size: 18, color: theme.colorScheme.onPrimary)
-            : null,
       ),
     );
+  }
+
+  int? _parseHexColor(String value) {
+    final normalized = value.startsWith('#') ? value.substring(1) : value;
+    if (normalized.length != 6) {
+      return null;
+    }
+    return int.tryParse(normalized, radix: 16);
+  }
+
+  Color _iconColorFor(Color background) {
+    return ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
   }
 }

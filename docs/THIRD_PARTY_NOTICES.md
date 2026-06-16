@@ -24,3 +24,10 @@ The Flutter customer app uses
 licensed under Apache-2.0, to render interactive GLB/glTF product models
 through a WebView-backed Flutter widget. Upstream project:
 <https://github.com/omchiii/model_viewer_plus.dart>.
+
+## http 1.6.0
+
+The Flutter customer app uses
+[`http`](https://pub.dev/packages/http/versions/1.6.0), licensed under BSD-3-
+Clause, for cross-platform HTTP requests from the catalog API adapter. Upstream
+project: <https://github.com/dart-lang/http/tree/master/pkgs/http>.
