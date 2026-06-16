@@ -135,21 +135,36 @@ checks, pricing precision, currency, discount rules, authentication,
 authorization, signed object URLs, live backend proof, live device proof, and
 direct service access remain deferred.
 
+`US-041` defines the first display pricing contract for products. Product
+drafts, records, catalog items, and product details include integer-cent
+amounts, uppercase three-letter currency codes, and optional compare-at amounts.
+The Flutter app parses this API-owned price, displays it on Product Detail,
+snapshots it into local cart items, and recalculates selected subtotal and
+savings when quantity or selection changes. Checkout, payments, authentication,
+authorization, backend cart APIs, inventory checks, discount engines, tax,
+shipping, settlement, live backend proof, live device proof, and direct service
+access remain deferred.
+
 ## Cart
 
-Cart state is persisted locally with product identity, selected mesh colors,
-quantity, and selection state. The cart recalculates subtotal and savings
-immediately when quantity or selection changes.
+Cart state is persisted locally with product identity, product name, display
+price snapshot, selected mesh colors, quantity, and selection state. The cart
+recalculates selected subtotal and savings immediately when quantity or
+selection changes. Totals are shown only when selected items share one currency.
 
 Initial storage shape:
 
 ```json
 {
   "product_id": "product-id",
+  "product_name": "Product name",
+  "amount_cents": 12900,
+  "currency": "USD",
+  "compare_at_amount_cents": 15900,
   "selected_colors": {"mesh_body": "#FF0000"},
   "qty": 1
 }
 ```
 
-Pricing precision, currency, discount rules, inventory checks, and checkout are
-not defined by the current product contract.
+Discount engines, inventory checks, tax, shipping, checkout, payments, and auth
+are not defined by the current product contract.

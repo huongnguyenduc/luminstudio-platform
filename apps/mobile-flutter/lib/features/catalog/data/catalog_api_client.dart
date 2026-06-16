@@ -188,6 +188,7 @@ class CatalogProductDto {
     required this.name,
     required this.slug,
     required this.description,
+    required this.price,
     required this.processingStatus,
     required this.updatedAt,
     this.spriteAsset,
@@ -197,6 +198,7 @@ class CatalogProductDto {
   final String name;
   final String slug;
   final String description;
+  final CatalogPriceDto price;
   final String processingStatus;
   final DateTime updatedAt;
   final CatalogObjectRefDto? spriteAsset;
@@ -209,6 +211,7 @@ class CatalogProductDto {
       name: _expectString(json['name'], 'name'),
       slug: _expectString(json['slug'], 'slug'),
       description: _expectString(json['description'], 'description'),
+      price: CatalogPriceDto.fromJson(_expectMap(json['price'], 'price')),
       processingStatus: _expectString(
         json['processingStatus'],
         'processingStatus',
@@ -230,12 +233,44 @@ class CatalogProductDto {
       name: name,
       slug: slug,
       description: description,
+      price: price.toDomain(),
       processingStatus: processingStatus,
       updatedAt: updatedAt,
       spriteAsset: spriteAsset?.toDomain(),
       spritePreviewUri: spriteAsset == null
           ? null
           : spritePreviewUriFor?.call(id),
+    );
+  }
+}
+
+class CatalogPriceDto {
+  const CatalogPriceDto({
+    required this.amountCents,
+    required this.currency,
+    this.compareAtAmountCents,
+  });
+
+  final int amountCents;
+  final String currency;
+  final int? compareAtAmountCents;
+
+  factory CatalogPriceDto.fromJson(Map<String, Object?> json) {
+    return CatalogPriceDto(
+      amountCents: _expectInt(json['amountCents'], 'price.amountCents'),
+      currency: _expectString(json['currency'], 'price.currency'),
+      compareAtAmountCents: _expectOptionalInt(
+        json['compareAtAmountCents'],
+        'price.compareAtAmountCents',
+      ),
+    );
+  }
+
+  CatalogPrice toDomain() {
+    return CatalogPrice(
+      amountCents: amountCents,
+      currency: currency,
+      compareAtAmountCents: compareAtAmountCents,
     );
   }
 }
@@ -278,6 +313,7 @@ class ProductDetailDto {
     required this.name,
     required this.slug,
     required this.description,
+    required this.price,
     required this.informationSections,
     required this.meshColorConfig,
     required this.processingStatus,
@@ -293,6 +329,7 @@ class ProductDetailDto {
   final String name;
   final String slug;
   final String description;
+  final CatalogPriceDto price;
   final List<CatalogInformationSectionDto> informationSections;
   final List<CatalogMeshColorOptionsDto> meshColorConfig;
   final String processingStatus;
@@ -314,6 +351,7 @@ class ProductDetailDto {
       name: _expectString(json['name'], 'name'),
       slug: _expectString(json['slug'], 'slug'),
       description: _expectString(json['description'], 'description'),
+      price: CatalogPriceDto.fromJson(_expectMap(json['price'], 'price')),
       informationSections: [
         for (final section in sections)
           CatalogInformationSectionDto.fromJson(
@@ -350,6 +388,7 @@ class ProductDetailDto {
       name: name,
       slug: slug,
       description: description,
+      price: price.toDomain(),
       informationSections: [
         for (final section in informationSections) section.toDomain(),
       ],

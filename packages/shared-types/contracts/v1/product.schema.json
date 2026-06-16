@@ -28,13 +28,36 @@
         }
       }
     },
+    "ProductPrice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amountCents",
+        "currency"
+      ],
+      "properties": {
+        "amountCents": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "compareAtAmountCents": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
     "ProductDraft": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "name",
         "slug",
-        "description"
+        "description",
+        "price"
       ],
       "properties": {
         "name": {
@@ -51,6 +74,9 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 10000
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
         },
         "informationSections": {
           "type": "array",
@@ -75,6 +101,7 @@
         "name",
         "slug",
         "description",
+        "price",
         "createdAt",
         "updatedAt",
         "processingStatus"
@@ -97,6 +124,9 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 10000
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
         },
         "informationSections": {
           "type": "array",
@@ -143,6 +173,7 @@
         "name",
         "slug",
         "description",
+        "price",
         "processingStatus",
         "updatedAt"
       ],
@@ -164,6 +195,9 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 10000
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
         },
         "processingStatus": {
           "type": "string",
@@ -226,6 +260,7 @@
         "name",
         "slug",
         "description",
+        "price",
         "informationSections",
         "processingStatus",
         "modelTier",
@@ -249,6 +284,9 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 10000
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
         },
         "informationSections": {
           "type": "array",

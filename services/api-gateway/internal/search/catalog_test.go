@@ -78,6 +78,7 @@ func TestListCatalogProductsReturnsCustomerSafeItems(t *testing.T) {
 			Name:             "Arc Chair",
 			Slug:             "arc-chair",
 			Description:      "Configurable chair.",
+			Price:            product.ProductPrice{AmountCents: 12900, Currency: "USD"},
 			InformationText:  "admin index text",
 			ProcessingStatus: product.ProcessingCompleted,
 			SpriteAsset: &product.ObjectRef{
@@ -110,6 +111,9 @@ func TestListCatalogProductsReturnsCustomerSafeItems(t *testing.T) {
 	}
 	if got.Items[0].SpriteAsset == nil || got.Items[0].SpriteAsset.Bucket != "lumin-360-sprites" {
 		t.Fatalf("sprite asset missing from customer item: %#v", got.Items[0])
+	}
+	if got.Items[0].Price.AmountCents != 12900 || got.Items[0].Price.Currency != "USD" {
+		t.Fatalf("price missing from customer item: %#v", got.Items[0].Price)
 	}
 	if strings.Contains(recorder.Body.String(), "informationText") {
 		t.Fatalf("customer response leaked index-only text: %s", recorder.Body.String())
@@ -145,6 +149,9 @@ func TestGetCatalogProductDetailReturnsTieredModelAccess(t *testing.T) {
 	}
 	if got.MeshColorConfig["mesh_body"].Default != "#FFFFFF" {
 		t.Fatalf("meshColorConfig = %#v", got.MeshColorConfig)
+	}
+	if got.Price.AmountCents != 12900 || got.Price.Currency != "USD" {
+		t.Fatalf("price = %#v", got.Price)
 	}
 }
 
@@ -354,6 +361,7 @@ func ProductRecordWithSprite(size int64) product.ProductRecord {
 		Name:             "Arc Chair",
 		Slug:             "arc-chair",
 		Description:      "Configurable chair.",
+		Price:            product.ProductPrice{AmountCents: 12900, Currency: "USD"},
 		CreatedAt:        now,
 		UpdatedAt:        now,
 		MeshColorConfig:  product.MeshColorConfig{"mesh_body": {Default: "#FFFFFF", Allowed: []string{"#FFFFFF", "#FF0000"}}},

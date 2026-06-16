@@ -451,12 +451,16 @@ void main() {
       );
       expect(cartRepository.items.single.quantity, 1);
       expect(cartRepository.items.single.isSelected, isTrue);
+      expect(cartRepository.items.single.amountCents, 12900);
+      expect(cartRepository.items.single.compareAtAmountCents, 15900);
 
       await tester.tap(find.text('Cart'));
       await tester.pumpAndSettle();
 
       expect(find.text('1 in cart, 1 selected'), findsOneWidget);
-      expect(find.text('Product prod_1'), findsOneWidget);
+      expect(find.text('Subtotal USD 129.00'), findsOneWidget);
+      expect(find.text('Savings USD 30.00'), findsOneWidget);
+      expect(find.text('Product 1'), findsOneWidget);
       expect(find.text('mesh_body: #0F172A'), findsOneWidget);
     },
   );
@@ -468,6 +472,10 @@ void main() {
       items: const [
         CartItem(
           productId: 'prod_1',
+          productName: 'Product 1',
+          amountCents: 12900,
+          currency: 'USD',
+          compareAtAmountCents: 15900,
           selectedColors: {'mesh_body': '#0F172A'},
           quantity: 1,
           isSelected: true,
@@ -487,6 +495,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('1 in cart, 1 selected'), findsOneWidget);
+    expect(find.text('Subtotal USD 129.00'), findsOneWidget);
+    expect(find.text('Savings USD 30.00'), findsOneWidget);
     expect(find.text('mesh_body: #0F172A'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Increase prod_1 quantity'));
@@ -498,12 +508,15 @@ void main() {
     );
     expect(cartRepository.items.single.quantity, 2);
     expect(find.text('2 in cart, 2 selected'), findsOneWidget);
+    expect(find.text('Subtotal USD 258.00'), findsOneWidget);
+    expect(find.text('Savings USD 60.00'), findsOneWidget);
 
     await tester.tap(find.byType(Checkbox));
     await tester.pumpAndSettle();
 
     expect(cartRepository.items.single.isSelected, isFalse);
     expect(find.text('2 in cart, 0 selected'), findsOneWidget);
+    expect(find.text('Subtotal USD 258.00'), findsNothing);
   });
 
   testWidgets(
@@ -763,6 +776,11 @@ CatalogProductDetail _catalogProductDetail(
     name: 'Product ${productId.split('_').last}',
     slug: 'product-${productId.split('_').last}',
     description: 'Customer-safe detail for $productId',
+    price: const CatalogPrice(
+      amountCents: 12900,
+      currency: 'USD',
+      compareAtAmountCents: 15900,
+    ),
     informationSections: const [
       CatalogInformationSection(
         title: 'Materials',
@@ -812,6 +830,7 @@ CatalogProductsPage _catalogPreviewPage() {
         name: 'Product 2',
         slug: 'product-2',
         description: 'Customer-safe description for Product 2',
+        price: const CatalogPrice(amountCents: 12900, currency: 'USD'),
         processingStatus: 'completed',
         updatedAt: DateTime.utc(2026, 6, 16, 12, 2),
         spriteAsset: const CatalogObjectRef(
@@ -845,6 +864,7 @@ CatalogProductsPage _catalogPageSlice({
           name: '$namePrefix $index',
           slug: '${namePrefix.toLowerCase().replaceAll(' ', '-')}-$index',
           description: 'Customer-safe description for $namePrefix $index',
+          price: const CatalogPrice(amountCents: 12900, currency: 'USD'),
           processingStatus: index.isEven ? 'completed' : 'queued',
           updatedAt: DateTime.utc(2026, 6, 16, 12, index),
           spriteAsset: index.isEven

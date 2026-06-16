@@ -117,6 +117,14 @@ class _ProductDetailReady extends StatelessWidget {
           Text(detail.name, style: theme.textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(detail.description, style: theme.textTheme.bodyLarge),
+          const SizedBox(height: 8),
+          Text(
+            _formatMoney(detail.price.amountCents, detail.price.currency),
+            key: const ValueKey<String>('product-detail-price'),
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
           const SizedBox(height: 16),
           _ModelAccessPanel(detail: detail),
           const SizedBox(height: 20),
@@ -163,6 +171,12 @@ class _ProductDetailReady extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatMoney(int cents, String currency) {
+  final whole = cents ~/ 100;
+  final fraction = (cents % 100).toString().padLeft(2, '0');
+  return '$currency $whole.$fraction';
 }
 
 class _InteractiveModelPanel extends StatelessWidget {

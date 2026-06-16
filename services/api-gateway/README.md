@@ -39,6 +39,11 @@ gateway asset routes. Model bytes are streamed through
 `GET /catalog/products/{id}/model?tier=low|high`, with low tier reading the
 optimized GLB and high tier reading the source GLB after the product row is
 completed. Retry/outbox semantics remain deferred.
+Product drafts and records now include a required display price; the API
+persists it on PostgreSQL product rows, propagates it into Meilisearch product
+documents, and returns it from customer catalog/search/detail responses. This
+does not add checkout, payments, authentication, authorization, backend cart
+APIs, inventory checks, or discount engines.
 
 Run native tests:
 
@@ -124,4 +129,10 @@ root:
 
 ```bash
 bash scripts/verify-us-036.sh
+```
+
+Verify product pricing contract and cart totals from the repository root:
+
+```bash
+bash scripts/verify-us-041.sh
 ```

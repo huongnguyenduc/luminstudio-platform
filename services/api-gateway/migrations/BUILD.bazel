@@ -1,5 +1,8 @@
 filegroup(
     name = "migrations",
-    srcs = ["001_create_products.sql"],
+    srcs = [
+        "001_create_products.sql",
+        "002_add_product_pricing.sql",
+    ],
     visibility = ["//visibility:public"],
 )

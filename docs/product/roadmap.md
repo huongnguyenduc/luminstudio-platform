@@ -242,6 +242,13 @@ Selected work:
   with local quantity and selection updates without adding backend cart APIs,
   checkout, payments, inventory checks, pricing rules, signed object URLs, auth,
   Flutter Bazel rules, live backend proof, or live device proof.
+- `US-041 Product Pricing Contract And Cart Totals` defines the first product
+  display pricing object, persists it on product records, propagates it through
+  search/catalog/detail API responses, snapshots it into local Flutter cart
+  items, and renders selected subtotal and savings without adding checkout,
+  payments, authentication, authorization, backend cart APIs, inventory checks,
+  discount engines, Flutter Bazel rules, live backend proof, or live device
+  proof.
 
 ## Deferred
 

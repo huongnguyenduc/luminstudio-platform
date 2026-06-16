@@ -54,6 +54,7 @@ type CatalogItem struct {
 	Name             string                   `json:"name"`
 	Slug             string                   `json:"slug"`
 	Description      string                   `json:"description"`
+	Price            product.ProductPrice     `json:"price"`
 	ProcessingStatus product.ProcessingStatus `json:"processingStatus"`
 	SpriteAsset      *product.ObjectRef       `json:"spriteAsset,omitempty"`
 	UpdatedAt        time.Time                `json:"updatedAt"`
@@ -72,6 +73,7 @@ type ProductDetailResponse struct {
 	Name                string                       `json:"name"`
 	Slug                string                       `json:"slug"`
 	Description         string                       `json:"description"`
+	Price               product.ProductPrice         `json:"price"`
 	InformationSections []product.InformationSection `json:"informationSections"`
 	MeshColorConfig     product.MeshColorConfig      `json:"meshColorConfig,omitempty"`
 	ProcessingStatus    product.ProcessingStatus     `json:"processingStatus"`
@@ -154,6 +156,7 @@ func (handler Handler) GetCatalogProductDetail(response http.ResponseWriter, req
 		Name:                record.Name,
 		Slug:                record.Slug,
 		Description:         record.Description,
+		Price:               record.Price,
 		InformationSections: record.InformationSections,
 		MeshColorConfig:     record.MeshColorConfig,
 		ProcessingStatus:    record.ProcessingStatus,
@@ -337,6 +340,7 @@ func (handler Handler) search(response http.ResponseWriter, request *http.Reques
 			Name:             hit.Name,
 			Slug:             hit.Slug,
 			Description:      hit.Description,
+			Price:            hit.Price,
 			ProcessingStatus: hit.ProcessingStatus,
 			SpriteAsset:      hit.SpriteAsset,
 			UpdatedAt:        hit.UpdatedAt,

@@ -12,12 +12,33 @@ class CatalogObjectRef {
   final int? sizeBytes;
 }
 
+class CatalogPrice {
+  const CatalogPrice({
+    required this.amountCents,
+    required this.currency,
+    this.compareAtAmountCents,
+  });
+
+  final int amountCents;
+  final String currency;
+  final int? compareAtAmountCents;
+
+  int get savingsCents {
+    final compareAt = compareAtAmountCents;
+    if (compareAt == null || compareAt <= amountCents) {
+      return 0;
+    }
+    return compareAt - amountCents;
+  }
+}
+
 class CatalogProduct {
   const CatalogProduct({
     required this.id,
     required this.name,
     required this.slug,
     required this.description,
+    required this.price,
     required this.processingStatus,
     required this.updatedAt,
     this.spriteAsset,
@@ -28,6 +49,7 @@ class CatalogProduct {
   final String name;
   final String slug;
   final String description;
+  final CatalogPrice price;
   final String processingStatus;
   final DateTime updatedAt;
   final CatalogObjectRef? spriteAsset;
@@ -41,6 +63,7 @@ class CatalogProduct {
       name: name,
       slug: slug,
       description: description,
+      price: price,
       processingStatus: processingStatus,
       updatedAt: updatedAt,
       spriteAsset: spriteAsset,
@@ -91,6 +114,7 @@ class CatalogProductDetail {
     required this.name,
     required this.slug,
     required this.description,
+    required this.price,
     required this.informationSections,
     required this.meshColorConfig,
     required this.processingStatus,
@@ -106,6 +130,7 @@ class CatalogProductDetail {
   final String name;
   final String slug;
   final String description;
+  final CatalogPrice price;
   final List<CatalogInformationSection> informationSections;
   final List<CatalogMeshColorOptions> meshColorConfig;
   final String processingStatus;

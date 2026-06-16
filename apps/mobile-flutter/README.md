@@ -26,9 +26,10 @@ screen now renders the selected gateway model route with an interactive
 rotate/zoom 3D viewer. Product detail mesh color configuration now renders as
 selectable material swatches backed by local Flutter state. Product Detail can
 now add the selected configuration to a locally persisted cart, and the Cart tab
-renders stored product identity, selected colors, quantity, and selection state.
-Category taxonomy, sorting, checkout, pricing rules, and executable Bazel
-Flutter targets remain deferred.
+renders stored product identity, selected colors, quantity, selection state,
+selected subtotal, and savings from locally stored price snapshots. Category
+taxonomy, sorting, checkout, payment, auth, inventory, discount engines, and
+executable Bazel Flutter targets remain deferred.
 
 Verify the shell from the repository root:
 
@@ -82,4 +83,10 @@ Verify local cart persistence from the repository root:
 
 ```bash
 bash scripts/verify-us-040.sh
+```
+
+Verify product pricing contract and cart totals from the repository root:
+
+```bash
+bash scripts/verify-us-041.sh
 ```

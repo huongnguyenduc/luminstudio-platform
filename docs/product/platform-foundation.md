@@ -189,6 +189,12 @@ tab renders stored product identity, selected mesh colors, quantity, and
 selection state without introducing backend cart APIs, checkout, payment,
 inventory, direct storage/search/message access, Flutter Bazel rules, or live
 device proof.
+`US-041` adds a required display price contract to product drafts and records,
+propagates that price through the API-owned search/catalog/detail boundary, and
+lets the local Flutter cart calculate selected subtotal and savings from stored
+price snapshots without introducing checkout, payment, auth, inventory,
+backend cart APIs, direct storage/search/message access, Flutter Bazel rules,
+or live device proof.
 
 ## Boundary Rules
 

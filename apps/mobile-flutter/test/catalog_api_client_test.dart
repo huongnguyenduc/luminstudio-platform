@@ -15,6 +15,11 @@ void main() {
       "name": "Ceramic Pendant",
       "slug": "ceramic-pendant",
       "description": "A customer-safe catalog description.",
+      "price": {
+        "amountCents": 12900,
+        "currency": "USD",
+        "compareAtAmountCents": 15900
+      },
       "processingStatus": "completed",
       "spriteAsset": {
         "bucket": "lumin-360-sprites",
@@ -40,6 +45,8 @@ void main() {
 
     expect(page.total, 1);
     expect(page.items.single.name, 'Ceramic Pendant');
+    expect(page.items.single.price.amountCents, 12900);
+    expect(page.items.single.price.savingsCents, 3000);
     expect(page.items.single.hasPreview, isTrue);
     expect(page.items.single.spriteAsset?.bucket, 'lumin-360-sprites');
     expect(
@@ -81,6 +88,11 @@ void main() {
   "name": "Ceramic Pendant",
   "slug": "ceramic-pendant",
   "description": "A configurable pendant.",
+  "price": {
+    "amountCents": 12900,
+    "currency": "USD",
+    "compareAtAmountCents": 15900
+  },
   "informationSections": [
     {"title": "Materials", "body": "Glazed ceramic and brass."}
   ],
@@ -117,6 +129,8 @@ void main() {
 
     expect(detail.id, 'prod_12345678');
     expect(detail.modelTier, ProductModelTier.high);
+    expect(detail.price.amountCents, 12900);
+    expect(detail.price.savingsCents, 3000);
     expect(detail.informationSections.single.title, 'Materials');
     expect(detail.meshColorConfig.single.meshId, 'mesh_body');
     expect(detail.meshColorConfig.single.defaultColor, '#FFFFFF');

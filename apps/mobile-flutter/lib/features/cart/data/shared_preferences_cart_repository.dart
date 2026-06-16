@@ -35,6 +35,10 @@ class SharedPreferencesCartRepository implements CartRepository {
       for (final item in items)
         <String, Object?>{
           'product_id': item.productId,
+          'product_name': item.productName,
+          'amount_cents': item.amountCents,
+          'currency': item.currency,
+          'compare_at_amount_cents': item.compareAtAmountCents,
           'selected_colors': item.selectedColors,
           'qty': item.quantity,
           'selected': item.isSelected,
@@ -49,10 +53,27 @@ class SharedPreferencesCartRepository implements CartRepository {
     }
 
     final productId = value['product_id'];
+    final productName = value['product_name'];
+    final amountCents = value['amount_cents'];
+    final currency = value['currency'];
+    final compareAtAmountCents = value['compare_at_amount_cents'];
     final quantity = value['qty'];
     final selectedColors = value['selected_colors'];
     final selected = value['selected'];
     if (productId is! String || productId.isEmpty) {
+      return null;
+    }
+    if (productName is! String || productName.isEmpty) {
+      return null;
+    }
+    if (amountCents is! int || amountCents < 1) {
+      return null;
+    }
+    if (currency is! String || currency.isEmpty) {
+      return null;
+    }
+    if (compareAtAmountCents != null &&
+        (compareAtAmountCents is! int || compareAtAmountCents <= amountCents)) {
       return null;
     }
     if (quantity is! int || quantity < 1) {
@@ -64,6 +85,12 @@ class SharedPreferencesCartRepository implements CartRepository {
 
     return CartItem(
       productId: productId,
+      productName: productName,
+      amountCents: amountCents,
+      currency: currency,
+      compareAtAmountCents: compareAtAmountCents is int
+          ? compareAtAmountCents
+          : null,
       selectedColors: {
         for (final entry in selectedColors.entries)
           if (entry.value is String) entry.key: entry.value! as String,

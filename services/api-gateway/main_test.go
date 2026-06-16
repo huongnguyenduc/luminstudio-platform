@@ -73,6 +73,7 @@ func routeProductRecord(now time.Time) product.ProductRecord {
 		Name:             "Arc Chair",
 		Slug:             "arc-chair",
 		Description:      "Configurable chair.",
+		Price:            product.ProductPrice{AmountCents: 12900, Currency: "USD"},
 		MeshColorConfig:  product.MeshColorConfig{"mesh_body": {Default: "#FFFFFF", Allowed: []string{"#FFFFFF"}}},
 		CreatedAt:        now,
 		UpdatedAt:        now,
@@ -90,6 +91,7 @@ func (productSearcherRouteStub) SearchProducts(_ context.Context, query search.P
 			Name:             "Arc Chair",
 			Slug:             "arc-chair",
 			Description:      "Configurable chair.",
+			Price:            product.ProductPrice{AmountCents: 12900, Currency: "USD"},
 			ProcessingStatus: product.ProcessingCompleted,
 			UpdatedAt:        time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC),
 		}},
@@ -128,7 +130,7 @@ func TestRoutesExposeReadiness(t *testing.T) {
 
 func TestRoutesExposeAdminProductCreate(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	body := `{"name":"Arc Chair","slug":"arc-chair","description":"Configurable chair.","informationSections":[]}`
+	body := `{"name":"Arc Chair","slug":"arc-chair","description":"Configurable chair.","price":{"amountCents":12900,"currency":"USD"},"informationSections":[]}`
 	request := httptest.NewRequest(http.MethodPost, "/admin/products", strings.NewReader(body))
 
 	testRoutes().ServeHTTP(recorder, request)
@@ -162,7 +164,7 @@ func TestRoutesExposeAdminProductGet(t *testing.T) {
 
 func TestRoutesExposeAdminProductUpdate(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	body := `{"name":"Arc Chair","slug":"arc-chair","description":"Configurable chair.","informationSections":[]}`
+	body := `{"name":"Arc Chair","slug":"arc-chair","description":"Configurable chair.","price":{"amountCents":12900,"currency":"USD"},"informationSections":[]}`
 	request := httptest.NewRequest(http.MethodPut, "/admin/products/prod_12345678", strings.NewReader(body))
 
 	testRoutes().ServeHTTP(recorder, request)

@@ -134,6 +134,7 @@ class _CartSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final totals = state.selectedTotals;
 
     return Container(
       key: const ValueKey<String>('cart-summary'),
@@ -142,16 +143,46 @@ class _CartSummary extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.shopping_bag, color: theme.colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '${state.totalQuantity} in cart, ${state.selectedQuantity} selected',
-              style: theme.textTheme.titleMedium,
-            ),
+          Row(
+            children: [
+              Icon(Icons.shopping_bag, color: theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${state.totalQuantity} in cart, ${state.selectedQuantity} selected',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+            ],
           ),
+          if (totals != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Subtotal ${_formatMoney(totals.subtotalCents, totals.currency)}',
+              key: const ValueKey<String>('cart-subtotal'),
+              style: theme.textTheme.titleSmall,
+            ),
+            if (totals.savingsCents > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Savings ${_formatMoney(totals.savingsCents, totals.currency)}',
+                key: const ValueKey<String>('cart-savings'),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ] else if (state.selectedQuantity > 0) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Totals unavailable for mixed currencies',
+              key: const ValueKey<String>('cart-mixed-currency'),
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
         ],
       ),
     );
@@ -191,11 +222,17 @@ class _CartItemTile extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Product ${item.productId}',
+                  item.productName,
                   style: theme.textTheme.titleMedium,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${_formatMoney(item.amountCents, item.currency)} each',
+            key: ValueKey<String>('cart-price-${item.productId}'),
+            style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -246,4 +283,10 @@ class _CartItemTile extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatMoney(int cents, String currency) {
+  final whole = cents ~/ 100;
+  final fraction = (cents % 100).toString().padLeft(2, '0');
+  return '$currency $whole.$fraction';
 }

@@ -5,6 +5,18 @@ import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart
 
 enum CartStatus { initial, loading, ready, failure }
 
+class CartTotals {
+  const CartTotals({
+    required this.currency,
+    required this.subtotalCents,
+    required this.savingsCents,
+  });
+
+  final String currency;
+  final int subtotalCents;
+  final int savingsCents;
+}
+
 class CartState {
   const CartState({
     this.status = CartStatus.initial,
@@ -24,6 +36,28 @@ class CartState {
   int get selectedQuantity => items
       .where((item) => item.isSelected)
       .fold<int>(0, (total, item) => total + item.quantity);
+
+  CartTotals? get selectedTotals {
+    final selectedItems = items.where((item) => item.isSelected).toList();
+    if (selectedItems.isEmpty) {
+      return null;
+    }
+    final currency = selectedItems.first.currency;
+    if (selectedItems.any((item) => item.currency != currency)) {
+      return null;
+    }
+    return CartTotals(
+      currency: currency,
+      subtotalCents: selectedItems.fold<int>(
+        0,
+        (total, item) => total + item.lineSubtotalCents,
+      ),
+      savingsCents: selectedItems.fold<int>(
+        0,
+        (total, item) => total + item.lineSavingsCents,
+      ),
+    );
+  }
 
   CartState copyWith({
     CartStatus? status,
@@ -78,6 +112,10 @@ class CartCubit extends Cubit<CartState> {
           ...items,
           CartItem(
             productId: detail.id,
+            productName: detail.name,
+            amountCents: detail.price.amountCents,
+            currency: detail.price.currency,
+            compareAtAmountCents: detail.price.compareAtAmountCents,
             selectedColors: Map<String, String>.unmodifiable(selectedColors),
             quantity: 1,
             isSelected: true,

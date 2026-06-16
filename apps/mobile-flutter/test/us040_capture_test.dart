@@ -32,7 +32,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Product prod_1'), findsOneWidget);
+    expect(find.text('Product 1'), findsOneWidget);
+    expect(find.text('Subtotal USD 258.00'), findsOneWidget);
     expect(find.text('mesh_body: #0F172A'), findsOneWidget);
 
     await expectLater(
@@ -48,6 +49,10 @@ class _SeededCartRepository implements CartRepository {
     return const [
       CartItem(
         productId: 'prod_1',
+        productName: 'Product 1',
+        amountCents: 12900,
+        currency: 'USD',
+        compareAtAmountCents: 15900,
         selectedColors: {'mesh_body': '#0F172A'},
         quantity: 2,
         isSelected: true,

@@ -34,6 +34,12 @@ type InformationSection struct {
 	CollapsedByDefault bool   `json:"collapsedByDefault"`
 }
 
+type ProductPrice struct {
+	AmountCents          int64  `json:"amountCents"`
+	Currency             string `json:"currency"`
+	CompareAtAmountCents *int64 `json:"compareAtAmountCents,omitempty"`
+}
+
 type MeshColorOption struct {
 	Default string   `json:"default"`
 	Allowed []string `json:"allowed"`
@@ -45,6 +51,7 @@ type ProductDraft struct {
 	Name                string               `json:"name"`
 	Slug                string               `json:"slug"`
 	Description         string               `json:"description"`
+	Price               ProductPrice         `json:"price"`
 	InformationSections []InformationSection `json:"informationSections"`
 	MeshColorConfig     MeshColorConfig      `json:"meshColorConfig,omitempty"`
 	SourceAsset         *ObjectRef           `json:"sourceAsset,omitempty"`
@@ -55,6 +62,7 @@ type ProductRecord struct {
 	Name                string               `json:"name"`
 	Slug                string               `json:"slug"`
 	Description         string               `json:"description"`
+	Price               ProductPrice         `json:"price"`
 	InformationSections []InformationSection `json:"informationSections"`
 	MeshColorConfig     MeshColorConfig      `json:"meshColorConfig,omitempty"`
 	SourceAsset         *ObjectRef           `json:"sourceAsset,omitempty"`
@@ -72,6 +80,7 @@ var (
 	meshIDPattern    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$`)
 	hexColorPattern  = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
 	objectKeyPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._/-]*$`)
+	currencyPattern  = regexp.MustCompile(`^[A-Z]{3}$`)
 	validBuckets     = map[string]struct{}{
 		"lumin-source-glb":    {},
 		"lumin-optimized-glb": {},
@@ -92,6 +101,9 @@ func (draft ProductDraft) Validate() error {
 	}
 	if draft.Slug == "" || len(draft.Slug) > 180 || !slugPattern.MatchString(draft.Slug) {
 		return errors.New("slug must match the v1 product slug contract")
+	}
+	if err := draft.Price.validate(); err != nil {
+		return fmt.Errorf("price: %w", err)
 	}
 	for index, section := range draft.InformationSections {
 		if err := section.validate(); err != nil {
@@ -119,6 +131,7 @@ func (record ProductRecord) Validate() error {
 		Name:                record.Name,
 		Slug:                record.Slug,
 		Description:         record.Description,
+		Price:               record.Price,
 		InformationSections: record.InformationSections,
 		MeshColorConfig:     record.MeshColorConfig,
 		SourceAsset:         record.SourceAsset,
@@ -161,6 +174,19 @@ func (section InformationSection) validate() error {
 		return err
 	}
 	return validateText("body", section.Body, 1, 5000)
+}
+
+func (price ProductPrice) validate() error {
+	if price.AmountCents <= 0 {
+		return errors.New("amountCents must be greater than zero")
+	}
+	if !currencyPattern.MatchString(price.Currency) {
+		return errors.New("currency must be an ISO 4217 uppercase code")
+	}
+	if price.CompareAtAmountCents != nil && *price.CompareAtAmountCents <= price.AmountCents {
+		return errors.New("compareAtAmountCents must be greater than amountCents")
+	}
+	return nil
 }
 
 func (config MeshColorConfig) validate() error {

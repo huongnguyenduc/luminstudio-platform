@@ -8,10 +8,16 @@ import (
 
 func validDraft() ProductDraft {
 	size := int64(42)
+	compareAt := int64(15900)
 	return ProductDraft{
 		Name:        "Arc Chair",
 		Slug:        "arc-chair",
 		Description: "Configurable chair with one source model.",
+		Price: ProductPrice{
+			AmountCents:          12900,
+			Currency:             "USD",
+			CompareAtAmountCents: &compareAt,
+		},
 		InformationSections: []InformationSection{
 			{Title: "Materials", Body: "Powder coated steel.", CollapsedByDefault: true},
 		},
@@ -51,6 +57,28 @@ func TestProductDraftValidateRejectsContractViolations(t *testing.T) {
 				draft.Slug = "Arc Chair"
 			},
 			want: "slug",
+		},
+		{
+			name: "zero price",
+			mutate: func(draft *ProductDraft) {
+				draft.Price.AmountCents = 0
+			},
+			want: "amountCents",
+		},
+		{
+			name: "bad currency",
+			mutate: func(draft *ProductDraft) {
+				draft.Price.Currency = "usd"
+			},
+			want: "currency",
+		},
+		{
+			name: "compare at not above amount",
+			mutate: func(draft *ProductDraft) {
+				compareAt := draft.Price.AmountCents
+				draft.Price.CompareAtAmountCents = &compareAt
+			},
+			want: "compareAtAmountCents",
 		},
 		{
 			name: "empty section title",
@@ -131,6 +159,7 @@ func TestProductRecordValidateRejectsInvalidStatusAndTime(t *testing.T) {
 		Name:                "Arc Chair",
 		Slug:                "arc-chair",
 		Description:         "Configurable chair.",
+		Price:               validDraft().Price,
 		InformationSections: validDraft().InformationSections,
 		CreatedAt:           now,
 		UpdatedAt:           now.Add(-time.Second),

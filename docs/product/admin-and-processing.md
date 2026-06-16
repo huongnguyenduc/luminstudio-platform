@@ -134,6 +134,13 @@ The API now also exposes customer product detail through
 authoritative product row first, require completed processing and matching
 object references, and keep source and optimized GLB access behind the API
 gateway rather than exposing direct MinIO URLs.
+Product drafts and records now include a required display price with integer
+cents, an uppercase three-letter currency code, and an optional compare-at
+amount. The Go API persists this price on the authoritative product row,
+propagates it through `product.updated` search synchronization, and returns it
+from customer catalog and product-detail responses. Checkout, payments,
+authentication, authorization, backend cart APIs, inventory checks, discount
+engines, tax, shipping, and seller settlement remain deferred.
 
 Authentication, authorization, product delete workflows, customer
 category taxonomy, sorting, signed object URLs, Flutter 3D viewer behavior,

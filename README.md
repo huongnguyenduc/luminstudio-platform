@@ -76,9 +76,10 @@ The Flutter product detail screen now renders that gateway model route through
 an interactive rotate/zoom viewer. Product detail mesh color configuration now
 renders as selectable material swatches backed by local Flutter state. The
 selected configuration can now be added to a locally persisted Flutter cart, and
-the Cart tab renders stored quantity, selected colors, and selection state.
-Category taxonomy, signed object URLs, checkout, pricing rules, and auth remain
-deferred.
+the Cart tab renders stored quantity, selected colors, selection state,
+selected subtotal, and savings from the API-owned display pricing contract.
+Category taxonomy, signed object URLs, checkout, payment, inventory, discount
+engines, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -354,6 +355,12 @@ Flutter local cart persistence verification:
 
 ```bash
 bash scripts/verify-us-040.sh
+```
+
+Product pricing contract and cart totals verification:
+
+```bash
+bash scripts/verify-us-041.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

@@ -128,7 +128,7 @@ func TestMeilisearchIndexerUpsertsProductDocument(t *testing.T) {
 	if authorization != "Bearer search-key" {
 		t.Fatalf("authorization = %q", authorization)
 	}
-	if len(documents) != 1 || documents[0].ID != "prod_12345678" || documents[0].InformationText == "" {
+	if len(documents) != 1 || documents[0].ID != "prod_12345678" || documents[0].InformationText == "" || documents[0].Price.AmountCents != 12900 {
 		t.Fatalf("documents = %#v", documents)
 	}
 }
@@ -159,6 +159,7 @@ func validSearchRecord(now time.Time) product.ProductRecord {
 		Name:        "Arc Chair",
 		Slug:        "arc-chair",
 		Description: "Configurable chair.",
+		Price:       product.ProductPrice{AmountCents: 12900, Currency: "USD"},
 		InformationSections: []product.InformationSection{
 			{Title: "Materials", Body: "Oak and wool."},
 		},

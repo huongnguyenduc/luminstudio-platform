@@ -15,14 +15,15 @@ INSERT INTO products (
   slug,
   name,
   description,
+  price,
   information_sections,
   mesh_color_config,
   source_asset,
   processing_status,
   created_at,
   updated_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, slug, name, description, information_sections, mesh_color_config,
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING id, slug, name, description, price, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
   sprite_asset`
 
@@ -31,12 +32,13 @@ UPDATE products
 SET slug = $2,
   name = $3,
   description = $4,
-  information_sections = $5,
-  mesh_color_config = $6,
-  source_asset = $7,
-  updated_at = $8
+  price = $5,
+  information_sections = $6,
+  mesh_color_config = $7,
+  source_asset = $8,
+  updated_at = $9
 WHERE id = $1
-RETURNING id, slug, name, description, information_sections, mesh_color_config,
+RETURNING id, slug, name, description, price, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
   sprite_asset`
 
@@ -46,7 +48,7 @@ SET source_asset = $2,
   processing_status = $3,
   updated_at = $4
 WHERE id = $1
-RETURNING id, slug, name, description, information_sections, mesh_color_config,
+RETURNING id, slug, name, description, price, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
   sprite_asset`
 
@@ -58,12 +60,12 @@ SET optimized_asset = $2,
   updated_at = $5
 WHERE id = $1
   AND updated_at <= $5
-RETURNING id, slug, name, description, information_sections, mesh_color_config,
+RETURNING id, slug, name, description, price, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
   sprite_asset`
 
 const selectProductColumns = `
-SELECT id, slug, name, description, information_sections, mesh_color_config,
+SELECT id, slug, name, description, price, information_sections, mesh_color_config,
   source_asset, created_at, updated_at, processing_status, optimized_asset,
   sprite_asset
 FROM products`
@@ -94,6 +96,7 @@ type insertProductArgs struct {
 	Slug                string
 	Name                string
 	Description         string
+	Price               []byte
 	InformationSections []byte
 	MeshColorConfig     []byte
 	SourceAsset         []byte
@@ -107,6 +110,7 @@ type updateProductArgs struct {
 	Slug                string
 	Name                string
 	Description         string
+	Price               []byte
 	InformationSections []byte
 	MeshColorConfig     []byte
 	SourceAsset         []byte
@@ -139,6 +143,10 @@ func NewInsertProductArgs(id string, draft ProductDraft, now time.Time) (insertP
 	if err != nil {
 		return insertProductArgs{}, fmt.Errorf("encode information sections: %w", err)
 	}
+	price, err := encodeJSON(draft.Price)
+	if err != nil {
+		return insertProductArgs{}, fmt.Errorf("encode price: %w", err)
+	}
 	meshConfig, err := encodeJSON(draft.MeshColorConfig)
 	if err != nil {
 		return insertProductArgs{}, fmt.Errorf("encode mesh color config: %w", err)
@@ -152,6 +160,7 @@ func NewInsertProductArgs(id string, draft ProductDraft, now time.Time) (insertP
 		Slug:                draft.Slug,
 		Name:                draft.Name,
 		Description:         draft.Description,
+		Price:               price,
 		InformationSections: sections,
 		MeshColorConfig:     meshConfig,
 		SourceAsset:         sourceAsset,
@@ -227,6 +236,10 @@ func NewUpdateProductArgs(id string, draft ProductDraft, now time.Time) (updateP
 	if err != nil {
 		return updateProductArgs{}, fmt.Errorf("encode information sections: %w", err)
 	}
+	price, err := encodeJSON(draft.Price)
+	if err != nil {
+		return updateProductArgs{}, fmt.Errorf("encode price: %w", err)
+	}
 	meshConfig, err := encodeJSON(draft.MeshColorConfig)
 	if err != nil {
 		return updateProductArgs{}, fmt.Errorf("encode mesh color config: %w", err)
@@ -240,6 +253,7 @@ func NewUpdateProductArgs(id string, draft ProductDraft, now time.Time) (updateP
 		Slug:                draft.Slug,
 		Name:                draft.Name,
 		Description:         draft.Description,
+		Price:               price,
 		InformationSections: sections,
 		MeshColorConfig:     meshConfig,
 		SourceAsset:         sourceAsset,
@@ -257,6 +271,7 @@ func (store Store) InsertProduct(ctx context.Context, id string, draft ProductDr
 		args.Slug,
 		args.Name,
 		args.Description,
+		args.Price,
 		args.InformationSections,
 		args.MeshColorConfig,
 		args.SourceAsset,
@@ -281,6 +296,7 @@ func (store Store) UpdateProduct(ctx context.Context, id string, draft ProductDr
 		args.Slug,
 		args.Name,
 		args.Description,
+		args.Price,
 		args.InformationSections,
 		args.MeshColorConfig,
 		args.SourceAsset,
@@ -385,6 +401,7 @@ type productRow interface {
 
 func scanProduct(row productRow) (ProductRecord, error) {
 	var record ProductRecord
+	var price []byte
 	var sections []byte
 	var meshConfig []byte
 	var sourceAsset []byte
@@ -395,6 +412,7 @@ func scanProduct(row productRow) (ProductRecord, error) {
 		&record.Slug,
 		&record.Name,
 		&record.Description,
+		&price,
 		&sections,
 		&meshConfig,
 		&sourceAsset,
@@ -407,6 +425,9 @@ func scanProduct(row productRow) (ProductRecord, error) {
 		return ProductRecord{}, err
 	}
 	var err error
+	if record.Price, err = decodeJSON[ProductPrice](price); err != nil {
+		return ProductRecord{}, fmt.Errorf("decode price: %w", err)
+	}
 	if record.InformationSections, err = decodeJSON[[]InformationSection](sections); err != nil {
 		return ProductRecord{}, fmt.Errorf("decode information sections: %w", err)
 	}
