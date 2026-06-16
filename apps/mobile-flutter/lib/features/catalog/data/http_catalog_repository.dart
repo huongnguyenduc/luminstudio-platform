@@ -8,6 +8,11 @@ class HttpCatalogRepository implements CatalogRepository {
   final CatalogApiClient _client;
 
   @override
+  Future<List<CatalogCategory>> listCategories() {
+    return _client.listCategories();
+  }
+
+  @override
   Future<CatalogProductsPage> listProducts({int limit = 20, int offset = 0}) {
     return _client.listProducts(limit: limit, offset: offset);
   }
@@ -19,6 +24,21 @@ class HttpCatalogRepository implements CatalogRepository {
     int offset = 0,
   }) {
     return _client.searchProducts(query, limit: limit, offset: offset);
+  }
+
+  @override
+  Future<CatalogProductsPage> listCategoryProducts(
+    String categorySlug, {
+    CategoryProductSort sort = CategoryProductSort.newest,
+    int limit = 20,
+    int offset = 0,
+  }) {
+    return _client.listCategoryProducts(
+      categorySlug,
+      sort: sort,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   @override

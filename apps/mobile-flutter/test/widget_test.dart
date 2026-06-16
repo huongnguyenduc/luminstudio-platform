@@ -86,6 +86,71 @@ void main() {
     expect(find.text('Home state retained'), findsOneWidget);
   });
 
+  testWidgets('category tab loads categories and first category products', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withCategories();
+
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Category'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lighting'), findsWidgets);
+    expect(find.text('Tables'), findsOneWidget);
+    expect(find.text('Lighting Product 1'), findsOneWidget);
+    expect(repository.lastCategorySlug, 'lighting');
+    expect(repository.categoryOffsets, contains(0));
+  });
+
+  testWidgets('category tab changes product sort through the API repository', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withCategories();
+
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Category'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Newest'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Price high to low').last);
+    await tester.pumpAndSettle();
+
+    expect(repository.lastCategorySlug, 'lighting');
+    expect(repository.categorySorts, contains(CategoryProductSort.priceDesc));
+  });
+
+  testWidgets('category tab paginates products and retries inline failures', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withCategories(
+      productCount: 5,
+      pageSize: 2,
+    )..shouldFailNextCategoryPage = true;
+
+    await tester.pumpWidget(_testApp(catalogRepository: repository));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Category'));
+    await tester.pumpAndSettle();
+
+    await _loadMoreThroughCategory(tester);
+
+    expect(find.text('More category products are unavailable'), findsOneWidget);
+    expect(find.text('Lighting Product 1'), findsOneWidget);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    await _loadMoreThroughCategory(tester);
+
+    expect(repository.categoryOffsets, containsAll(<int>[0, 2, 4]));
+    expect(find.text('Lighting Product 5'), findsOneWidget);
+    await _scrollCategoryDown(tester);
+    expect(find.text('All category products loaded'), findsOneWidget);
+  });
+
   testWidgets('home tab renders catalog products from the API repository', (
     WidgetTester tester,
   ) async {
@@ -638,9 +703,26 @@ Future<void> _loadMoreThroughHome(WidgetTester tester) async {
   }
 }
 
+Future<void> _loadMoreThroughCategory(WidgetTester tester) async {
+  await _scrollCategoryDown(tester);
+
+  if (tester.any(find.text('Load more'))) {
+    await tester.tap(find.text('Load more'));
+    await tester.pumpAndSettle();
+  }
+}
+
 Future<void> _scrollHomeDown(WidgetTester tester) async {
   await tester.drag(
     find.byKey(const PageStorageKey<String>('home-scroll')),
+    const Offset(0, -420),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _scrollCategoryDown(WidgetTester tester) async {
+  await tester.drag(
+    find.byKey(const PageStorageKey<String>('category-scroll')),
     const Offset(0, -420),
   );
   await tester.pumpAndSettle();
@@ -655,6 +737,18 @@ class _FakeCatalogRepository implements CatalogRepository {
 
   _FakeCatalogRepository.previewProduct() : this(_catalogPreviewPage());
 
+  _FakeCatalogRepository.withCategories({
+    int productCount = 3,
+    int pageSize = 20,
+  }) : page = _catalogPage(0),
+       categories = const [
+         CatalogCategory(slug: 'lighting', name: 'Lighting'),
+         CatalogCategory(slug: 'tables', name: 'Tables'),
+       ],
+       categoryTotal = productCount,
+       categoryPageSize = pageSize,
+       shouldFail = false;
+
   _FakeCatalogRepository.pagedProducts(int count, {int pageSize = 20})
     : page = _catalogPageSlice(count: count),
       pagedTotal = count,
@@ -665,21 +759,39 @@ class _FakeCatalogRepository implements CatalogRepository {
 
   CatalogProductsPage page;
   CatalogProductsPage searchPage = _catalogPage(0);
+  List<CatalogCategory> categories = const [];
   int? pagedTotal;
   int pagedPageSize = 20;
   int? searchTotal;
   int searchPageSize = 20;
   String searchNamePrefix = 'Search Hit';
+  int? categoryTotal;
+  int categoryPageSize = 20;
   bool shouldFail;
   bool shouldFailSearch = false;
   bool shouldFailNextPage = false;
+  bool shouldFailCategories = false;
+  bool shouldFailCategoryProducts = false;
+  bool shouldFailNextCategoryPage = false;
   bool shouldFailDetail = false;
   bool detailWithoutModelRoute = false;
   String? lastSearchQuery;
+  String? lastCategorySlug;
   String? lastDetailProductId;
   ProductModelTier? lastDetailTier;
   final List<int> listOffsets = [];
   final List<int> searchOffsets = [];
+  final List<int> categoryOffsets = [];
+  final List<CategoryProductSort> categorySorts = [];
+
+  @override
+  Future<List<CatalogCategory>> listCategories() async {
+    if (shouldFailCategories) {
+      shouldFailCategories = false;
+      throw StateError('categories unavailable');
+    }
+    return List<CatalogCategory>.of(categories);
+  }
 
   @override
   Future<CatalogProductsPage> listProducts({
@@ -731,6 +843,35 @@ class _FakeCatalogRepository implements CatalogRepository {
   }
 
   @override
+  Future<CatalogProductsPage> listCategoryProducts(
+    String categorySlug, {
+    CategoryProductSort sort = CategoryProductSort.newest,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    lastCategorySlug = categorySlug;
+    categoryOffsets.add(offset);
+    categorySorts.add(sort);
+    if (shouldFailCategoryProducts) {
+      shouldFailCategoryProducts = false;
+      throw StateError('category products unavailable');
+    }
+    if (shouldFailNextCategoryPage && offset > 0) {
+      shouldFailNextCategoryPage = false;
+      throw StateError('next category page unavailable');
+    }
+    return _catalogPageSlice(
+      count: categoryTotal ?? 0,
+      limit: categoryPageSize,
+      offset: offset,
+      namePrefix: '${_categoryName(categorySlug)} Product',
+      category: _findCategory(categorySlug),
+      categorySlug: categorySlug,
+      sort: sort,
+    );
+  }
+
+  @override
   Future<CatalogProductDetail> getProductDetail(
     String productId, {
     required ProductModelTier tier,
@@ -747,6 +888,23 @@ class _FakeCatalogRepository implements CatalogRepository {
       includeModelRoute: !detailWithoutModelRoute,
     );
   }
+
+  CatalogCategory? _findCategory(String slug) {
+    for (final category in categories) {
+      if (category.slug == slug) {
+        return category;
+      }
+    }
+    return null;
+  }
+}
+
+String _categoryName(String slug) {
+  return switch (slug) {
+    'lighting' => 'Lighting',
+    'tables' => 'Tables',
+    _ => slug,
+  };
 }
 
 class _FakeCartRepository implements CartRepository {
@@ -853,6 +1011,9 @@ CatalogProductsPage _catalogPageSlice({
   int limit = 20,
   int offset = 0,
   String namePrefix = 'Product',
+  CatalogCategory? category,
+  String? categorySlug,
+  CategoryProductSort? sort,
 }) {
   final end = (offset + limit) > count ? count : offset + limit;
 
@@ -865,6 +1026,7 @@ CatalogProductsPage _catalogPageSlice({
           slug: '${namePrefix.toLowerCase().replaceAll(' ', '-')}-$index',
           description: 'Customer-safe description for $namePrefix $index',
           price: const CatalogPrice(amountCents: 12900, currency: 'USD'),
+          categories: category == null ? const [] : [category],
           processingStatus: index.isEven ? 'completed' : 'queued',
           updatedAt: DateTime.utc(2026, 6, 16, 12, index),
           spriteAsset: index.isEven
@@ -881,5 +1043,7 @@ CatalogProductsPage _catalogPageSlice({
     total: count,
     limit: limit,
     offset: offset,
+    categorySlug: categorySlug,
+    sort: sort,
   );
 }

@@ -32,6 +32,39 @@ class CatalogPrice {
   }
 }
 
+class CatalogCategory {
+  const CatalogCategory({required this.slug, required this.name});
+
+  final String slug;
+  final String name;
+}
+
+enum CategoryProductSort {
+  newest('newest', 'Newest'),
+  priceAsc('price_asc', 'Price low to high'),
+  priceDesc('price_desc', 'Price high to low'),
+  nameAsc('name_asc', 'Name A to Z');
+
+  const CategoryProductSort(this.wireName, this.label);
+
+  final String wireName;
+  final String label;
+
+  static CategoryProductSort parse(String value) {
+    return switch (value) {
+      'newest' => CategoryProductSort.newest,
+      'price_asc' => CategoryProductSort.priceAsc,
+      'price_desc' => CategoryProductSort.priceDesc,
+      'name_asc' => CategoryProductSort.nameAsc,
+      _ => throw ArgumentError.value(
+        value,
+        'value',
+        'unsupported category sort',
+      ),
+    };
+  }
+}
+
 class CatalogProduct {
   const CatalogProduct({
     required this.id,
@@ -39,6 +72,7 @@ class CatalogProduct {
     required this.slug,
     required this.description,
     required this.price,
+    this.categories = const [],
     required this.processingStatus,
     required this.updatedAt,
     this.spriteAsset,
@@ -50,6 +84,7 @@ class CatalogProduct {
   final String slug;
   final String description;
   final CatalogPrice price;
+  final List<CatalogCategory> categories;
   final String processingStatus;
   final DateTime updatedAt;
   final CatalogObjectRef? spriteAsset;
@@ -64,6 +99,7 @@ class CatalogProduct {
       slug: slug,
       description: description,
       price: price,
+      categories: categories,
       processingStatus: processingStatus,
       updatedAt: updatedAt,
       spriteAsset: spriteAsset,
@@ -115,6 +151,7 @@ class CatalogProductDetail {
     required this.slug,
     required this.description,
     required this.price,
+    this.categories = const [],
     required this.informationSections,
     required this.meshColorConfig,
     required this.processingStatus,
@@ -131,6 +168,7 @@ class CatalogProductDetail {
   final String slug;
   final String description;
   final CatalogPrice price;
+  final List<CatalogCategory> categories;
   final List<CatalogInformationSection> informationSections;
   final List<CatalogMeshColorOptions> meshColorConfig;
   final String processingStatus;
@@ -148,10 +186,14 @@ class CatalogProductsPage {
     required this.total,
     required this.limit,
     required this.offset,
+    this.categorySlug,
+    this.sort,
   });
 
   final List<CatalogProduct> items;
   final int total;
   final int limit;
   final int offset;
+  final String? categorySlug;
+  final CategoryProductSort? sort;
 }

@@ -11,6 +11,31 @@ class CatalogApiClient {
   final Uri _baseUri;
   final http.Client _httpClient;
 
+  Future<List<CatalogCategory>> listCategories() async {
+    final uri = _baseUri.replace(
+      path: _joinPath(_baseUri.path, '/catalog/categories'),
+      queryParameters: null,
+    );
+    final response = await _httpClient.get(
+      uri,
+      headers: const {'accept': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw CatalogApiException(
+        'Catalog categories API returned HTTP ${response.statusCode}',
+      );
+    }
+
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is! Map<String, Object?>) {
+      throw const CatalogApiException(
+        'Catalog categories API returned an invalid body',
+      );
+    }
+    return CategoryListDto.fromJson(decoded).toDomain();
+  }
+
   Future<CatalogProductsPage> listProducts({
     int limit = 20,
     int offset = 0,
@@ -30,6 +55,23 @@ class CatalogApiClient {
       routePath: '/catalog/search',
       queryParameters: {
         'q': query,
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      },
+    );
+  }
+
+  Future<CatalogProductsPage> listCategoryProducts(
+    String categorySlug, {
+    CategoryProductSort sort = CategoryProductSort.newest,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    return _fetchCatalogPage(
+      routePath:
+          '/catalog/categories/${Uri.encodeComponent(categorySlug)}/products',
+      queryParameters: {
+        'sort': sort.wireName,
         'limit': limit.toString(),
         'offset': offset.toString(),
       },
@@ -141,6 +183,8 @@ class CatalogProductsDto {
     required this.limit,
     required this.offset,
     this.query,
+    this.categorySlug,
+    this.sort,
   });
 
   final List<CatalogProductDto> items;
@@ -148,6 +192,8 @@ class CatalogProductsDto {
   final int limit;
   final int offset;
   final String? query;
+  final String? categorySlug;
+  final CategoryProductSort? sort;
 
   factory CatalogProductsDto.fromJson(Map<String, Object?> json) {
     final items = json['items'];
@@ -164,6 +210,8 @@ class CatalogProductsDto {
       limit: _expectInt(json['limit'], 'limit'),
       offset: _expectInt(json['offset'], 'offset'),
       query: _expectOptionalString(json['query'], 'query'),
+      categorySlug: _expectOptionalString(json['categorySlug'], 'categorySlug'),
+      sort: _parseOptionalCategorySort(json['sort']),
     );
   }
 
@@ -178,6 +226,8 @@ class CatalogProductsDto {
       total: total,
       limit: limit,
       offset: offset,
+      categorySlug: categorySlug,
+      sort: sort,
     );
   }
 }
@@ -189,6 +239,7 @@ class CatalogProductDto {
     required this.slug,
     required this.description,
     required this.price,
+    required this.categories,
     required this.processingStatus,
     required this.updatedAt,
     this.spriteAsset,
@@ -199,6 +250,7 @@ class CatalogProductDto {
   final String slug;
   final String description;
   final CatalogPriceDto price;
+  final List<CatalogCategoryDto> categories;
   final String processingStatus;
   final DateTime updatedAt;
   final CatalogObjectRefDto? spriteAsset;
@@ -212,6 +264,7 @@ class CatalogProductDto {
       slug: _expectString(json['slug'], 'slug'),
       description: _expectString(json['description'], 'description'),
       price: CatalogPriceDto.fromJson(_expectMap(json['price'], 'price')),
+      categories: _parseCategories(json['categories']),
       processingStatus: _expectString(
         json['processingStatus'],
         'processingStatus',
@@ -234,6 +287,7 @@ class CatalogProductDto {
       slug: slug,
       description: description,
       price: price.toDomain(),
+      categories: [for (final category in categories) category.toDomain()],
       processingStatus: processingStatus,
       updatedAt: updatedAt,
       spriteAsset: spriteAsset?.toDomain(),
@@ -241,6 +295,47 @@ class CatalogProductDto {
           ? null
           : spritePreviewUriFor?.call(id),
     );
+  }
+}
+
+class CategoryListDto {
+  const CategoryListDto({required this.categories});
+
+  final List<CatalogCategoryDto> categories;
+
+  factory CategoryListDto.fromJson(Map<String, Object?> json) {
+    final categories = json['categories'];
+    if (categories is! List<Object?>) {
+      throw const CatalogApiException('categories must be an array');
+    }
+    return CategoryListDto(
+      categories: [
+        for (final category in categories)
+          CatalogCategoryDto.fromJson(_expectMap(category, 'category')),
+      ],
+    );
+  }
+
+  List<CatalogCategory> toDomain() {
+    return [for (final category in categories) category.toDomain()];
+  }
+}
+
+class CatalogCategoryDto {
+  const CatalogCategoryDto({required this.slug, required this.name});
+
+  final String slug;
+  final String name;
+
+  factory CatalogCategoryDto.fromJson(Map<String, Object?> json) {
+    return CatalogCategoryDto(
+      slug: _expectString(json['slug'], 'category.slug'),
+      name: _expectString(json['name'], 'category.name'),
+    );
+  }
+
+  CatalogCategory toDomain() {
+    return CatalogCategory(slug: slug, name: name);
   }
 }
 
@@ -314,6 +409,7 @@ class ProductDetailDto {
     required this.slug,
     required this.description,
     required this.price,
+    required this.categories,
     required this.informationSections,
     required this.meshColorConfig,
     required this.processingStatus,
@@ -330,6 +426,7 @@ class ProductDetailDto {
   final String slug;
   final String description;
   final CatalogPriceDto price;
+  final List<CatalogCategoryDto> categories;
   final List<CatalogInformationSectionDto> informationSections;
   final List<CatalogMeshColorOptionsDto> meshColorConfig;
   final String processingStatus;
@@ -352,6 +449,7 @@ class ProductDetailDto {
       slug: _expectString(json['slug'], 'slug'),
       description: _expectString(json['description'], 'description'),
       price: CatalogPriceDto.fromJson(_expectMap(json['price'], 'price')),
+      categories: _parseCategories(json['categories']),
       informationSections: [
         for (final section in sections)
           CatalogInformationSectionDto.fromJson(
@@ -389,6 +487,7 @@ class ProductDetailDto {
       slug: slug,
       description: description,
       price: price.toDomain(),
+      categories: [for (final category in categories) category.toDomain()],
       informationSections: [
         for (final section in informationSections) section.toDomain(),
       ],
@@ -480,6 +579,25 @@ List<CatalogMeshColorOptionsDto> _parseMeshColorConfig(Object? value) {
         _expectMap(entry.value, 'meshColorConfig.${entry.key}'),
       ),
   ];
+}
+
+List<CatalogCategoryDto> _parseCategories(Object? value) {
+  if (value == null) {
+    return const [];
+  }
+  final categories = value;
+  if (categories is! List<Object?>) {
+    throw const CatalogApiException('categories must be an array');
+  }
+  return [
+    for (final category in categories)
+      CatalogCategoryDto.fromJson(_expectMap(category, 'category')),
+  ];
+}
+
+CategoryProductSort? _parseOptionalCategorySort(Object? value) {
+  final sort = _expectOptionalString(value, 'sort');
+  return sort == null ? null : CategoryProductSort.parse(sort);
 }
 
 Map<String, Object?> _expectMap(Object? value, String name) {

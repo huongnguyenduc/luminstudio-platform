@@ -28,8 +28,10 @@ selectable material swatches backed by local Flutter state. Product Detail can
 now add the selected configuration to a locally persisted cart, and the Cart tab
 renders stored product identity, selected colors, quantity, selection state,
 selected subtotal, and savings from locally stored price snapshots. Category
-taxonomy, sorting, checkout, payment, auth, inventory, discount engines, and
-executable Bazel Flutter targets remain deferred.
+taxonomy and sorting are now active in the Category tab through the Go API
+gateway, with category selection, sorting, pagination, incremental retry, and
+scroll-to-top behavior. Checkout, payment, auth, inventory, discount engines,
+and executable Bazel Flutter targets remain deferred.
 
 Verify the shell from the repository root:
 
@@ -89,4 +91,10 @@ Verify product pricing contract and cart totals from the repository root:
 
 ```bash
 bash scripts/verify-us-041.sh
+```
+
+Verify Flutter category tab API integration from the repository root:
+
+```bash
+bash scripts/verify-us-043.sh
 ```

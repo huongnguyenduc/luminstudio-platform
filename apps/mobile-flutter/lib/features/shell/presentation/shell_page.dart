@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lumin_studio_mobile/features/cart/presentation/cart_view.dart';
+import 'package:lumin_studio_mobile/features/catalog/presentation/category_products_view.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/catalog_products_view.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 
@@ -148,94 +149,9 @@ class _TabList extends StatelessWidget {
       return const CartView();
     }
 
-    return Semantics(
-      label: '${tab.label} tab content',
-      child: ListView.separated(
-        key: PageStorageKey<String>('${tab.name}-scroll'),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return _EmptyState(tab: tab);
-          }
-
-          return _ShellPlaceholderRow(tab: tab, index: index);
-        },
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemCount: 18,
-      ),
+    return const CategoryProductsView(
+      scrollKey: PageStorageKey<String>('category-scroll'),
     );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.tab});
-
-  final CustomerTab tab;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final text = switch (tab) {
-      CustomerTab.home => 'No featured products yet',
-      CustomerTab.category => 'No categories yet',
-      CustomerTab.cart => 'Cart is empty',
-    };
-
-    return Container(
-      constraints: const BoxConstraints(minHeight: 168),
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(text, style: theme.textTheme.titleMedium),
-    );
-  }
-}
-
-class _ShellPlaceholderRow extends StatelessWidget {
-  const _ShellPlaceholderRow({required this.tab, required this.index});
-
-  final CustomerTab tab;
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SizedBox(
-      height: 72,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Icon(_iconFor(tab), color: theme.colorScheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '${tab.label} slot $index',
-                  style: theme.textTheme.bodyLarge,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  IconData _iconFor(CustomerTab tab) {
-    return switch (tab) {
-      CustomerTab.home => Icons.view_in_ar_outlined,
-      CustomerTab.category => Icons.grid_view_outlined,
-      CustomerTab.cart => Icons.receipt_long_outlined,
-    };
   }
 }
 

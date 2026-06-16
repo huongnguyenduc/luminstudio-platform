@@ -68,6 +68,11 @@ class _EmptyCatalogRepository implements CatalogRepository {
   const _EmptyCatalogRepository();
 
   @override
+  Future<List<CatalogCategory>> listCategories() async {
+    return const [];
+  }
+
+  @override
   Future<CatalogProductsPage> listProducts({
     int limit = 20,
     int offset = 0,
@@ -78,6 +83,16 @@ class _EmptyCatalogRepository implements CatalogRepository {
   @override
   Future<CatalogProductsPage> searchProducts(
     String query, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    return const CatalogProductsPage(items: [], total: 0, limit: 20, offset: 0);
+  }
+
+  @override
+  Future<CatalogProductsPage> listCategoryProducts(
+    String categorySlug, {
+    CategoryProductSort sort = CategoryProductSort.newest,
     int limit = 20,
     int offset = 0,
   }) async {

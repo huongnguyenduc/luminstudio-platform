@@ -202,6 +202,12 @@ Go API exposes `GET /catalog/categories` plus
 `GET /catalog/categories/{slug}/products` without introducing Flutter Category
 tab UI, checkout, payment, auth, inventory, backend cart APIs, direct
 storage/search/message access, Flutter Bazel rules, or live device proof.
+`US-043` connects the Flutter Category tab to those category routes through the
+existing repository/use-case boundary. The tab renders category selection,
+sorting, pagination, incremental retry, scroll-to-top, and existing product
+detail navigation without introducing checkout, payment, auth, inventory,
+backend cart APIs, direct storage/search/message access, Flutter Bazel rules,
+or live device proof.
 
 ## Boundary Rules
 

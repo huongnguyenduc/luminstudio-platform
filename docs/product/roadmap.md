@@ -202,6 +202,12 @@ Selected work:
   gateway without adding Flutter Category tab UI, checkout, payments,
   authentication, authorization, inventory checks, backend cart APIs, signed
   object URLs, live backend proof, or live device proof.
+- `US-043 Flutter Category Tab API Integration` connects the Flutter Category
+  tab to those category routes, renders category selection, sort controls,
+  category product pagination, incremental retry, scroll-to-top, and product
+  detail navigation without adding checkout, payments, authentication,
+  authorization, inventory checks, backend cart APIs, signed object URLs,
+  Flutter Bazel rules, live backend proof, or live device proof.
 
 ## Phase 4: 3D Detail And Cart
 

@@ -82,7 +82,9 @@ selected subtotal, and savings from the API-owned display pricing contract.
 sorting routes through `GET /catalog/categories` and
 `GET /catalog/categories/{slug}/products`, backed by product category metadata
 in the derived Meilisearch index.
-Flutter Category tab UI, signed object URLs, checkout, payment, inventory,
+The Flutter Category tab now consumes those routes with category selection,
+sorting, paginated product results, incremental retry, scroll-to-top, and
+product detail navigation. Signed object URLs, checkout, payment, inventory,
 discount engines, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
@@ -371,6 +373,12 @@ Customer category taxonomy and sorting API verification:
 
 ```bash
 bash scripts/verify-us-042.sh
+```
+
+Flutter category tab API integration verification:
+
+```bash
+bash scripts/verify-us-043.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

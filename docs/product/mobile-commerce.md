@@ -156,6 +156,15 @@ Category tab UI, checkout, payments, authentication, authorization, inventory
 checks, backend cart APIs, live backend proof, live device proof, and direct
 service access remain deferred.
 
+`US-043` connects the Flutter Category tab to those API routes. The app lists
+categories, loads the selected category's products, supports the v1 sort values,
+paginates category product results, renders incremental retry and end-of-list
+states, exposes scroll-to-top away from the top of the list, and opens existing
+Product Detail from category product rows. Checkout, payments, authentication,
+authorization, inventory checks, backend cart APIs, signed object URLs, Flutter
+Bazel rules, live backend proof, live device proof, and direct service access
+remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display

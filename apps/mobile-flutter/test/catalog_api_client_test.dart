@@ -20,6 +20,9 @@ void main() {
         "currency": "USD",
         "compareAtAmountCents": 15900
       },
+      "categories": [
+        {"slug": "lighting", "name": "Lighting"}
+      ],
       "processingStatus": "completed",
       "spriteAsset": {
         "bucket": "lumin-360-sprites",
@@ -47,6 +50,7 @@ void main() {
     expect(page.items.single.name, 'Ceramic Pendant');
     expect(page.items.single.price.amountCents, 12900);
     expect(page.items.single.price.savingsCents, 3000);
+    expect(page.items.single.categories.single.slug, 'lighting');
     expect(page.items.single.hasPreview, isTrue);
     expect(page.items.single.spriteAsset?.bucket, 'lumin-360-sprites');
     expect(
@@ -66,6 +70,32 @@ void main() {
 
     expect(page.items, isEmpty);
     expect(page.total, 0);
+  });
+
+  test('CatalogProductsDto accepts category product metadata', () {
+    final page = CatalogProductsDto.fromJson({
+      'items': <Object?>[],
+      'total': 0,
+      'limit': 20,
+      'offset': 0,
+      'categorySlug': 'lighting',
+      'sort': 'price_desc',
+    }).toDomain();
+
+    expect(page.items, isEmpty);
+    expect(page.categorySlug, 'lighting');
+    expect(page.sort, CategoryProductSort.priceDesc);
+  });
+
+  test('CategoryListDto parses the v1 category list response shape', () {
+    final categories = CategoryListDto.fromJson({
+      'categories': <Object?>[
+        {'slug': 'lighting', 'name': 'Lighting'},
+        {'slug': 'tables', 'name': 'Tables'},
+      ],
+    }).toDomain();
+
+    expect(categories.map((category) => category.slug), ['lighting', 'tables']);
   });
 
   test('CatalogProductsDto rejects malformed catalog responses', () {
@@ -93,6 +123,9 @@ void main() {
     "currency": "USD",
     "compareAtAmountCents": 15900
   },
+  "categories": [
+    {"slug": "lighting", "name": "Lighting"}
+  ],
   "informationSections": [
     {"title": "Materials", "body": "Glazed ceramic and brass."}
   ],
@@ -131,6 +164,7 @@ void main() {
     expect(detail.modelTier, ProductModelTier.high);
     expect(detail.price.amountCents, 12900);
     expect(detail.price.savingsCents, 3000);
+    expect(detail.categories.single.name, 'Lighting');
     expect(detail.informationSections.single.title, 'Materials');
     expect(detail.meshColorConfig.single.meshId, 'mesh_body');
     expect(detail.meshColorConfig.single.defaultColor, '#FFFFFF');

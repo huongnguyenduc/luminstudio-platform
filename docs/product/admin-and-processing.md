@@ -146,12 +146,13 @@ stable slugs and display names. The API persists those category arrays on the
 authoritative product row, propagates category metadata and filter slugs into
 Meilisearch, exposes `GET /catalog/categories`, and exposes
 `GET /catalog/categories/{slug}/products` with pagination plus `newest`,
-`price_asc`, `price_desc`, and `name_asc` sort values. Flutter Category tab UI
-and live backend proof remain deferred.
+`price_asc`, `price_desc`, and `name_asc` sort values. The Flutter Category tab
+now consumes those routes through the Go API gateway with category selection,
+sorting, paginated product results, incremental retry, scroll-to-top, and
+product detail navigation. Live backend proof remains deferred.
 
-Authentication, authorization, product delete workflows, Flutter Category tab
-UI, signed object URLs, retry/outbox semantics, and dead-letter handling remain
-deferred.
+Authentication, authorization, product delete workflows, signed object URLs,
+retry/outbox semantics, and dead-letter handling remain deferred.
 
 ## Processing Pipeline
 
