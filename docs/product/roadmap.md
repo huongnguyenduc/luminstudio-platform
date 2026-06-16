@@ -335,3 +335,11 @@ Selected work:
   Flutter integration, checkout, payments, authentication, authorization,
   inventory checks, discount engines, tax, shipping, order fulfillment, signed
   object URLs, live backend proof, or live device proof.
+- `US-052 Flutter Backend Cart API Integration` connects the Flutter customer
+  cart repository to the existing Go API cart routes. The app stores the
+  server cart id and latest item snapshot locally, loads `GET /cart/{id}` when
+  possible, sends Product Detail and Cart tab mutations through `POST /cart` or
+  `PUT /cart/{id}`, and shows Cart tab sync state without adding checkout,
+  payments, authentication, authorization, inventory checks, tax, shipping,
+  order fulfillment, signed object URLs, live backend proof, or live device
+  proof.

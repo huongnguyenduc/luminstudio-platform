@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lumin_studio_mobile/features/cart/data/api_backed_cart_repository.dart';
+import 'package:lumin_studio_mobile/features/cart/data/cart_api_client.dart';
 import 'package:lumin_studio_mobile/features/cart/data/shared_preferences_cart_repository.dart';
 import 'package:lumin_studio_mobile/features/cart/domain/cart_repository.dart';
 import 'package:lumin_studio_mobile/features/cart/presentation/cubit/cart_cubit.dart';
@@ -34,21 +36,16 @@ class LuminStudioApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final apiBaseUri = Uri.parse(
+      const String.fromEnvironment(
+        'LUMIN_API_BASE_URL',
+        defaultValue: 'http://localhost:8080',
+      ),
+    );
     final catalog =
         catalogRepository ??
-        HttpCatalogRepository(
-          CatalogApiClient(
-            baseUri: Uri.parse(
-              const String.fromEnvironment(
-                'LUMIN_API_BASE_URL',
-                defaultValue: 'http://localhost:8080',
-              ),
-            ),
-          ),
-        );
-    final cart =
-        cartRepository ??
-        SharedPreferencesCartRepository(SharedPreferencesAsync());
+        HttpCatalogRepository(CatalogApiClient(baseUri: apiBaseUri));
+    final cart = cartRepository ?? _defaultCartRepository(apiBaseUri);
 
     return MultiBlocProvider(
       providers: [
@@ -85,6 +82,15 @@ class LuminStudioApp extends StatelessWidget {
         ),
         home: const CustomerShellPage(),
       ),
+    );
+  }
+
+  CartRepository _defaultCartRepository(Uri apiBaseUri) {
+    final localCart = SharedPreferencesCartRepository(SharedPreferencesAsync());
+    return ApiBackedCartRepository(
+      client: CartApiClient(baseUri: apiBaseUri),
+      localRepository: localCart,
+      cartIdStore: localCart,
     );
   }
 }

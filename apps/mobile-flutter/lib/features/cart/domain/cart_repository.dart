@@ -5,3 +5,9 @@ abstract interface class CartRepository {
 
   Future<void> saveCart(List<CartItem> items);
 }
+
+abstract interface class CartIdStore {
+  Future<String?> loadCartId();
+
+  Future<void> saveCartId(String? cartId);
+}

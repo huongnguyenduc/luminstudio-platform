@@ -200,6 +200,11 @@ This does not publish events or add checkout, payments, authentication,
 authorization, inventory checks, order fulfillment, seller settlement, signed
 object URLs, Flutter integration, retry/outbox semantics, or dead-letter
 handling.
+`US-052` connects the Flutter customer app to those cart routes through the Go
+API boundary. The mobile client stores the anonymous cart id and latest server
+item snapshot locally, but it still does not access PostgreSQL, MinIO, NATS, or
+Meilisearch directly and does not add checkout, payment, auth, inventory,
+order, retry/outbox, or dead-letter behavior.
 
 Authentication, authorization, product delete workflows, checkout, payments,
 inventory checks, signed object URLs, retry/outbox semantics, and dead-letter

@@ -202,6 +202,17 @@ integration, checkout, payments, authentication, authorization, inventory
 checks, tax, shipping, order fulfillment, signed object URLs, live backend
 proof, live device proof, and direct service access remain deferred.
 
+`US-052` connects the Flutter Cart feature to that backend cart API. The
+default cart repository uses the app API base URL to create anonymous server
+carts, read an existing saved cart id, and submit full cart replacements while
+keeping the latest server item snapshot cached locally. Product Detail and Cart
+tab mutations still send only product id, selected mesh colors, quantity, and
+selection state; the API-owned response supplies product name, price, category,
+processing status, and totals. Checkout, payments, authentication,
+authorization, inventory checks, tax, shipping, order fulfillment, signed object
+URLs, live backend proof, live device proof, and direct service access remain
+deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display
@@ -210,6 +221,8 @@ recalculates selected subtotal and savings immediately when quantity or
 selection changes. Totals are shown only when selected items share one currency.
 The backend cart foundation stores the same customer-visible item shape behind
 the Go API after validating products and selected colors against PostgreSQL.
+Flutter now syncs its default cart repository with that API and retains the
+local snapshot as a fallback cache.
 
 Initial storage shape:
 
@@ -226,5 +239,4 @@ Initial storage shape:
 ```
 
 Discount engines, inventory checks, tax, shipping, checkout, payments, auth,
-orders, and Flutter backend-cart synchronization are not defined by the current
-product contract.
+and orders are not defined by the current product contract.

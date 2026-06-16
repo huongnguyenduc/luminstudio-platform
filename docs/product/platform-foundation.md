@@ -255,6 +255,10 @@ anonymous cart snapshots in PostgreSQL behind `POST /cart`, `GET /cart/{id}`,
 and `PUT /cart/{id}`, validating requested products and selected colors against
 authoritative product rows while leaving Flutter integration, checkout,
 payment, auth, inventory, order fulfillment, and live platform proof deferred.
+`US-052` connects Flutter cart persistence to those Go API cart routes while
+keeping the server cart id and latest item snapshot in local preferences as a
+cache. Checkout, payment, auth, inventory, order fulfillment, and live platform
+proof remain deferred.
 
 ## Boundary Rules
 

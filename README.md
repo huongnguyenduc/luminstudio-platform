@@ -102,8 +102,12 @@ checkout, payment, inventory, discount engines, auth, and admin delete UI remain
 deferred. `US-051` now exposes the first backend cart foundation through
 `POST /cart`, `GET /cart/{id}`, and `PUT /cart/{id}`; it persists anonymous cart
 snapshots in PostgreSQL after validating product existence and selected mesh
-colors against authoritative product rows, while leaving Flutter synchronization,
-checkout, payment, inventory, order fulfillment, and auth deferred.
+colors against authoritative product rows. `US-052` now connects the Flutter
+customer app to the backend cart API; it
+synchronizes its default cart repository with those backend cart routes, stores
+the anonymous server cart id and latest item snapshot locally, and shows Cart
+tab sync state during backend cart mutations. Checkout, payment, inventory,
+order fulfillment, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -445,6 +449,12 @@ Backend cart API foundation verification:
 
 ```bash
 bash scripts/verify-us-051.sh
+```
+
+Flutter backend cart API integration verification:
+
+```bash
+bash scripts/verify-us-052.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and

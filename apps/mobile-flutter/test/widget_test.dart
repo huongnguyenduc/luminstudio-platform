@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lumin_studio_mobile/app/app.dart';
@@ -584,6 +586,50 @@ void main() {
     expect(find.text('Subtotal USD 258.00'), findsNothing);
   });
 
+  testWidgets('cart tab shows backend sync state during mutations', (
+    WidgetTester tester,
+  ) async {
+    final cartRepository = _SlowCartRepository(
+      items: const [
+        CartItem(
+          productId: 'prod_1',
+          productName: 'Product 1',
+          amountCents: 12900,
+          currency: 'USD',
+          compareAtAmountCents: 15900,
+          selectedColors: {'mesh_body': '#0F172A'},
+          quantity: 1,
+          isSelected: true,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      _testApp(
+        catalogRepository: _FakeCatalogRepository.empty(),
+        cartRepository: cartRepository,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cart'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Increase prod_1 quantity'));
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey<String>('cart-sync-progress')),
+      findsOneWidget,
+    );
+    expect(find.text('Syncing cart'), findsOneWidget);
+
+    cartRepository.completeSave();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Syncing cart'), findsNothing);
+    expect(cartRepository.items.single.quantity, 2);
+  });
+
   testWidgets(
     'product detail renders unavailable model state without a model route',
     (WidgetTester tester) async {
@@ -921,6 +967,24 @@ class _FakeCartRepository implements CartRepository {
   @override
   Future<void> saveCart(List<CartItem> items) async {
     this.items = List<CartItem>.of(items);
+  }
+}
+
+class _SlowCartRepository extends _FakeCartRepository {
+  _SlowCartRepository({super.items});
+
+  Completer<void>? _pendingSave;
+
+  @override
+  Future<void> saveCart(List<CartItem> items) async {
+    this.items = List<CartItem>.of(items);
+    _pendingSave = Completer<void>();
+    return _pendingSave!.future;
+  }
+
+  void completeSave() {
+    _pendingSave?.complete();
+    _pendingSave = null;
   }
 }
 

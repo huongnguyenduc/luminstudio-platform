@@ -117,7 +117,7 @@ class _CartReady extends StatelessWidget {
           }
 
           final item = state.items[index - 1];
-          return _CartItemTile(item: item);
+          return _CartItemTile(item: item, isMutating: state.isMutating);
         },
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         itemCount: state.items.length + 1,
@@ -183,6 +183,19 @@ class _CartSummary extends StatelessWidget {
               style: theme.textTheme.bodyMedium,
             ),
           ],
+          if (state.isMutating) ...[
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(
+              key: ValueKey<String>('cart-sync-progress'),
+              minHeight: 3,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Syncing cart',
+              key: const ValueKey<String>('cart-syncing-label'),
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
         ],
       ),
     );
@@ -190,9 +203,10 @@ class _CartSummary extends StatelessWidget {
 }
 
 class _CartItemTile extends StatelessWidget {
-  const _CartItemTile({required this.item});
+  const _CartItemTile({required this.item, required this.isMutating});
 
   final CartItem item;
+  final bool isMutating;
 
   @override
   Widget build(BuildContext context) {
@@ -212,12 +226,14 @@ class _CartItemTile extends StatelessWidget {
             children: [
               Checkbox(
                 value: item.isSelected,
-                onChanged: (value) {
-                  context.read<CartCubit>().toggleSelection(
-                    item.productId,
-                    value ?? false,
-                  );
-                },
+                onChanged: isMutating
+                    ? null
+                    : (value) {
+                        context.read<CartCubit>().toggleSelection(
+                          item.productId,
+                          value ?? false,
+                        );
+                      },
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -253,7 +269,7 @@ class _CartItemTile extends StatelessWidget {
             children: [
               IconButton(
                 tooltip: 'Decrease ${item.productId} quantity',
-                onPressed: item.quantity > 1
+                onPressed: item.quantity > 1 && !isMutating
                     ? () {
                         context.read<CartCubit>().decrement(item.productId);
                       }
@@ -272,9 +288,11 @@ class _CartItemTile extends StatelessWidget {
               ),
               IconButton(
                 tooltip: 'Increase ${item.productId} quantity',
-                onPressed: () {
-                  context.read<CartCubit>().increment(item.productId);
-                },
+                onPressed: isMutating
+                    ? null
+                    : () {
+                        context.read<CartCubit>().increment(item.productId);
+                      },
                 icon: const Icon(Icons.add_circle_outline),
               ),
             ],

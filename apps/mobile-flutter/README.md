@@ -34,7 +34,10 @@ scroll-to-top behavior. The app now has a Bazel-owned validation boundary that
 runs the accepted Flutter dependency, formatting, analysis, and test checks from
 a copied temporary app directory. Checkout, payment, auth, inventory, discount
 engines and production mobile release packaging remain deferred. The existing
-commerce flow now has local iOS simulator proof through `US-050`.
+commerce flow now has local iOS simulator proof through `US-050`. `US-052`
+connects the default cart repository to the Go API `POST /cart`,
+`GET /cart/{id}`, and `PUT /cart/{id}` routes while retaining the server cart
+id and latest item snapshot in local preferences as a fallback cache.
 
 Verify the shell from the repository root:
 
@@ -112,4 +115,10 @@ Verify the live Flutter customer commerce smoke from the repository root:
 
 ```bash
 LUMIN_US050_API_BASE_URL=http://127.0.0.1:8080 bash scripts/verify-us-050.sh
+```
+
+Verify Flutter backend cart API integration from the repository root:
+
+```bash
+bash scripts/verify-us-052.sh
 ```

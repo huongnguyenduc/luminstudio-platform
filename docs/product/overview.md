@@ -30,8 +30,8 @@ add those products to a local cart on mobile devices.
 
 - Admin product management and 3D upload configuration.
 - Event-driven search synchronization and 3D processing.
-- Mobile catalog, search, product detail, customization, local cart, and the
-  first backend cart snapshot API.
+- Mobile catalog, search, product detail, customization, local cart, and
+  backend-synchronized anonymous cart snapshots.
 - Local/dev infrastructure on K3d using PostgreSQL, MinIO, NATS, and
   Meilisearch.
 

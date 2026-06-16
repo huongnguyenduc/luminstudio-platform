@@ -4,10 +4,11 @@ import 'package:lumin_studio_mobile/features/cart/domain/cart_item.dart';
 import 'package:lumin_studio_mobile/features/cart/domain/cart_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SharedPreferencesCartRepository implements CartRepository {
+class SharedPreferencesCartRepository implements CartRepository, CartIdStore {
   SharedPreferencesCartRepository(this._preferences);
 
   static const String _storageKey = 'lumin.cart.v1';
+  static const String _cartIdStorageKey = 'lumin.cart.id.v1';
 
   final SharedPreferencesAsync _preferences;
 
@@ -45,6 +46,21 @@ class SharedPreferencesCartRepository implements CartRepository {
         },
     ]);
     await _preferences.setString(_storageKey, encoded);
+  }
+
+  @override
+  Future<String?> loadCartId() async {
+    final cartId = await _preferences.getString(_cartIdStorageKey);
+    return cartId == null || cartId.isEmpty ? null : cartId;
+  }
+
+  @override
+  Future<void> saveCartId(String? cartId) async {
+    if (cartId == null || cartId.isEmpty) {
+      await _preferences.remove(_cartIdStorageKey);
+      return;
+    }
+    await _preferences.setString(_cartIdStorageKey, cartId);
   }
 
   CartItem? _parseCartItem(Object? value) {
