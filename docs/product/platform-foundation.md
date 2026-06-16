@@ -259,6 +259,10 @@ payment, auth, inventory, order fulfillment, and live platform proof deferred.
 keeping the server cart id and latest item snapshot in local preferences as a
 cache. Checkout, payment, auth, inventory, order fulfillment, and live platform
 proof remain deferred.
+`US-053` adds live iOS simulator and Go API proof for that backend cart sync
+path, including backend cart create, read, update, saved cart id, and fresh Cart
+tab hydration. Checkout, payment, auth, inventory, order fulfillment, signed
+URLs, and new cart contracts remain deferred.
 
 ## Boundary Rules
 

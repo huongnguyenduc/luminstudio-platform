@@ -106,8 +106,10 @@ colors against authoritative product rows. `US-052` now connects the Flutter
 customer app to the backend cart API; it
 synchronizes its default cart repository with those backend cart routes, stores
 the anonymous server cart id and latest item snapshot locally, and shows Cart
-tab sync state during backend cart mutations. Checkout, payment, inventory,
-order fulfillment, and auth remain deferred.
+tab sync state during backend cart mutations. `US-053` now proves that backend
+cart sync path live against the Go API and iOS simulator, including create,
+read, update, saved cart id, and fresh Cart tab hydration. Checkout, payment,
+inventory, order fulfillment, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -455,6 +457,12 @@ Flutter backend cart API integration verification:
 
 ```bash
 bash scripts/verify-us-052.sh
+```
+
+Live Flutter backend cart sync smoke verification:
+
+```bash
+LUMIN_US053_API_BASE_URL=http://127.0.0.1:8080 bash scripts/verify-us-053.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and

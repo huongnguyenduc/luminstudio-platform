@@ -205,6 +205,11 @@ API boundary. The mobile client stores the anonymous cart id and latest server
 item snapshot locally, but it still does not access PostgreSQL, MinIO, NATS, or
 Meilisearch directly and does not add checkout, payment, auth, inventory,
 order, retry/outbox, or dead-letter behavior.
+`US-053` proves the existing backend cart path live with the Go API and Flutter
+iOS simulator. The smoke verifies cart create, read, update, saved anonymous
+cart id, and Cart tab hydration without changing backend contracts or adding
+checkout, payment, auth, inventory, order, retry/outbox, or dead-letter
+behavior.
 
 Authentication, authorization, product delete workflows, checkout, payments,
 inventory checks, signed object URLs, retry/outbox semantics, and dead-letter

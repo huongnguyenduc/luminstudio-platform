@@ -37,7 +37,9 @@ engines and production mobile release packaging remain deferred. The existing
 commerce flow now has local iOS simulator proof through `US-050`. `US-052`
 connects the default cart repository to the Go API `POST /cart`,
 `GET /cart/{id}`, and `PUT /cart/{id}` routes while retaining the server cart
-id and latest item snapshot in local preferences as a fallback cache.
+id and latest item snapshot in local preferences as a fallback cache. `US-053`
+adds live iOS simulator proof that the Flutter Cart tab creates, updates, saves,
+and hydrates backend cart snapshots through the Go API.
 
 Verify the shell from the repository root:
 
@@ -121,4 +123,10 @@ Verify Flutter backend cart API integration from the repository root:
 
 ```bash
 bash scripts/verify-us-052.sh
+```
+
+Verify the live Flutter backend cart sync smoke from the repository root:
+
+```bash
+LUMIN_US053_API_BASE_URL=http://127.0.0.1:8080 bash scripts/verify-us-053.sh
 ```

@@ -213,6 +213,13 @@ authorization, inventory checks, tax, shipping, order fulfillment, signed object
 URLs, live backend proof, live device proof, and direct service access remain
 deferred.
 
+`US-053` adds live proof for that backend cart sync path. A running Go API
+gateway and iOS simulator now verify cart create, read, update, saved cart id,
+and fresh Cart tab hydration for a completed processed product. Checkout,
+payments, authentication, authorization, inventory checks, tax, shipping, order
+fulfillment, signed object URLs, new cart contracts, and direct service access
+remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display
@@ -222,7 +229,8 @@ selection changes. Totals are shown only when selected items share one currency.
 The backend cart foundation stores the same customer-visible item shape behind
 the Go API after validating products and selected colors against PostgreSQL.
 Flutter now syncs its default cart repository with that API and retains the
-local snapshot as a fallback cache.
+local snapshot as a fallback cache. Live simulator proof now covers backend cart
+create, update, saved id, and backend hydration for the Flutter Cart tab.
 
 Initial storage shape:
 

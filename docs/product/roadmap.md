@@ -343,3 +343,11 @@ Selected work:
   payments, authentication, authorization, inventory checks, tax, shipping,
   order fulfillment, signed object URLs, live backend proof, or live device
   proof.
+- `US-053 Live Flutter Backend Cart Sync Smoke` proves the existing backend cart
+  integration against a live Go API gateway and iOS simulator. It verifies
+  `POST /cart`, `GET /cart/{id}`, and `PUT /cart/{id}` with a completed
+  catalog product, drives Product Detail Add to cart through Flutter, confirms
+  the saved anonymous server cart id, and proves a fresh Cart tab load hydrates
+  from the backend snapshot without adding checkout, payments, authentication,
+  authorization, inventory checks, tax, shipping, order fulfillment, signed
+  object URLs, direct platform access, or new cart contracts.
