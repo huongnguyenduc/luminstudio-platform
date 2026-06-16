@@ -3,7 +3,14 @@
 Flutter customer application for catalog navigation, search, 360 previews, 3D
 product interaction, configuration, and local cart management.
 
-Phase 0 defines this ownership boundary only. Flutter project generation,
-BLoCs, platform shells, and executable Bazel targets belong to Phase 3 and
-Phase 4 stories.
+Phase 3 now provides the first executable Flutter application boundary for
+Android and iOS. The app shell exposes Home, Category, and Cart tabs with state
+retained while users switch tabs. Catalog API integration, search, 360-degree
+previews, product detail, cart persistence, and executable Bazel Flutter
+targets remain deferred.
 
+Verify the shell from the repository root:
+
+```bash
+bash scripts/verify-us-030.sh
+```

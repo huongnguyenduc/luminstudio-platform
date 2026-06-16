@@ -23,8 +23,10 @@
   `rules_go` 0.61.1 with Go 1.26.4, and `rules_rust` 0.70.0 with Rust 1.95.0
   for the first executable service targets. The Web Admin uses
   `aspect_rules_js` 3.2.1 with Node.js 22.20.0 for its first executable React +
-  Vite target. Flutter rules must still be introduced before
-  `bazel build //...` becomes a repository-wide acceptance claim.
+  Vite target. The Flutter customer app now has a native Flutter Android/iOS
+  shell with `flutter analyze` and `flutter test` proof, but Flutter Bazel
+  rules must still be introduced before `bazel build //...` becomes a
+  repository-wide acceptance claim.
 
 ## Runtime Topology
 
@@ -122,6 +124,11 @@ the Go API gateway. The routes query the derived Meilisearch `products` index
 and return v1 customer catalog item response shapes without adding Flutter UI,
 category taxonomy, sorting, signed object URLs, product detail, auth,
 retry/dead-letter behavior, or live K3d proof.
+`US-030` adds the first executable Flutter customer app shell for Android and
+iOS with Home, Category, and Cart tabs plus retained tab scroll and nested
+navigation state, without adding catalog API integration, search, 360-degree
+previews, product detail, cart persistence, Flutter Bazel rules, or live device
+proof.
 
 ## Boundary Rules
 

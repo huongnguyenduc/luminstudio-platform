@@ -13,6 +13,11 @@ adapters implement API and local persistence contracts.
 - Category detail supports pagination, infinite scrolling, and sorting.
 - A scroll-to-top control appears away from the top and disappears at the top.
 
+`US-030` introduces the first executable Flutter shell for Android and iOS with
+Home, Category, and Cart tabs. It keeps tab scroll and nested navigation state
+without adding catalog API integration, search, category pagination, previews,
+product detail, or cart persistence.
+
 ## 360-Degree Catalog Preview
 
 When a product item remains more than 80% visible and scrolling has stopped for

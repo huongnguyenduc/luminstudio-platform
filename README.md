@@ -53,8 +53,10 @@ and API completion consumption. Production worker image hardening and
 retry/dead-letter behavior remain deferred. The first Phase 3 customer-facing
 catalog/search API routes now expose `GET /catalog/products` and
 `GET /catalog/search?q=...` through the Go API gateway, backed by the derived
-Meilisearch `products` index. Flutter UI, category taxonomy, product detail,
-signed object URLs, and auth remain deferred.
+Meilisearch `products` index. The Flutter customer app now has an executable
+Android/iOS shell with Home, Category, and Cart tabs plus retained tab scroll
+and navigation state. Catalog API integration, category taxonomy, product
+detail, signed object URLs, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -264,6 +266,12 @@ Customer catalog/search API verification:
 
 ```bash
 bash scripts/verify-us-029.sh
+```
+
+Flutter customer app shell verification:
+
+```bash
+bash scripts/verify-us-030.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

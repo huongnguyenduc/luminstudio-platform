@@ -157,6 +157,11 @@ Selected work:
   routes through the Go API, backed by the derived Meilisearch `products` index,
   without adding Flutter UI, category taxonomy, sorting, signed object URLs,
   product detail, auth, retry/outbox behavior, or live K3d proof.
+- `US-030 Flutter Customer App Shell` starts E08 with an executable Flutter
+  Android/iOS app shell, Home, Category, and Cart bottom navigation, and
+  retained tab scroll/navigation state without adding catalog API integration,
+  search, category pagination, sorting, 360-degree previews, product detail,
+  cart persistence, Flutter Bazel rules, auth, or live device proof.
 
 ## Phase 4: 3D Detail And Cart
 
