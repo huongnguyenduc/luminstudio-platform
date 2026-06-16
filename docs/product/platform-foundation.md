@@ -151,6 +151,11 @@ checks the authoritative PostgreSQL product row and streams only completed
 `lumin-360-sprites` JPEG assets from MinIO, without adding signed URLs, direct
 client storage access, Flutter preview activation, product detail, auth, or
 live K3d proof.
+`US-035` activates those sprite assets in the Flutter Home tab after a catalog
+card is at least 80% visible and idle for three seconds. Preview rendering
+still goes through the Go API sprite route and does not add direct storage
+access, signed URLs, product detail, cart persistence, Flutter Bazel rules, or
+live device proof.
 
 ## Boundary Rules
 

@@ -63,8 +63,9 @@ and ready states. The Flutter Home tab also paginates catalog and search
 results through the same API boundary. The Go API now exposes processed
 360-degree sprite assets through `GET /catalog/products/{id}/sprite`, streaming
 JPEG objects from MinIO only after the authoritative product row is completed.
-Category taxonomy, 360-degree preview activation, product detail, signed object
-URLs, cart persistence, and auth remain deferred.
+The Flutter Home tab now activates those sprite previews after a card remains
+at least 80% visible and idle for three seconds. Category taxonomy, product
+detail, signed object URLs, cart persistence, and auth remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -304,6 +305,12 @@ Customer sprite preview asset access verification:
 
 ```bash
 bash scripts/verify-us-034.sh
+```
+
+Flutter 360-degree catalog preview activation verification:
+
+```bash
+bash scripts/verify-us-035.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, and OCI

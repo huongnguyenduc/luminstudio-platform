@@ -186,6 +186,14 @@ Selected work:
   and a 360-degree sprite asset reference, and streams the JPEG from MinIO
   without adding Flutter preview activation, product detail, signed object URLs,
   category taxonomy, cart persistence, auth, or live K3d proof.
+- `US-035 Flutter 360 Catalog Preview Activation` activates processed sprite
+  previews on Flutter Home tab product cards after a card remains at least
+  80% visible and scrolling is idle for three seconds. The preview uses the Go
+  API `GET /catalog/products/{id}/sprite` route and the existing 24-frame
+  sprite-sheet contract without adding category taxonomy, sorting controls,
+  product detail, signed object URLs, device-tier GLB selection, cart
+  persistence, auth, Flutter Bazel rules, live backend proof, or live device
+  proof.
 
 ## Phase 4: 3D Detail And Cart
 

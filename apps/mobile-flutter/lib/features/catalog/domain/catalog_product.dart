@@ -21,6 +21,7 @@ class CatalogProduct {
     required this.processingStatus,
     required this.updatedAt,
     this.spriteAsset,
+    this.spritePreviewUri,
   });
 
   final String id;
@@ -30,8 +31,22 @@ class CatalogProduct {
   final String processingStatus;
   final DateTime updatedAt;
   final CatalogObjectRef? spriteAsset;
+  final Uri? spritePreviewUri;
 
   bool get hasPreview => spriteAsset != null;
+
+  CatalogProduct copyWith({Uri? spritePreviewUri}) {
+    return CatalogProduct(
+      id: id,
+      name: name,
+      slug: slug,
+      description: description,
+      processingStatus: processingStatus,
+      updatedAt: updatedAt,
+      spriteAsset: spriteAsset,
+      spritePreviewUri: spritePreviewUri ?? this.spritePreviewUri,
+    );
+  }
 }
 
 class CatalogProductsPage {

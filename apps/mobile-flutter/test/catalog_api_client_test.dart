@@ -32,12 +32,19 @@ void main() {
 ''')
             as Map<String, Object?>;
 
-    final page = CatalogProductsDto.fromJson(decoded).toDomain();
+    final page = CatalogProductsDto.fromJson(decoded).toDomain(
+      spritePreviewUriFor: (productId) =>
+          Uri.parse('http://api.test/catalog/products/$productId/sprite'),
+    );
 
     expect(page.total, 1);
     expect(page.items.single.name, 'Ceramic Pendant');
     expect(page.items.single.hasPreview, isTrue);
     expect(page.items.single.spriteAsset?.bucket, 'lumin-360-sprites');
+    expect(
+      page.items.single.spritePreviewUri,
+      Uri.parse('http://api.test/catalog/products/prod_123/sprite'),
+    );
   });
 
   test('CatalogProductsDto accepts catalog search response query metadata', () {

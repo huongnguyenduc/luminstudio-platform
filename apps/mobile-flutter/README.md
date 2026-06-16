@@ -13,10 +13,10 @@ loading, empty, failure/retry, clear, and result states. The Home tab now
 paginates both catalog and search result lists through the existing Go API
 `limit` and `offset` parameters with inline load-more retry behavior. The Go
 API now exposes completed sprite JPEGs at
-`GET /catalog/products/{id}/sprite` for a later Flutter preview activation
-story. Category taxonomy, sorting, 360-degree preview activation, product
-detail, cart persistence, and executable Bazel Flutter targets remain
-deferred.
+`GET /catalog/products/{id}/sprite`; the Flutter Home tab activates those
+sprite previews after a product card remains at least 80% visible and idle for
+three seconds. Category taxonomy, sorting, product detail, cart persistence,
+and executable Bazel Flutter targets remain deferred.
 
 Verify the shell from the repository root:
 
@@ -40,4 +40,10 @@ Verify catalog pagination and infinite scroll from the repository root:
 
 ```bash
 bash scripts/verify-us-033.sh
+```
+
+Verify 360-degree catalog preview activation from the repository root:
+
+```bash
+bash scripts/verify-us-035.sh
 ```

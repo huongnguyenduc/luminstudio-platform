@@ -4,8 +4,13 @@ import 'package:lumin_studio_mobile/app/app.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 void main() {
+  setUp(() {
+    VisibilityDetectorController.instance.updateInterval = Duration.zero;
+  });
+
   test('ShellCubit changes selected tab', () {
     final cubit = ShellCubit();
     addTearDown(cubit.close);
@@ -234,6 +239,60 @@ void main() {
     expect(repository.listOffsets, containsAll(<int>[0, 2]));
     expect(find.text('Product 4'), findsOneWidget);
   });
+
+  testWidgets('home tab activates a visible idle 360 sprite preview', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      LuminStudioApp(
+        catalogRepository: _FakeCatalogRepository.previewProduct(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 3100));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(
+      find.byKey(const ValueKey<String>('preview-prod_2')),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is NetworkImage &&
+            (widget.image as NetworkImage).url ==
+                'http://api.test/catalog/products/prod_2/sprite',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('home tab cancels pending preview activation while scrolling', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      LuminStudioApp(catalogRepository: _FakeCatalogRepository.withProducts(8)),
+    );
+    await tester.pumpAndSettle();
+
+    VisibilityDetectorController.instance.notifyNow();
+    await tester.pump(const Duration(seconds: 1));
+
+    await tester.drag(
+      find.byKey(const PageStorageKey<String>('home-scroll')),
+      const Offset(0, -700),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 4));
+
+    expect(
+      find.bySemanticsLabel('360 preview active for Product 2'),
+      findsNothing,
+    );
+  });
 }
 
 Future<void> _loadMoreThroughHome(WidgetTester tester) async {
@@ -259,6 +318,8 @@ class _FakeCatalogRepository implements CatalogRepository {
   _FakeCatalogRepository.empty() : this(_catalogPage(0));
 
   _FakeCatalogRepository.withProducts(int count) : this(_catalogPage(count));
+
+  _FakeCatalogRepository.previewProduct() : this(_catalogPreviewPage());
 
   _FakeCatalogRepository.pagedProducts(int count, {int pageSize = 20})
     : page = _catalogPageSlice(count: count),
@@ -336,6 +397,31 @@ CatalogProductsPage _catalogPage(int count, {String namePrefix = 'Product'}) {
   return _catalogPageSlice(count: count, namePrefix: namePrefix);
 }
 
+CatalogProductsPage _catalogPreviewPage() {
+  return CatalogProductsPage(
+    items: [
+      CatalogProduct(
+        id: 'prod_2',
+        name: 'Product 2',
+        slug: 'product-2',
+        description: 'Customer-safe description for Product 2',
+        processingStatus: 'completed',
+        updatedAt: DateTime.utc(2026, 6, 16, 12, 2),
+        spriteAsset: const CatalogObjectRef(
+          bucket: 'lumin-360-sprites',
+          key: 'products/prod_2/prod_2_360_sprite.jpg',
+        ),
+        spritePreviewUri: Uri.parse(
+          'http://api.test/catalog/products/prod_2/sprite',
+        ),
+      ),
+    ],
+    total: 1,
+    limit: 20,
+    offset: 0,
+  );
+}
+
 CatalogProductsPage _catalogPageSlice({
   required int count,
   int limit = 20,
@@ -359,6 +445,9 @@ CatalogProductsPage _catalogPageSlice({
                   bucket: 'lumin-360-sprites',
                   key: 'products/prod_2/prod_2_360_sprite.jpg',
                 )
+              : null,
+          spritePreviewUri: index.isEven
+              ? Uri.parse('http://api.test/catalog/products/prod_$index/sprite')
               : null,
         ),
     ],

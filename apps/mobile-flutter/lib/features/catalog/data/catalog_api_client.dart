@@ -59,7 +59,19 @@ class CatalogApiClient {
     if (decoded is! Map<String, Object?>) {
       throw const CatalogApiException('Catalog API returned an invalid body');
     }
-    return CatalogProductsDto.fromJson(decoded).toDomain();
+    return CatalogProductsDto.fromJson(
+      decoded,
+    ).toDomain(spritePreviewUriFor: _catalogSpriteUri);
+  }
+
+  Uri _catalogSpriteUri(String productId) {
+    return _baseUri.replace(
+      path: _joinPath(
+        _baseUri.path,
+        '/catalog/products/${Uri.encodeComponent(productId)}/sprite',
+      ),
+      queryParameters: null,
+    );
   }
 
   String _joinPath(String basePath, String routePath) {
@@ -112,9 +124,14 @@ class CatalogProductsDto {
     );
   }
 
-  CatalogProductsPage toDomain() {
+  CatalogProductsPage toDomain({
+    Uri Function(String productId)? spritePreviewUriFor,
+  }) {
     return CatalogProductsPage(
-      items: [for (final item in items) item.toDomain()],
+      items: [
+        for (final item in items)
+          item.toDomain(spritePreviewUriFor: spritePreviewUriFor),
+      ],
       total: total,
       limit: limit,
       offset: offset,
@@ -162,7 +179,9 @@ class CatalogProductDto {
     );
   }
 
-  CatalogProduct toDomain() {
+  CatalogProduct toDomain({
+    Uri Function(String productId)? spritePreviewUriFor,
+  }) {
     return CatalogProduct(
       id: id,
       name: name,
@@ -171,6 +190,9 @@ class CatalogProductDto {
       processingStatus: processingStatus,
       updatedAt: updatedAt,
       spriteAsset: spriteAsset?.toDomain(),
+      spritePreviewUri: spriteAsset == null
+          ? null
+          : spritePreviewUriFor?.call(id),
     );
   }
 }
