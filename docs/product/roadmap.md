@@ -223,6 +223,13 @@ Selected work:
   model/sprite route metadata without adding an interactive 3D viewer, material
   color editing, related products, signed object URLs, cart persistence, auth,
   Flutter Bazel rules, live backend proof, or live device proof.
+- `US-038 Flutter Interactive 3D Viewer` renders an interactive model viewer
+  on the Flutter product detail screen using the existing gateway `modelUrl`
+  for the resolved device tier. The viewer enables rotate and zoom controls
+  through the selected WebView-backed Flutter viewer bridge without adding
+  material color editing, related products, signed object URLs, cart
+  persistence, auth, Flutter Bazel rules, live backend proof, or live device
+  proof.
 
 ## Deferred
 

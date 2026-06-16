@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/product_detail_cubit.dart';
+import 'package:lumin_studio_mobile/features/catalog/presentation/product_model_viewer.dart';
 
 class ProductDetailPage extends StatelessWidget {
   const ProductDetailPage({super.key});
@@ -96,6 +97,8 @@ class _ProductDetailReady extends StatelessWidget {
         key: const PageStorageKey<String>('product-detail-scroll'),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
+          _InteractiveModelPanel(detail: detail),
+          const SizedBox(height: 18),
           Text(detail.name, style: theme.textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(detail.description, style: theme.textTheme.bodyLarge),
@@ -121,6 +124,24 @@ class _ProductDetailReady extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _InteractiveModelPanel extends StatelessWidget {
+  const _InteractiveModelPanel({required this.detail});
+
+  final CatalogProductDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final modelViewerBuilder = context.read<ProductModelViewerBuilder>();
+
+    return SizedBox(
+      key: ValueKey<String>('product-model-panel-${detail.id}'),
+      height: 280,
+      width: double.infinity,
+      child: modelViewerBuilder(context, detail),
     );
   }
 }

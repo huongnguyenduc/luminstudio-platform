@@ -113,6 +113,13 @@ and optional sprite route metadata. The interactive Flutter 3D viewer,
 material color editing, related products, signed object URLs, cart persistence,
 and direct service access remain deferred.
 
+`US-038` adds the first interactive Flutter 3D viewer to the product detail
+ready state. The viewer receives the gateway `modelUrl` selected by the
+resolved low/high device tier and enables rotate plus zoom controls through the
+selected Flutter viewer bridge. Material color editing, related products,
+signed object URLs, cart persistence, live backend proof, live device proof,
+and direct service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, selected mesh colors,

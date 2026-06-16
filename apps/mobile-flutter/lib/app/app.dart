@@ -7,6 +7,7 @@ import 'package:lumin_studio_mobile/features/catalog/domain/device_tier.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/load_catalog_products.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/search_catalog_products.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/catalog_cubit.dart';
+import 'package:lumin_studio_mobile/features/catalog/presentation/product_model_viewer.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/shell_page.dart';
 
@@ -15,10 +16,12 @@ class LuminStudioApp extends StatelessWidget {
     super.key,
     this.catalogRepository,
     this.deviceTierResolver = const DefaultDeviceTierResolver(),
+    this.productModelViewerBuilder = defaultProductModelViewerBuilder,
   });
 
   final CatalogRepository? catalogRepository;
   final DeviceTierResolver deviceTierResolver;
+  final ProductModelViewerBuilder productModelViewerBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +42,9 @@ class LuminStudioApp extends StatelessWidget {
       providers: [
         RepositoryProvider<CatalogRepository>.value(value: repository),
         RepositoryProvider<DeviceTierResolver>.value(value: deviceTierResolver),
+        RepositoryProvider<ProductModelViewerBuilder>.value(
+          value: productModelViewerBuilder,
+        ),
         BlocProvider(create: (_) => ShellCubit()),
         BlocProvider(
           create: (_) => CatalogCubit(

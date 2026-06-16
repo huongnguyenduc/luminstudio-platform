@@ -21,8 +21,9 @@ The Go API now also exposes product detail and tiered model routes through
 `GET /catalog/products/{id}/model?tier=low|high`. The Home tab now opens a
 product detail screen from catalog cards, derives a low/high model tier, and
 renders seller-provided sections, mesh color configuration, and gateway
-model/sprite route metadata without direct storage access. Category taxonomy,
-sorting, the interactive 3D product viewer, material editing, cart
+model/sprite route metadata without direct storage access. The product detail
+screen now renders the selected gateway model route with an interactive
+rotate/zoom 3D viewer. Category taxonomy, sorting, material editing, cart
 persistence, and executable Bazel Flutter targets remain deferred.
 
 Verify the shell from the repository root:
@@ -59,4 +60,10 @@ Verify product detail and device tier integration from the repository root:
 
 ```bash
 bash scripts/verify-us-037.sh
+```
+
+Verify the interactive 3D product viewer from the repository root:
+
+```bash
+bash scripts/verify-us-038.sh
 ```

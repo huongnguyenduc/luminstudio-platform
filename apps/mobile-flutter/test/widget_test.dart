@@ -306,6 +306,7 @@ void main() {
         deviceTierResolver: const FixedDeviceTierResolver(
           ProductModelTier.high,
         ),
+        productModelViewerBuilder: _fakeProductModelViewerBuilder,
       ),
     );
     await tester.pumpAndSettle();
@@ -315,6 +316,15 @@ void main() {
 
     expect(repository.lastDetailProductId, 'prod_1');
     expect(repository.lastDetailTier, ProductModelTier.high);
+    expect(
+      find.byKey(const ValueKey<String>('fake-model-viewer-prod_1')),
+      findsOneWidget,
+    );
+    await tester.drag(
+      find.byKey(const PageStorageKey<String>('product-detail-scroll')),
+      const Offset(0, -360),
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Materials'), findsOneWidget);
     expect(find.text('Glazed ceramic and brass.'), findsOneWidget);
     expect(find.text('Model tier: high'), findsOneWidget);
@@ -324,6 +334,59 @@ void main() {
     );
     expect(find.text('mesh_body'), findsOneWidget);
   });
+
+  testWidgets('product detail renders the injected interactive model viewer', (
+    WidgetTester tester,
+  ) async {
+    final repository = _FakeCatalogRepository.withProducts(1);
+
+    await tester.pumpWidget(
+      LuminStudioApp(
+        catalogRepository: repository,
+        deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
+        productModelViewerBuilder: _fakeProductModelViewerBuilder,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Product 1'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey<String>('fake-model-viewer-prod_1')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Model viewer: http://api.test/catalog/products/prod_1/model?tier=low',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'product detail renders unavailable model state without a model route',
+    (WidgetTester tester) async {
+      final repository = _FakeCatalogRepository.withProducts(1)
+        ..detailWithoutModelRoute = true;
+
+      await tester.pumpWidget(
+        LuminStudioApp(
+          catalogRepository: repository,
+          deviceTierResolver: const FixedDeviceTierResolver(
+            ProductModelTier.low,
+          ),
+          productModelViewerBuilder: _fakeProductModelViewerBuilder,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Product 1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('3D model unavailable'), findsOneWidget);
+    },
+  );
 
   testWidgets('product detail exposes failure and retry states', (
     WidgetTester tester,
@@ -335,6 +398,7 @@ void main() {
       LuminStudioApp(
         catalogRepository: repository,
         deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
+        productModelViewerBuilder: _fakeProductModelViewerBuilder,
       ),
     );
     await tester.pumpAndSettle();
@@ -357,6 +421,7 @@ void main() {
       LuminStudioApp(
         catalogRepository: _FakeCatalogRepository.withProducts(2),
         deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
+        productModelViewerBuilder: _fakeProductModelViewerBuilder,
       ),
     );
     await tester.pumpAndSettle();
@@ -373,6 +438,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Model tier: low'), findsOneWidget);
   });
+}
+
+Widget _fakeProductModelViewerBuilder(
+  BuildContext context,
+  CatalogProductDetail detail,
+) {
+  final modelUri = detail.modelUri;
+  if (modelUri == null) {
+    return const Center(child: Text('3D model unavailable'));
+  }
+
+  return Semantics(
+    label: 'Interactive 3D viewer for ${detail.name}',
+    child: Container(
+      key: ValueKey<String>('fake-model-viewer-${detail.id}'),
+      alignment: Alignment.center,
+      child: Text('Model viewer: $modelUri'),
+    ),
+  );
 }
 
 Future<void> _loadMoreThroughHome(WidgetTester tester) async {
@@ -420,6 +504,7 @@ class _FakeCatalogRepository implements CatalogRepository {
   bool shouldFailSearch = false;
   bool shouldFailNextPage = false;
   bool shouldFailDetail = false;
+  bool detailWithoutModelRoute = false;
   String? lastSearchQuery;
   String? lastDetailProductId;
   ProductModelTier? lastDetailTier;
@@ -486,14 +571,19 @@ class _FakeCatalogRepository implements CatalogRepository {
       shouldFailDetail = false;
       throw StateError('detail unavailable');
     }
-    return _catalogProductDetail(productId, tier);
+    return _catalogProductDetail(
+      productId,
+      tier,
+      includeModelRoute: !detailWithoutModelRoute,
+    );
   }
 }
 
 CatalogProductDetail _catalogProductDetail(
   String productId,
-  ProductModelTier tier,
-) {
+  ProductModelTier tier, {
+  bool includeModelRoute = true,
+}) {
   return CatalogProductDetail(
     id: productId,
     name: 'Product ${productId.split('_').last}',
@@ -521,9 +611,11 @@ CatalogProductDetail _catalogProductDetail(
       key: 'products/$productId/model.glb',
       contentType: 'model/gltf-binary',
     ),
-    modelUri: Uri.parse(
-      'http://api.test/catalog/products/$productId/model?tier=${tier.wireName}',
-    ),
+    modelUri: includeModelRoute
+        ? Uri.parse(
+            'http://api.test/catalog/products/$productId/model?tier=${tier.wireName}',
+          )
+        : null,
     spriteAsset: const CatalogObjectRef(
       bucket: 'lumin-360-sprites',
       key: 'products/prod_1/prod_1_360_sprite.jpg',

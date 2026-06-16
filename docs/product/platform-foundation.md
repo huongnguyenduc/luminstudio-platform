@@ -172,6 +172,12 @@ screen displays seller-provided sections, mesh color configuration, and
 gateway model/sprite route metadata while keeping direct storage/search/message
 access, interactive viewer behavior, cart persistence, Flutter Bazel rules,
 and live device proof deferred.
+`US-038` adds the first interactive Flutter product model viewer on that detail
+screen. The viewer consumes only the API gateway model route selected by the
+existing detail response and enables rotate/zoom controls through the chosen
+WebView-backed Flutter bridge, while keeping material editing, cart
+persistence, direct storage/search/message access, Flutter Bazel rules, and
+live device proof deferred.
 
 ## Boundary Rules
 
