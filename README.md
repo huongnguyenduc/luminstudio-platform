@@ -10,7 +10,8 @@ object storage, event delivery, and search.
 Phase 0 established the product contract and monorepo foundation. Phase 1 is in
 progress: the Go API has an operational health endpoint, and the Rust worker
 has an executable startup/configuration target. The React + Vite Web Admin has
-an executable build/test target and a non-product shell. A repeatable local
+an executable build/test target and now renders its first product workflow from
+the Go API admin product list boundary. A repeatable local
 K3d cluster now hosts the labeled `dev` namespace and a healthy namespace-local
 NATS service plus persistent PostgreSQL, MinIO, and Meilisearch instances. The
 Bazel-built Go API image runs behind a namespace-local Service and exposes
@@ -87,8 +88,10 @@ sorting routes through `GET /catalog/categories` and
 in the derived Meilisearch index.
 The Flutter Category tab now consumes those routes with category selection,
 sorting, paginated product results, incremental retry, scroll-to-top, and
-product detail navigation. Signed object URLs, checkout, payment, inventory,
-discount engines, and auth remain deferred.
+product detail navigation. The Web Admin now consumes
+`GET /admin/products` with loading, empty, failure/retry, and ready states for
+persisted product records. Signed object URLs, checkout, payment, inventory,
+discount engines, auth, and admin create/edit/upload UI remain deferred.
 
 The original [SPEC.md](SPEC.md) is input material. Current product truth lives
 under `docs/product/`, selected work lives under `docs/stories/`, and proof
@@ -388,6 +391,12 @@ Flutter Bazel build and test boundary verification:
 
 ```bash
 bash scripts/verify-us-044.sh
+```
+
+Web Admin product list API integration verification:
+
+```bash
+bash scripts/verify-us-045.sh
 ```
 
 Bazel is the selected top-level build system. Go, Rust, JavaScript, OCI, and

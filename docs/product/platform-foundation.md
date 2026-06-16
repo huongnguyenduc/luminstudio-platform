@@ -216,6 +216,11 @@ the app with `flutter pub get`, formatting, analysis, and tests in a copied
 temporary directory, keeping generated Flutter files out of the source checkout
 and leaving checkout, payment, auth, inventory, production mobile release
 packaging, and live device proof deferred.
+`US-045` adds the first product workflow to the Web Admin shell. The React app
+calls `GET /admin/products` through the Go API boundary and renders product
+list loading, empty, failure/retry, and ready states without adding product
+create, edit, delete, source GLB upload, auth, direct platform access, or live
+backend proof.
 
 ## Boundary Rules
 

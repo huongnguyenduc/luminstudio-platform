@@ -140,6 +140,11 @@ Selected work:
   processed uploads, completion publication, and API completion consumption
   without adding production image hardening, retries, outbox/dead-letter
   behavior, auth, UI, mobile, or customer catalog/search routes.
+- `US-045 Web Admin Product List API Integration` adds the first product
+  workflow to the React Web Admin by consuming `GET /admin/products` through
+  the Go API boundary and rendering loading, empty, failure/retry, and ready
+  states without adding product create, edit, delete, source GLB upload, auth,
+  direct platform access, or live backend proof.
 
 ## Phase 3: Mobile Catalog And Search
 

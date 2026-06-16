@@ -55,6 +55,12 @@ The Go API also exposes product read routes for the admin surface:
 identity. These read routes use PostgreSQL as the source of truth and do not
 read from Meilisearch, MinIO, NATS, or the worker.
 
+The React Web Admin now consumes the product list route as its first product
+workflow beyond the Phase 1 shell. It renders persisted product records with
+loading, empty, failure/retry, and ready states while remaining behind the Go
+API gateway. Product create, edit, delete, source GLB upload, authentication,
+and authorization remain deferred.
+
 The Go API also exposes full-replacement product updates through
 `PUT /admin/products/{id}`. The endpoint accepts the same v1 product draft shape
 as creation, validates the path identity before persistence access, updates the

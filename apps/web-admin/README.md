@@ -4,8 +4,9 @@ React + Vite administration surface for product CRUD, GLB upload, mesh color
 configuration, and dynamic product information sections.
 
 Phase 1 provides the executable React + Vite shell, native checks, and Bazel
-build/test targets. Product UI design, routes, API clients, and administration
-workflows still belong to selected Phase 2 stories.
+build/test targets. `US-045` adds the first product workflow: a read-only
+product list loaded from the Go API `GET /admin/products` boundary with
+loading, empty, failure, and ready states.
 
 Native verification:
 
@@ -19,4 +20,10 @@ Bazel verification:
 ```bash
 bazelisk test //apps/web-admin/...
 bazelisk build //apps/web-admin:web-admin
+```
+
+Story verification:
+
+```bash
+bash scripts/verify-us-045.sh
 ```
