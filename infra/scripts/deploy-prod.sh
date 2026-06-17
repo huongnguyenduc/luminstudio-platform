@@ -74,13 +74,28 @@ fi
 # ---------------------------------------------------------------------------
 # 3. Áp dụng overlay prod.
 # ---------------------------------------------------------------------------
-# minio-buckets là Job: pod template bất biến nên `apply` sẽ lỗi "field is immutable"
-# mỗi khi danh sách bucket đổi. Xoá trước để apply tạo lại (Job idempotent nhờ
-# `mc mb --ignore-existing`, không xoá dữ liệu trong bucket đã có).
-kubectl --context "$cluster_context" -n prod delete job minio-buckets --ignore-not-found
+log "Bảo đảm namespace prod tồn tại"
+kubectl --context "$cluster_context" create namespace prod \
+  --dry-run=client -o yaml | kubectl --context "$cluster_context" apply -f -
+
+# ConfigMap chứa các file migration .sql. Tạo imperative từ nguồn duy nhất
+# (services/api-gateway/migrations) vì kustomize không đọc được file ngoài thư mục overlay.
+log "Cập nhật ConfigMap db-migrations từ services/api-gateway/migrations"
+cm_args=()
+for f in "$repo_root"/services/api-gateway/migrations/*.sql; do cm_args+=(--from-file="$f"); done
+kubectl --context "$cluster_context" -n prod create configmap db-migrations "${cm_args[@]}" \
+  --dry-run=client -o yaml | kubectl --context "$cluster_context" apply -f -
+
+# db-migrate và minio-buckets là Job: pod template bất biến nên `apply` lỗi
+# "field is immutable" mỗi khi nội dung đổi. Xoá trước để apply tạo lại. Cả hai
+# đều idempotent (schema_migrations / `mc mb --ignore-existing`) nên không mất dữ liệu.
+kubectl --context "$cluster_context" -n prod delete job db-migrate minio-buckets --ignore-not-found
 
 log "kubectl apply -k overlays/prod"
 kubectl --context "$cluster_context" apply -k "$prod_overlay"
+
+log "Chờ migration schema hoàn tất"
+kubectl --context "$cluster_context" -n prod wait --for=condition=complete job/db-migrate --timeout=180s
 
 # ---------------------------------------------------------------------------
 # 4. Lăn bản mới.

@@ -5,6 +5,7 @@ resources:
   - ../../base
   - namespace.yaml
   - api-gateway-ingress.yaml
+  - db-migrate-job.yaml
 labels:
   - pairs:
       app.kubernetes.io/managed-by: kustomize
