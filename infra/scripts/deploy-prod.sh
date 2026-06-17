@@ -16,6 +16,11 @@ cluster_context="k3d-${cluster_name}"
 image_tag="${IMAGE_TAG:-prod}"
 prod_overlay="$repo_root/infra/k8s/overlays/prod"
 secrets_dir="$prod_overlay/secrets"
+# Nguồn sự thật của secrets nằm NGOÀI checkout: runner CI dùng workspace riêng
+# (~/actions-runner/_work/...) nên file secrets/*.env trong overlay không tồn tại ở đó.
+# Lưu cố định tại đây để mọi lần deploy (CI hay tay) tái dùng cùng một secret, tránh
+# sinh mật khẩu mới lệch với data Postgres/MinIO đã khởi tạo.
+persist_dir="${LUMIN_SECRETS_DIR:-$HOME/.config/lumin/prod-secrets}"
 
 log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31merror: %s\033[0m\n' "$*" >&2; exit 1; }
@@ -39,21 +44,26 @@ k3d cluster list --no-headers | awk -v n="$cluster_name" '$1==n{f=1} END{exit !f
   || die "cluster k3d '$cluster_name' không tồn tại"
 
 # ---------------------------------------------------------------------------
-# 1. Secrets prod: sinh ngẫu nhiên nếu chưa có (chỉ lưu trên host, đã gitignore).
+# 1. Secrets prod: nguồn sự thật ở persist_dir; sinh ngẫu nhiên lần đầu rồi copy
+#    vào overlay để kustomize đọc. Cả hai vị trí đều gitignore / ngoài repo.
 # ---------------------------------------------------------------------------
 ensure_secret() {
-  local file="$1"; shift
-  [ -f "$file" ] && return 0
-  log "Sinh secret prod mới: $(basename "$file")"
-  printf '%s\n' "$@" > "$file"
-  chmod 600 "$file"
+  local name="$1"; shift
+  local persist="$persist_dir/$name"
+  if [ ! -f "$persist" ]; then
+    log "Sinh secret prod mới: $name (lưu tại $persist_dir)"
+    printf '%s\n' "$@" > "$persist"
+    chmod 600 "$persist"
+  fi
+  cp "$persist" "$secrets_dir/$name"
+  chmod 600 "$secrets_dir/$name"
 }
-mkdir -p "$secrets_dir"
-ensure_secret "$secrets_dir/postgres.env" \
+mkdir -p "$secrets_dir" "$persist_dir"
+ensure_secret "postgres.env" \
   "POSTGRES_DB=lumin" "POSTGRES_USER=lumin" "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
-ensure_secret "$secrets_dir/minio.env" \
+ensure_secret "minio.env" \
   "MINIO_ROOT_USER=lumin-prod" "MINIO_ROOT_PASSWORD=$(openssl rand -hex 24)"
-ensure_secret "$secrets_dir/meilisearch.env" \
+ensure_secret "meilisearch.env" \
   "MEILI_MASTER_KEY=$(openssl rand -hex 32)"
 
 # ---------------------------------------------------------------------------

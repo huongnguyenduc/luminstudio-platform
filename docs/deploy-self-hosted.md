@@ -105,9 +105,15 @@ SKIP_BUILD=1 bash infra/scripts/deploy-prod.sh
 ## 4. Secrets
 
 Overlay `prod` thay thế secret dev (plaintext trong `base`) bằng giá trị đọc từ
-`infra/k8s/overlays/prod/secrets/*.env`. Các file `.env` **không commit** (đã gitignore);
-`deploy-prod.sh` tự sinh ngẫu nhiên bằng `openssl rand` ở lần chạy đầu và lưu `chmod 600`
-trên host. Muốn đặt tay thì copy từ `*.env.example`.
+`infra/k8s/overlays/prod/secrets/*.env`. Các file `.env` **không commit** (đã gitignore).
+
+**Nguồn sự thật của secrets** nằm ở `~/.config/lumin/prod-secrets/` (đổi bằng env
+`LUMIN_SECRETS_DIR`), **ngoài** mọi checkout. Lý do: runner CI dùng workspace riêng
+(`~/actions-runner/_work/...`) nên file trong overlay không tồn tại ở đó — nếu sinh mới
+mỗi lần thì mật khẩu sẽ lệch với data Postgres/MinIO đã khởi tạo và pod không auth được.
+`deploy-prod.sh` sinh ngẫu nhiên (`openssl rand`) vào `persist_dir` ở lần đầu, rồi **copy**
+sang overlay để kustomize đọc. Muốn đặt tay: ghi vào `~/.config/lumin/prod-secrets/*.env`
+(tham khảo `secrets/*.env.example`).
 
 Đổi secret sau này: sửa file `.env` rồi chạy lại deploy (`SKIP_BUILD=1` đủ). Lưu ý
 Postgres/MinIO đã khởi tạo data với mật khẩu cũ — đổi mật khẩu cần thao tác thêm trên DB,
