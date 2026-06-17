@@ -74,6 +74,11 @@ fi
 # ---------------------------------------------------------------------------
 # 3. Áp dụng overlay prod.
 # ---------------------------------------------------------------------------
+# minio-buckets là Job: pod template bất biến nên `apply` sẽ lỗi "field is immutable"
+# mỗi khi danh sách bucket đổi. Xoá trước để apply tạo lại (Job idempotent nhờ
+# `mc mb --ignore-existing`, không xoá dữ liệu trong bucket đã có).
+kubectl --context "$cluster_context" -n prod delete job minio-buckets --ignore-not-found
+
 log "kubectl apply -k overlays/prod"
 kubectl --context "$cluster_context" apply -k "$prod_overlay"
 
