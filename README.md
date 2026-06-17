@@ -1,4 +1,8 @@
-# Lumin Studio
+<p align="center">
+  <img src="resources/lumin_logo.png" alt="Lumin Studio" width="128" height="128" />
+</p>
+
+<h1 align="center">Lumin Studio</h1>
 
 Lumin Studio is a 3D commerce platform composed of an admin web application,
 a Go API gateway, an asynchronous Rust 3D worker, and a Flutter customer
