@@ -1,4 +1,4 @@
-"""Render a deterministic JPEG sprite sheet from a GLB with Blender."""
+"""Render a deterministic transparent PNG sprite sheet from a GLB with Blender."""
 
 import argparse
 from array import array
@@ -87,10 +87,12 @@ def configure_scene(center: Vector, extent: Vector, size: int) -> bpy.types.Obje
     scene.render.resolution_x = size
     scene.render.resolution_y = size
     scene.render.resolution_percentage = 100
-    scene.render.image_settings.file_format = "JPEG"
-    scene.render.image_settings.color_mode = "RGB"
-    scene.render.image_settings.quality = 90
-    scene.render.film_transparent = False
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode = "RGBA"
+    scene.render.image_settings.compression = 90
+    # Transparent film so the sprite shows only the rotating model; the app card
+    # background shows through instead of a baked-in solid colour.
+    scene.render.film_transparent = True
     scene.render.use_file_extension = True
     scene.render.use_overwrite = True
     scene.render.use_placeholder = False
@@ -155,6 +157,7 @@ def render_sheet(args: argparse.Namespace) -> dict[str, int | str]:
     frame_directory = Path(tempfile.mkdtemp(prefix="lumin-sprite-"))
     try:
         bpy.context.scene.render.image_settings.file_format = "PNG"
+        bpy.context.scene.render.image_settings.color_mode = "RGBA"
         for frame in range(args.frames):
             angle = (2.0 * math.pi * frame) / args.frames
             location = Vector(
@@ -189,14 +192,18 @@ def render_sheet(args: argparse.Namespace) -> dict[str, int | str]:
 
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
-    sheet = bpy.data.images.new("Lumin360Sprite", width=sheet_width, height=sheet_height, alpha=False)
+    sheet = bpy.data.images.new("Lumin360Sprite", width=sheet_width, height=sheet_height, alpha=True)
+    sheet.alpha_mode = "STRAIGHT"
     sheet.pixels.foreach_set(sheet_pixels)
-    bpy.context.scene.render.image_settings.file_format = "JPEG"
+    bpy.context.scene.render.image_settings.file_format = "PNG"
+    bpy.context.scene.render.image_settings.color_mode = "RGBA"
     sheet.filepath_raw = str(output)
-    sheet.file_format = "JPEG"
+    sheet.file_format = "PNG"
     sheet.save()
     return {
         "renderer": "blender-eevee",
+        "format": "png",
+        "transparent": True,
         "frames": args.frames,
         "columns": args.columns,
         "rows": rows,

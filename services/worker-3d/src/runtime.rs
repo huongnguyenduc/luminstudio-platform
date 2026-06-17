@@ -180,10 +180,13 @@ impl SpriteRenderer for BlenderSpriteRenderer {
             .map_err(|error| format!("create render directory {}: {error}", directory.display()))?;
         let cleanup = TemporaryDirectory(directory.clone());
         let input = directory.join("source.glb");
-        let output = directory.join("sprite.jpg");
+        let png_output = directory.join("sprite.png");
+        let webp_output = directory.join("sprite.webp");
         fs::write(&input, source)
             .map_err(|error| format!("write Blender input {}: {error}", input.display()))?;
 
+        // Blender renders a transparent PNG sprite sheet (Blender 3.4 has no
+        // native WebP encoder).
         let result = Command::new(&self.binary)
             .args([
                 "--background",
@@ -196,7 +199,7 @@ impl SpriteRenderer for BlenderSpriteRenderer {
             .arg(&self.script)
             .arg("--")
             .arg(&input)
-            .arg(&output)
+            .arg(&png_output)
             .output()
             .map_err(|error| format!("start Blender {}: {error}", self.binary.display()))?;
         if !result.status.success() {
@@ -206,8 +209,27 @@ impl SpriteRenderer for BlenderSpriteRenderer {
                 String::from_utf8_lossy(&result.stderr).trim()
             ));
         }
-        let bytes = fs::read(&output)
-            .map_err(|error| format!("read rendered sprite {}: {error}", output.display()))?;
+
+        // Re-encode to WebP for delivery: smaller payload while preserving the
+        // alpha channel (so the app still sees only the rotating model).
+        let webp_binary = env::var("WEBP_BINARY").unwrap_or_else(|_| "cwebp".to_owned());
+        let convert = Command::new(&webp_binary)
+            .args(["-quiet", "-q", "90", "-alpha_q", "100", "-m", "6"])
+            .arg(&png_output)
+            .arg("-o")
+            .arg(&webp_output)
+            .output()
+            .map_err(|error| format!("start cwebp {webp_binary}: {error}"))?;
+        if !convert.status.success() {
+            return Err(format!(
+                "cwebp exited with {}: {}",
+                convert.status,
+                String::from_utf8_lossy(&convert.stderr).trim()
+            ));
+        }
+
+        let bytes = fs::read(&webp_output)
+            .map_err(|error| format!("read rendered sprite {}: {error}", webp_output.display()))?;
         drop(cleanup);
         Ok(bytes)
     }

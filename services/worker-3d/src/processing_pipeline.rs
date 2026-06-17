@@ -154,7 +154,7 @@ where
             .map_err(PipelineError::UploadOptimized)?;
         let sprite_asset = self
             .asset_store
-            .put_processed_asset(SPRITE_BUCKET, &sprite_key, "image/jpeg", sprite_bytes)
+            .put_processed_asset(SPRITE_BUCKET, &sprite_key, "image/webp", sprite_bytes)
             .map_err(PipelineError::UploadSprite)?;
 
         let event = TaskCompletedEvent {
@@ -243,7 +243,7 @@ mod tests {
         assert_eq!(event.payload.sprite_asset.bucket, SPRITE_BUCKET);
         assert_eq!(
             event.payload.sprite_asset.key,
-            "prod_12345678_360_sprite.jpg"
+            "prod_12345678_360_sprite.webp"
         );
 
         let json = serde_json::to_value(&event).expect("serialize event");
@@ -253,7 +253,7 @@ mod tests {
             json["payload"]["optimizedAsset"]["contentType"],
             "model/gltf-binary"
         );
-        assert_eq!(json["payload"]["spriteAsset"]["contentType"], "image/jpeg");
+        assert_eq!(json["payload"]["spriteAsset"]["contentType"], "image/webp");
     }
 
     #[test]
@@ -363,7 +363,7 @@ mod tests {
         fn render(&mut self, task_id: &str, source: &[u8]) -> Result<Vec<u8>, String> {
             assert_eq!(task_id, "task_12345678");
             assert_eq!(source, b"glTF");
-            Ok(b"jpeg".to_vec())
+            Ok(b"webp".to_vec())
         }
     }
 

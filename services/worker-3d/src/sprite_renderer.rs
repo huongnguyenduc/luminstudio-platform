@@ -21,7 +21,7 @@ pub fn sprite_object_key(product_id: &str) -> Result<String, &'static str> {
         return Err("product id must match the v1 contract");
     }
 
-    Ok(format!("{product_id}_360_sprite.jpg"))
+    Ok(format!("{product_id}_360_sprite.webp"))
 }
 
 #[cfg(test)]
@@ -35,7 +35,7 @@ mod tests {
         assert_eq!(SPRITE_FRAME_SIZE, 160);
         assert_eq!(
             sprite_object_key("prod_pet_tag_12345678").unwrap(),
-            "prod_pet_tag_12345678_360_sprite.jpg"
+            "prod_pet_tag_12345678_360_sprite.webp"
         );
     }
 

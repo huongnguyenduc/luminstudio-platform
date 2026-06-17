@@ -129,16 +129,17 @@ pub fn optimize_glb(
             SimplifyOptions::None,
             Some(&mut result_error),
         );
-        if simplified.is_empty() || !simplified.len().is_multiple_of(3) {
-            return Err(OptimizationError::Simplification(format!(
-                "primitive accessor {index_accessor} returned an invalid triangle list"
-            )));
-        }
-        if simplified.len() >= indices.len() {
-            return Err(OptimizationError::Simplification(format!(
-                "primitive accessor {index_accessor} could not be reduced within error {}",
-                config.target_error
-            )));
+        // meshopt cannot always hit the target within the error budget: small or
+        // already-minimal primitives may come back unchanged (or empty). Keep such
+        // primitives at full resolution instead of failing the whole job, so a
+        // single stubborn primitive does not block the entire product.
+        let usable = !simplified.is_empty()
+            && simplified.len().is_multiple_of(3)
+            && simplified.len() < indices.len();
+        if !usable {
+            source_triangles += indices.len() / 3;
+            optimized_triangles += indices.len() / 3;
+            continue;
         }
 
         let replacement = encode_indices(&document, index_accessor, &simplified)?;

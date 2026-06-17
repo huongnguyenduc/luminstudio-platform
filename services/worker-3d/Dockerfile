@@ -13,7 +13,7 @@ RUN cargo build --release -p worker-3d --bin worker-3d
 FROM docker.io/library/debian:bookworm-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends blender ca-certificates libegl1 python3-numpy \
+    && apt-get install -y --no-install-recommends blender ca-certificates libegl1 python3-numpy webp \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /src/target/release/worker-3d /usr/local/bin/worker-3d
