@@ -2,16 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lumin_studio_mobile/app/theme/app_theme.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/device_tier.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/get_catalog_product_detail.dart';
-import 'package:lumin_studio_mobile/features/catalog/presentation/catalog_sprite_preview.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/catalog_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/product_detail_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/product_detail_view.dart';
+import 'package:lumin_studio_mobile/features/cart/presentation/cubit/cart_cubit.dart';
+import 'package:lumin_studio_mobile/shared/widgets/product_card.dart';
+import 'package:lumin_studio_mobile/shared/widgets/product_media_tile.dart';
+import 'package:lumin_studio_mobile/shared/widgets/shimmer_box.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 const _previewActivationDelay = Duration(seconds: 3);
@@ -101,7 +107,7 @@ class _CatalogProductsViewState extends State<CatalogProductsView> {
                 scrollKey: widget.scrollKey,
                 scrollController: _scrollController,
                 searchController: _searchController,
-                child: const _CatalogLoading(),
+                child: const ShimmerProductList(itemCount: 4),
               ),
               CatalogStatus.empty => _CatalogScaffold(
                 scrollKey: widget.scrollKey,
@@ -151,12 +157,118 @@ class _CatalogScaffold extends StatelessWidget {
     return ListView(
       key: scrollKey,
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
       children: [
+        const _HomeHero(),
+        const SizedBox(height: 18),
         _CatalogSearchField(controller: searchController),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         child,
       ],
+    );
+  }
+}
+
+class _HomeHero extends StatelessWidget {
+  const _HomeHero();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
+      decoration: BoxDecoration(
+        gradient: context.gradients.hero,
+        borderRadius: BorderRadius.circular(LuminRadii.xl),
+        boxShadow: LuminShadows.glow(theme.colorScheme.primary),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
+              const SizedBox(width: 6),
+              Text(
+                'WELCOME TO LUMIN',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Discover premium\n3D assets',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              height: 1.08,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Spin, customize and collect studio-grade models.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: const [
+              _HeroChip(icon: Icons.threesixty, label: '360° preview'),
+              _HeroChip(icon: Icons.palette_outlined, label: 'Customizable'),
+              _HeroChip(icon: Icons.bolt, label: 'New drops'),
+            ],
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 450.ms).slideY(
+      begin: 0.08,
+      end: 0,
+      duration: 450.ms,
+      curve: Curves.easeOutCubic,
+    );
+  }
+}
+
+class _HeroChip extends StatelessWidget {
+  const _HeroChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(LuminRadii.pill),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -192,20 +304,6 @@ class _CatalogSearchField extends StatelessWidget {
   }
 }
 
-class _CatalogLoading extends StatelessWidget {
-  const _CatalogLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: SizedBox.square(
-        dimension: 32,
-        child: CircularProgressIndicator(strokeWidth: 3),
-      ),
-    );
-  }
-}
-
 class _CatalogEmpty extends StatelessWidget {
   const _CatalogEmpty({required this.isSearching});
 
@@ -216,16 +314,43 @@ class _CatalogEmpty extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 168),
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.all(20),
+      constraints: const BoxConstraints(minHeight: 220),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(LuminRadii.lg),
       ),
-      child: Text(
-        isSearching ? 'No matching products' : 'No catalog products yet',
-        style: theme.textTheme.titleMedium,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isSearching ? Icons.search_off_rounded : Icons.inventory_2_outlined,
+            size: 52,
+            color: theme.colorScheme.primary.withValues(alpha: 0.7),
+          ).animate().scale(
+            delay: 120.ms,
+            duration: 360.ms,
+            curve: Curves.easeOutBack,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isSearching ? 'No matching products' : 'No catalog products yet',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium,
+          ),
+          if (isSearching) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Try a different search term.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -242,16 +367,19 @@ class _CatalogFailure extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 168),
-      padding: const EdgeInsets.all(20),
+      constraints: const BoxConstraints(minHeight: 200),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         border: Border.all(color: theme.colorScheme.error),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(LuminRadii.lg),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Icon(Icons.cloud_off_rounded, color: theme.colorScheme.error),
+          const SizedBox(height: 12),
           Text(
             message ?? 'Catalog is unavailable',
             style: theme.textTheme.titleMedium?.copyWith(
@@ -297,38 +425,47 @@ class _CatalogList extends StatelessWidget {
     final products = state.products;
     final theme = Theme.of(context);
 
-    return ListView.separated(
+    return ListView(
       key: scrollKey,
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _CatalogSearchField(controller: searchController),
-              const SizedBox(height: 12),
-              Text(
-                state.isSearching
-                    ? '${products.length} matching products'
-                    : 'Browse ${products.length} products',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _HomeHero(),
+            const SizedBox(height: 18),
+            _CatalogSearchField(controller: searchController),
+            const SizedBox(height: 16),
+            Text(
+              state.isSearching
+                  ? '${products.length} matching products'
+                  : 'Browse ${products.length} products',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
+            ),
+            const SizedBox(height: 16),
+            for (var i = 0; i < products.length; i++) ...[
+              _CatalogProductTile(
+                product: products[i],
+                isScrolling: isScrolling,
+              ).animate().fadeIn(
+                delay: (40 * i.clamp(0, 8)).ms,
+                duration: 280.ms,
+              ).slideY(
+                begin: 0.12,
+                end: 0,
+                delay: (40 * i.clamp(0, 8)).ms,
+                duration: 280.ms,
+                curve: Curves.easeOutCubic,
+              ),
+              const SizedBox(height: 14),
             ],
-          );
-        }
-        if (index == products.length + 1) {
-          return _CatalogPaginationFooter(state: state);
-        }
-        return _CatalogProductTile(
-          product: products[index - 1],
-          isScrolling: isScrolling,
-        );
-      },
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemCount: products.length + 2,
+            _CatalogPaginationFooter(state: state),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -344,7 +481,7 @@ class _CatalogPaginationFooter extends StatelessWidget {
 
     if (state.isLoadingMore) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
+        padding: EdgeInsets.symmetric(vertical: 16),
         child: Center(
           child: SizedBox.square(
             dimension: 24,
@@ -358,7 +495,7 @@ class _CatalogPaginationFooter extends StatelessWidget {
       return DecoratedBox(
         decoration: BoxDecoration(
           border: Border.all(color: theme.colorScheme.error),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(LuminRadii.md),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -385,7 +522,7 @@ class _CatalogPaginationFooter extends StatelessWidget {
 
     if (!state.canLoadMore) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         child: Center(
           child: Text(
             state.isSearching
@@ -574,12 +711,24 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
     );
   }
 
+  void _quickAdd() {
+    HapticFeedback.mediumImpact();
+    context.read<CartCubit>().addCatalogProduct(widget.product);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${widget.product.name} added to cart'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final product = widget.product;
     final statusLabel = product.processingStatus.replaceAll('_', ' ');
-    final previewUri = product.spritePreviewUri;
     final categoryLabel = product.categories.isEmpty
         ? 'Catalog'
         : product.categories.first.name;
@@ -590,280 +739,23 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
       child: Semantics(
         button: true,
         label: 'Catalog product ${product.name}',
-        child: Material(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(18),
-          child: InkWell(
-            onTap: _openProductDetail,
-            borderRadius: BorderRadius.circular(18),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 156),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.outlineVariant),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.shadow.withValues(alpha: 0.05),
-                    blurRadius: 22,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ProductMediaTile(
-                    product: product,
-                    previewActive: _previewActive,
-                    previewUri: previewUri,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                categoryLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: _ProductStatusPill(
-                                label: product.hasPreview
-                                    ? '360 preview ready'
-                                    : statusLabel,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          product.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            height: 1.08,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          product.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 8,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              _formatMoney(
-                                product.price.amountCents,
-                                product.price.currency,
-                              ),
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            Text(
-                              'View details',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondary.withValues(
-                        alpha: 0.14,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(7),
-                      child: Icon(
-                        Icons.chevron_right,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        child: ProductCard(
+          media: ProductMediaTile(
+            product: product,
+            previewActive: _previewActive,
+            spriteFrameKey: ValueKey<String>('sprite-frame-${product.id}'),
+            subtlePreviewKey: ValueKey<String>('subtle-preview-${product.id}'),
+            iconKey: ValueKey<String>('product-icon-${product.id}'),
           ),
+          categoryLabel: categoryLabel,
+          statusLabel: product.hasPreview ? '360 preview ready' : statusLabel,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          onTap: _openProductDetail,
+          onQuickAdd: _quickAdd,
         ),
       ),
     );
   }
-}
-
-class _ProductMediaTile extends StatelessWidget {
-  const _ProductMediaTile({
-    required this.product,
-    required this.previewActive,
-    required this.previewUri,
-  });
-
-  final CatalogProduct product;
-  final bool previewActive;
-  final Uri? previewUri;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: 96,
-      height: 112,
-      alignment: Alignment.center,
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        color: product.hasPreview
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.74)
-            : theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.surface.withValues(alpha: 0.40),
-                    theme.colorScheme.primary.withValues(alpha: 0.12),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Center(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: product.hasPreview && previewUri != null
-                  ? SizedBox.square(
-                      key: ValueKey<String>(
-                        previewActive
-                            ? 'subtle-preview-${product.id}'
-                            : 'sprite-frame-${product.id}',
-                      ),
-                      dimension: 86,
-                      child: previewActive
-                          ? CatalogSubtleSpritePreview(
-                              uri: previewUri!,
-                              productName: product.name,
-                            )
-                          : CatalogSpriteFrame(
-                              uri: previewUri!,
-                              productName: product.name,
-                            ),
-                    )
-                  : Icon(
-                      key: ValueKey<String>('product-icon-${product.id}'),
-                      product.hasPreview
-                          ? Icons.view_in_ar
-                          : Icons.view_in_ar_outlined,
-                      size: 36,
-                      color: theme.colorScheme.primary,
-                    ),
-            ),
-          ),
-          if (product.hasPreview)
-            Positioned(
-              left: 8,
-              right: 8,
-              bottom: 8,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.82),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.threesixty,
-                        size: 13,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '360',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProductStatusPill extends StatelessWidget {
-  const _ProductStatusPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.primary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-String _formatMoney(int cents, String currency) {
-  final whole = cents ~/ 100;
-  final fraction = (cents % 100).toString().padLeft(2, '0');
-  return '$currency $whole.$fraction';
 }

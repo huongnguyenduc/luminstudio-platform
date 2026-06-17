@@ -99,8 +99,10 @@ class CartCubit extends Cubit<CartState> {
 
   Future<void> addProduct(
     CatalogProductDetail detail,
-    Map<String, String> selectedColors,
-  ) async {
+    Map<String, String> selectedColors, {
+    int quantity = 1,
+  }) async {
+    final added = quantity < 1 ? 1 : quantity;
     await _mutate((items) {
       final existingIndex = items.indexWhere(
         (item) =>
@@ -117,7 +119,7 @@ class CartCubit extends Cubit<CartState> {
             currency: detail.price.currency,
             compareAtAmountCents: detail.price.compareAtAmountCents,
             selectedColors: Map<String, String>.unmodifiable(selectedColors),
-            quantity: 1,
+            quantity: added,
             isSelected: true,
           ),
         ];
@@ -126,11 +128,76 @@ class CartCubit extends Cubit<CartState> {
       return [
         for (var index = 0; index < items.length; index += 1)
           if (index == existingIndex)
-            items[index].copyWith(quantity: items[index].quantity + 1)
+            items[index].copyWith(quantity: items[index].quantity + added)
           else
             items[index],
       ];
     }, successMessage: 'Added to cart');
+  }
+
+  /// Quick-adds a catalog list product (no finish customization) to the cart.
+  Future<void> addCatalogProduct(
+    CatalogProduct product, {
+    int quantity = 1,
+  }) async {
+    final added = quantity < 1 ? 1 : quantity;
+    await _mutate((items) {
+      final existingIndex = items.indexWhere(
+        (item) =>
+            item.productId == product.id && item.selectedColors.isEmpty,
+      );
+      if (existingIndex == -1) {
+        return [
+          ...items,
+          CartItem(
+            productId: product.id,
+            productName: product.name,
+            amountCents: product.price.amountCents,
+            currency: product.price.currency,
+            compareAtAmountCents: product.price.compareAtAmountCents,
+            selectedColors: const <String, String>{},
+            quantity: added,
+            isSelected: true,
+          ),
+        ];
+      }
+      return [
+        for (var index = 0; index < items.length; index += 1)
+          if (index == existingIndex)
+            items[index].copyWith(quantity: items[index].quantity + added)
+          else
+            items[index],
+      ];
+    }, successMessage: 'Added to cart');
+  }
+
+  /// Removes the item with [productId] from the cart.
+  Future<void> removeProduct(String productId) async {
+    await _mutate(
+      (items) => [
+        for (final item in items)
+          if (item.productId != productId) item,
+      ],
+    );
+  }
+
+  /// Re-inserts a previously removed [item] at [index] (used for undo).
+  Future<void> restoreItem(CartItem item, int index) async {
+    await _mutate((items) {
+      if (items.any((existing) => existing.productId == item.productId)) {
+        return items;
+      }
+      final clampedIndex = index < 0
+          ? 0
+          : index > items.length
+          ? items.length
+          : index;
+      return [
+        ...items.sublist(0, clampedIndex),
+        item,
+        ...items.sublist(clampedIndex),
+      ];
+    });
   }
 
   Future<void> increment(String productId) async {
@@ -176,15 +243,25 @@ class CartCubit extends Cubit<CartState> {
     List<CartItem> Function(List<CartItem> items) mutate, {
     String? successMessage,
   }) async {
-    emit(state.copyWith(isMutating: true, message: null));
+    final previousItems = state.items;
+    final updatedItems = mutate(previousItems);
+
+    // Optimistically apply the change so the UI (including swipe-to-remove)
+    // updates immediately, then persist in the background.
+    emit(
+      state.copyWith(
+        status: CartStatus.ready,
+        items: updatedItems,
+        isMutating: true,
+        message: null,
+      ),
+    );
 
     try {
-      final updatedItems = mutate(state.items);
       await _cartRepository.saveCart(updatedItems);
       emit(
         state.copyWith(
           status: CartStatus.ready,
-          items: updatedItems,
           isMutating: false,
           message: successMessage,
         ),
@@ -193,6 +270,7 @@ class CartCubit extends Cubit<CartState> {
       emit(
         state.copyWith(
           status: CartStatus.failure,
+          items: previousItems,
           isMutating: false,
           message: 'Cart is unavailable',
         ),

@@ -2,16 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lumin_studio_mobile/app/theme/app_theme.dart';
+import 'package:lumin_studio_mobile/features/cart/presentation/cubit/cart_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/device_tier.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/get_catalog_product_detail.dart';
-import 'package:lumin_studio_mobile/features/catalog/presentation/catalog_sprite_preview.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/category_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/product_detail_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/product_detail_view.dart';
+import 'package:lumin_studio_mobile/shared/widgets/product_card.dart';
+import 'package:lumin_studio_mobile/shared/widgets/product_media_tile.dart';
+import 'package:lumin_studio_mobile/shared/widgets/shimmer_box.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 const _categoryPreviewActivationDelay = Duration(seconds: 3);
@@ -153,7 +159,7 @@ class _CategoryContent extends StatelessWidget {
       children: [
         switch (state.status) {
           CategoryStatus.initial ||
-          CategoryStatus.loading => const _CategoryLoading(),
+          CategoryStatus.loading => const ShimmerProductList(itemCount: 4),
           CategoryStatus.empty => const _CategoryEmpty(),
           CategoryStatus.failure => _CategoryFailure(message: state.message),
           CategoryStatus.ready => _CategoryReady(
@@ -184,14 +190,14 @@ class _CategoryReady extends StatelessWidget {
           categories: state.categories,
           selectedCategory: selected,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         _CategorySortControl(sort: state.sort),
         const SizedBox(height: 18),
         if (selected != null) ...[
           Text(
             selected.name,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 4),
@@ -202,10 +208,12 @@ class _CategoryReady extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         switch (state.productsStatus) {
           CategoryProductsStatus.idle ||
-          CategoryProductsStatus.loading => const _CategoryLoading(),
+          CategoryProductsStatus.loading => const ShimmerProductList(
+            itemCount: 3,
+          ),
           CategoryProductsStatus.empty => const _CategoryProductsEmpty(),
           CategoryProductsStatus.failure => _CategoryProductsFailure(
             message: state.productsMessage,
@@ -246,7 +254,7 @@ class _CategorySelector extends StatelessWidget {
                   ? Icon(
                       Icons.check,
                       size: 18,
-                      color: theme.colorScheme.onSecondaryContainer,
+                      color: theme.colorScheme.primary,
                     )
                   : null,
               onSelected: (_) {
@@ -275,11 +283,21 @@ class _CategorySortControl extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Sort products',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.swap_vert_rounded,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Sort products',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           SingleChildScrollView(
@@ -314,11 +332,24 @@ class _CategoryProductList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final products = state.products;
     return Column(
       children: [
-        for (final product in state.products) ...[
-          _CategoryProductTile(product: product, isScrolling: isScrolling),
-          const SizedBox(height: 12),
+        for (var i = 0; i < products.length; i++) ...[
+          _CategoryProductTile(
+            product: products[i],
+            isScrolling: isScrolling,
+          ).animate().fadeIn(
+            delay: (40 * i.clamp(0, 8)).ms,
+            duration: 280.ms,
+          ).slideY(
+            begin: 0.12,
+            end: 0,
+            delay: (40 * i.clamp(0, 8)).ms,
+            duration: 280.ms,
+            curve: Curves.easeOutCubic,
+          ),
+          const SizedBox(height: 14),
         ],
         _CategoryPaginationFooter(state: state),
       ],
@@ -337,7 +368,7 @@ class _CategoryPaginationFooter extends StatelessWidget {
 
     if (state.isLoadingMore) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
+        padding: EdgeInsets.symmetric(vertical: 16),
         child: Center(
           child: SizedBox.square(
             dimension: 24,
@@ -351,7 +382,7 @@ class _CategoryPaginationFooter extends StatelessWidget {
       return DecoratedBox(
         decoration: BoxDecoration(
           border: Border.all(color: theme.colorScheme.error),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(LuminRadii.md),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -378,7 +409,7 @@ class _CategoryPaginationFooter extends StatelessWidget {
 
     if (!state.canLoadMore) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         child: Center(
           child: Text(
             'All category products loaded',
@@ -568,9 +599,22 @@ class _CategoryProductTileState extends State<_CategoryProductTile> {
     );
   }
 
+  void _quickAdd() {
+    HapticFeedback.mediumImpact();
+    context.read<CartCubit>().addCatalogProduct(widget.product);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${widget.product.name} added to cart'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final product = widget.product;
     final statusLabel = product.processingStatus.replaceAll('_', ' ');
     final categoryLabel = product.categories.isEmpty
@@ -583,276 +627,25 @@ class _CategoryProductTileState extends State<_CategoryProductTile> {
       child: Semantics(
         button: true,
         label: 'Category product ${product.name}',
-        child: Material(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(18),
-          child: InkWell(
-            onTap: () => _openProductDetail(context),
-            borderRadius: BorderRadius.circular(18),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 156),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.outlineVariant),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.shadow.withValues(alpha: 0.05),
-                    blurRadius: 22,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _CategoryProductMediaTile(
-                    product: product,
-                    previewActive: _previewActive,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                categoryLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: _CategoryStatusPill(
-                                label: product.hasPreview
-                                    ? '360 preview ready'
-                                    : statusLabel,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          product.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            height: 1.08,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          product.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          _formatPrice(product.price),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondary.withValues(
-                        alpha: 0.14,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(7),
-                      child: Icon(
-                        Icons.chevron_right,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        child: ProductCard(
+          media: ProductMediaTile(
+            product: product,
+            previewActive: _previewActive,
+            spriteFrameKey: ValueKey<String>(
+              'category-sprite-frame-${product.id}',
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatPrice(CatalogPrice price) {
-    return '${price.currency} ${(price.amountCents / 100).toStringAsFixed(2)}';
-  }
-}
-
-class _CategoryProductMediaTile extends StatelessWidget {
-  const _CategoryProductMediaTile({
-    required this.product,
-    required this.previewActive,
-  });
-
-  final CatalogProduct product;
-  final bool previewActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: 96,
-      height: 112,
-      alignment: Alignment.center,
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        color: product.hasPreview
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.74)
-            : theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.surface.withValues(alpha: 0.40),
-                    theme.colorScheme.primary.withValues(alpha: 0.12),
-                  ],
-                ),
-              ),
+            subtlePreviewKey: ValueKey<String>(
+              'category-subtle-preview-${product.id}',
             ),
+            iconKey: ValueKey<String>('category-product-icon-${product.id}'),
           ),
-          Center(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: product.hasPreview && product.spritePreviewUri != null
-                  ? SizedBox.square(
-                      key: ValueKey<String>(
-                        previewActive
-                            ? 'category-subtle-preview-${product.id}'
-                            : 'category-sprite-frame-${product.id}',
-                      ),
-                      dimension: 86,
-                      child: previewActive
-                          ? CatalogSubtleSpritePreview(
-                              uri: product.spritePreviewUri!,
-                              productName: product.name,
-                            )
-                          : CatalogSpriteFrame(
-                              uri: product.spritePreviewUri!,
-                              productName: product.name,
-                            ),
-                    )
-                  : Icon(
-                      key: ValueKey<String>(
-                        'category-product-icon-${product.id}',
-                      ),
-                      product.hasPreview
-                          ? Icons.view_in_ar
-                          : Icons.view_in_ar_outlined,
-                      size: 36,
-                      color: theme.colorScheme.primary,
-                    ),
-            ),
-          ),
-          if (product.hasPreview)
-            Positioned(
-              left: 8,
-              right: 8,
-              bottom: 8,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.82),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.threesixty,
-                        size: 13,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '360',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoryStatusPill extends StatelessWidget {
-  const _CategoryStatusPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.primary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryLoading extends StatelessWidget {
-  const _CategoryLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
-        child: SizedBox.square(
-          dimension: 32,
-          child: CircularProgressIndicator(strokeWidth: 3),
+          categoryLabel: categoryLabel,
+          statusLabel: product.hasPreview ? '360 preview ready' : statusLabel,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          onTap: () => _openProductDetail(context),
+          onQuickAdd: _quickAdd,
         ),
       ),
     );
@@ -864,7 +657,10 @@ class _CategoryEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _CategoryMessageCard(text: 'No categories yet');
+    return const _CategoryMessageCard(
+      icon: Icons.grid_view_outlined,
+      text: 'No categories yet',
+    );
   }
 }
 
@@ -873,7 +669,10 @@ class _CategoryProductsEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _CategoryMessageCard(text: 'No products in this category');
+    return const _CategoryMessageCard(
+      icon: Icons.inventory_2_outlined,
+      text: 'No products in this category',
+    );
   }
 }
 
@@ -906,8 +705,9 @@ class _CategoryProductsFailure extends StatelessWidget {
 }
 
 class _CategoryMessageCard extends StatelessWidget {
-  const _CategoryMessageCard({required this.text});
+  const _CategoryMessageCard({required this.icon, required this.text});
 
+  final IconData icon;
   final String text;
 
   @override
@@ -915,14 +715,30 @@ class _CategoryMessageCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 168),
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.all(20),
+      constraints: const BoxConstraints(minHeight: 200),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(LuminRadii.lg),
       ),
-      child: Text(text, style: theme.textTheme.titleMedium),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 52,
+            color: theme.colorScheme.primary.withValues(alpha: 0.7),
+          ).animate().scale(
+            delay: 120.ms,
+            duration: 360.ms,
+            curve: Curves.easeOutBack,
+          ),
+          const SizedBox(height: 16),
+          Text(text, textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
+        ],
+      ),
     );
   }
 }
@@ -938,16 +754,19 @@ class _CategoryErrorCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 168),
-      padding: const EdgeInsets.all(20),
+      constraints: const BoxConstraints(minHeight: 200),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         border: Border.all(color: theme.colorScheme.error),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(LuminRadii.lg),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Icon(Icons.cloud_off_rounded, color: theme.colorScheme.error),
+          const SizedBox(height: 12),
           Text(
             message,
             style: theme.textTheme.titleMedium?.copyWith(

@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lumin_studio_mobile/app/theme/theme_mode_cubit.dart';
+import 'package:lumin_studio_mobile/features/cart/presentation/cubit/cart_cubit.dart';
 import 'package:lumin_studio_mobile/features/cart/presentation/cart_view.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/category_products_view.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/catalog_products_view.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
+import 'package:lumin_studio_mobile/shared/widgets/cart_badge_icon.dart';
 
 class CustomerShellPage extends StatefulWidget {
   const CustomerShellPage({super.key});
@@ -49,20 +53,20 @@ class _CustomerShellPageState extends State<CustomerShellPage> {
             onDestinationSelected: (index) {
               context.read<ShellCubit>().selectTab(CustomerTab.values[index]);
             },
-            destinations: const [
-              NavigationDestination(
+            destinations: [
+              const NavigationDestination(
                 icon: Icon(Icons.storefront_outlined),
                 selectedIcon: Icon(Icons.storefront),
                 label: 'Home',
               ),
-              NavigationDestination(
-                icon: Icon(Icons.category_outlined),
-                selectedIcon: Icon(Icons.category),
+              const NavigationDestination(
+                icon: Icon(Icons.grid_view_outlined),
+                selectedIcon: Icon(Icons.grid_view_rounded),
                 label: 'Category',
               ),
-              NavigationDestination(
-                icon: Icon(Icons.shopping_bag_outlined),
-                selectedIcon: Icon(Icons.shopping_bag),
+              const NavigationDestination(
+                icon: _CartNavIcon(icon: Icons.shopping_bag_outlined),
+                selectedIcon: _CartNavIcon(icon: Icons.shopping_bag),
                 label: 'Cart',
               ),
             ],
@@ -70,6 +74,23 @@ class _CustomerShellPageState extends State<CustomerShellPage> {
         );
       },
     );
+  }
+}
+
+/// Cart bottom-nav icon that subscribes to the cart count itself, so quantity
+/// changes only rebuild the badge — not the whole shell (which would otherwise
+/// rebuild the active tab and replay list entrance animations).
+class _CartNavIcon extends StatelessWidget {
+  const _CartNavIcon({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = context.select<CartCubit, int>(
+      (cubit) => cubit.state.totalQuantity,
+    );
+    return CartBadgeIcon(icon: icon, count: count);
   }
 }
 
@@ -114,20 +135,50 @@ class _TabRootPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(title),
         actions: [
-          IconButton(
-            tooltip: '${tab.label} detail',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => _TabDetailPage(tab: tab),
-                ),
-              );
-            },
-            icon: const Icon(Icons.open_in_new),
-          ),
+          const _ThemeToggleButton(),
+          // Test-only navigation hook (verifies nested-navigator state
+          // retention); hidden from end users in release builds.
+          if (kDebugMode)
+            IconButton(
+              tooltip: '${tab.label} detail',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => _TabDetailPage(tab: tab),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.open_in_new),
+            ),
         ],
       ),
       body: _TabList(tab: tab),
+    );
+  }
+}
+
+class _ThemeToggleButton extends StatelessWidget {
+  const _ThemeToggleButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return IconButton(
+      tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+      onPressed: () {
+        context.read<ThemeModeCubit>().toggle(Theme.of(context).brightness);
+      },
+      icon: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        transitionBuilder: (child, animation) => RotationTransition(
+          turns: Tween<double>(begin: 0.6, end: 1).animate(animation),
+          child: FadeTransition(opacity: animation, child: child),
+        ),
+        child: Icon(
+          isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+          key: ValueKey<bool>(isDark),
+        ),
+      ),
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lumin_studio_mobile/app/theme/app_theme.dart';
+import 'package:lumin_studio_mobile/app/theme/theme_mode_cubit.dart';
 import 'package:lumin_studio_mobile/features/cart/data/api_backed_cart_repository.dart';
 import 'package:lumin_studio_mobile/features/cart/data/cart_api_client.dart';
 import 'package:lumin_studio_mobile/features/cart/data/shared_preferences_cart_repository.dart';
@@ -19,12 +21,6 @@ import 'package:lumin_studio_mobile/features/catalog/presentation/product_model_
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/shell_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-const _studioInk = Color(0xFF121916);
-const _studioJade = Color(0xFF087463);
-const _studioMist = Color(0xFFF4F7F2);
-const _studioSurface = Color(0xFFFEFFFC);
-const _studioBrass = Color(0xFFB9853A);
 
 class LuminStudioApp extends StatelessWidget {
   const LuminStudioApp({
@@ -61,6 +57,7 @@ class LuminStudioApp extends StatelessWidget {
         RepositoryProvider<ProductModelViewerBuilder>.value(
           value: productModelViewerBuilder,
         ),
+        BlocProvider(create: (_) => ThemeModeCubit()),
         BlocProvider(create: (_) => ShellCubit()),
         BlocProvider(create: (_) => CartCubit(cart)..load()),
         BlocProvider(
@@ -76,110 +73,17 @@ class LuminStudioApp extends StatelessWidget {
           )..loadCategories(),
         ),
       ],
-      child: MaterialApp(
-        title: 'Lumin Studio',
-        debugShowCheckedModeBanner: false,
-        theme: _luminTheme(),
-        home: const CustomerShellPage(),
-      ),
-    );
-  }
-
-  ThemeData _luminTheme() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: _studioJade,
-      brightness: Brightness.light,
-      surface: _studioSurface,
-      primary: _studioJade,
-      secondary: _studioBrass,
-      onSurface: _studioInk,
-    );
-
-    return ThemeData(
-      colorScheme: colorScheme,
-      useMaterial3: true,
-      scaffoldBackgroundColor: _studioMist,
-      appBarTheme: AppBarTheme(
-        centerTitle: false,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        backgroundColor: _studioMist,
-        foregroundColor: colorScheme.onSurface,
-        titleTextStyle: const TextStyle(
-          color: _studioInk,
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0,
-        ),
-      ),
-      textTheme: ThemeData.light().textTheme.apply(
-        bodyColor: _studioInk,
-        displayColor: _studioInk,
-      ),
-      cardTheme: CardThemeData(
-        color: colorScheme.surface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: _studioSurface,
-        indicatorColor: const Color(0xFFD8EFE8),
-        elevation: 0,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          return TextStyle(
-            color: states.contains(WidgetState.selected)
-                ? _studioInk
-                : const Color(0xFF59645F),
-            fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w700
-                : FontWeight.w500,
-            fontSize: 12,
-            letterSpacing: 0,
+      child: BlocBuilder<ThemeModeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp(
+            title: 'Lumin Studio',
+            debugShowCheckedModeBanner: false,
+            theme: buildLuminTheme(Brightness.light),
+            darkTheme: buildLuminTheme(Brightness.dark),
+            themeMode: themeMode,
+            home: const CustomerShellPage(),
           );
-        }),
-      ),
-      searchBarTheme: SearchBarThemeData(
-        elevation: const WidgetStatePropertyAll<double>(0),
-        backgroundColor: WidgetStatePropertyAll<Color>(colorScheme.surface),
-        side: WidgetStatePropertyAll<BorderSide>(
-          BorderSide(color: colorScheme.outlineVariant),
-        ),
-        shape: WidgetStatePropertyAll<OutlinedBorder>(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        ),
-        padding: const WidgetStatePropertyAll<EdgeInsets>(
-          EdgeInsets.symmetric(horizontal: 16),
-        ),
-      ),
-      chipTheme: ChipThemeData(
-        backgroundColor: colorScheme.surface,
-        selectedColor: const Color(0xFFD8EFE8),
-        side: BorderSide(color: colorScheme.outlineVariant),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-        labelStyle: const TextStyle(
-          color: _studioInk,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0,
-        ),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0,
-          ),
-        ),
-      ),
-      iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
+        },
       ),
     );
   }
