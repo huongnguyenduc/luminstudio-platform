@@ -39,16 +39,20 @@ void main() {
       ),
     );
 
-    await _pumpUntilVisible(tester, find.text(productName));
-    expect(find.text('360 preview ready'), findsWidgets);
-
+    await _pumpUntilVisible(tester, find.byType(SearchBar));
     await tester.enterText(find.byType(SearchBar), productName);
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await _pumpUntilVisible(tester, find.text(productName));
+    await _pumpUntilVisible(
+      tester,
+      find.byKey(ValueKey<String>('catalog-product-visibility-$productId')),
+    );
 
     await tester.tap(find.text('Category'));
     await tester.pumpAndSettle();
     await _pumpUntilVisible(tester, find.text(categoryName));
+    await tester.tap(find.text(categoryName));
+    await tester.pumpAndSettle();
     await _pumpUntilVisible(tester, find.text(productName));
 
     await tester.tap(find.text('Home'));
@@ -58,7 +62,10 @@ void main() {
     );
     await _pumpUntilVisible(tester, homeProductCard);
     await tester.tap(homeProductCard);
-    await _pumpUntilVisible(tester, find.text('Model tier: high'));
+    await _pumpUntilVisible(
+      tester,
+      find.byKey(ValueKey<String>('product-model-panel-$productId')),
+    );
 
     expect(
       find.byKey(ValueKey<String>('product-model-panel-$productId')),
@@ -67,7 +74,7 @@ void main() {
     expect(find.text('US-050 model viewer high'), findsOneWidget);
     expect(
       find.textContaining('/catalog/products/$productId/model'),
-      findsOneWidget,
+      findsNothing,
     );
 
     final swatch = find.byKey(
@@ -135,17 +142,26 @@ Future<void> _pumpUntilVisible(
 }
 
 Future<void> _scrollUntilVisible(WidgetTester tester, Finder finder) async {
-  if (finder.evaluate().isNotEmpty) {
-    return;
-  }
+  final scrollable = find.descendant(
+    of: find.byKey(const PageStorageKey<String>('product-detail-scroll')),
+    matching: find.byType(Scrollable),
+  );
   await tester.scrollUntilVisible(
     finder,
     160,
-    scrollable: find.descendant(
-      of: find.byKey(const PageStorageKey<String>('product-detail-scroll')),
-      matching: find.byType(Scrollable),
-    ),
+    scrollable: scrollable,
     maxScrolls: 20,
   );
   await tester.pumpAndSettle();
+
+  final safeBottom =
+      tester.view.physicalSize.height / tester.view.devicePixelRatio - 180;
+  for (var attempt = 0; attempt < 8; attempt += 1) {
+    final center = tester.getCenter(finder);
+    if (center.dy < safeBottom) {
+      return;
+    }
+    await tester.drag(scrollable, const Offset(0, -120));
+    await tester.pumpAndSettle();
+  }
 }

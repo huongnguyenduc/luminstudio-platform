@@ -239,12 +239,20 @@ class CartCubit extends Cubit<CartState> {
     );
   }
 
+  // Tracks whether a background save loop is currently draining, plus the
+  // latest cart snapshot still waiting to be persisted. Coalescing saves this
+  // way keeps every quantity/selection control interactive (no disabling on
+  // each tap) while guaranteeing only one in-flight request at a time, so
+  // rapid taps never race the backend or thrash the sync indicator.
+  bool _isSaving = false;
+  List<CartItem>? _pendingSave;
+  String? _pendingMessage;
+
   Future<void> _mutate(
     List<CartItem> Function(List<CartItem> items) mutate, {
     String? successMessage,
   }) async {
-    final previousItems = state.items;
-    final updatedItems = mutate(previousItems);
+    final updatedItems = mutate(state.items);
 
     // Optimistically apply the change so the UI (including swipe-to-remove)
     // updates immediately, then persist in the background.
@@ -257,20 +265,36 @@ class CartCubit extends Cubit<CartState> {
       ),
     );
 
+    _pendingSave = updatedItems;
+    _pendingMessage = successMessage;
+
+    // A drain loop is already running; it will pick up the snapshot above on
+    // its next iteration instead of starting a second concurrent save.
+    if (_isSaving) {
+      return;
+    }
+    _isSaving = true;
+
     try {
-      await _cartRepository.saveCart(updatedItems);
+      while (_pendingSave != null) {
+        final snapshot = _pendingSave!;
+        _pendingSave = null;
+        await _cartRepository.saveCart(snapshot);
+      }
+      _isSaving = false;
       emit(
         state.copyWith(
           status: CartStatus.ready,
           isMutating: false,
-          message: successMessage,
+          message: _pendingMessage,
         ),
       );
     } catch (_) {
+      _isSaving = false;
+      _pendingSave = null;
       emit(
         state.copyWith(
           status: CartStatus.failure,
-          items: previousItems,
           isMutating: false,
           message: 'Cart is unavailable',
         ),

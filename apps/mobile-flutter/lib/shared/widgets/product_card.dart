@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lumin_studio_mobile/app/theme/app_theme.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
+import 'package:lumin_studio_mobile/shared/format/markdown_text.dart';
 import 'package:lumin_studio_mobile/shared/format/money.dart';
 import 'package:lumin_studio_mobile/shared/widgets/discount_badge.dart';
 import 'package:lumin_studio_mobile/shared/widgets/price_tag.dart';
@@ -16,11 +17,11 @@ class ProductCard extends StatelessWidget {
   const ProductCard({
     required this.media,
     required this.categoryLabel,
-    required this.statusLabel,
     required this.name,
     required this.description,
     required this.price,
     required this.onTap,
+    this.statusLabel,
     this.onQuickAdd,
     this.quickAddKey,
     super.key,
@@ -28,7 +29,10 @@ class ProductCard extends StatelessWidget {
 
   final Widget media;
   final String categoryLabel;
-  final String statusLabel;
+
+  /// Optional badge (e.g. processing status). Hidden when null/empty so the
+  /// card isn't cluttered with low-signal labels.
+  final String? statusLabel;
   final String name;
   final String description;
   final CatalogPrice price;
@@ -88,8 +92,10 @@ class ProductCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Flexible(child: _StatusPill(label: statusLabel)),
+                      if (statusLabel != null && statusLabel!.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Flexible(child: _StatusPill(label: statusLabel!)),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -104,7 +110,7 @@ class ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    description,
+                    markdownToPlainText(description),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(

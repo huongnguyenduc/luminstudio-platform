@@ -77,6 +77,7 @@ class CatalogProduct {
     required this.updatedAt,
     this.spriteAsset,
     this.spritePreviewUri,
+    this.descriptionImageUri,
   });
 
   final String id;
@@ -90,7 +91,14 @@ class CatalogProduct {
   final CatalogObjectRef? spriteAsset;
   final Uri? spritePreviewUri;
 
+  /// Representative still pulled from the description markdown
+  /// (`![…](/catalog/products/{id}/image)`). Null when the product has no
+  /// description image; cards then lead with the 360 sprite frame instead.
+  final Uri? descriptionImageUri;
+
   bool get hasPreview => spriteAsset != null;
+
+  bool get hasDescriptionImage => descriptionImageUri != null;
 
   CatalogProduct copyWith({Uri? spritePreviewUri}) {
     return CatalogProduct(
@@ -104,6 +112,7 @@ class CatalogProduct {
       updatedAt: updatedAt,
       spriteAsset: spriteAsset,
       spritePreviewUri: spritePreviewUri ?? this.spritePreviewUri,
+      descriptionImageUri: descriptionImageUri,
     );
   }
 }

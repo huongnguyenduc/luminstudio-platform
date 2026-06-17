@@ -33,8 +33,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Product 1'), findsOneWidget);
-    expect(find.text('Subtotal USD 258.00'), findsOneWidget);
-    expect(find.text('Body: #0F172A'), findsOneWidget);
+    expect(find.text('USD 258.00'), findsOneWidget);
+    expect(find.text('Body: Midnight navy'), findsOneWidget);
 
     await expectLater(
       find.byType(MaterialApp),

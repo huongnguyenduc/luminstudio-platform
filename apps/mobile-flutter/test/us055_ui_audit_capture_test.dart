@@ -20,7 +20,6 @@ void main() {
 
     expect(find.text('Arc chair'), findsOneWidget);
     expect(find.text('Line lamp'), findsOneWidget);
-    expect(find.text('360 preview ready'), findsWidgets);
 
     await _capture(tester, 'us055-home.png');
   });
@@ -48,7 +47,6 @@ void main() {
     await tester.tap(find.text('Arc chair'));
     await tester.pumpAndSettle();
 
-    expect(find.text('HIGH model'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('audit-model-viewer-prod_arc')),
       findsOneWidget,
@@ -67,9 +65,11 @@ void main() {
 
     await tester.tap(find.text('Arc chair'));
     await tester.pumpAndSettle();
+    // Removing the model-tier metadata row shortened the content above the
+    // customization block by ~36px, so this frames it like the prior -430.
     await tester.drag(
       find.byKey(const PageStorageKey<String>('product-detail-scroll')),
-      const Offset(0, -430),
+      const Offset(0, -180),
     );
     await tester.pumpAndSettle();
 
@@ -89,9 +89,12 @@ void main() {
     await tester.tap(find.text('Cart'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Cart summary'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('cart-summary')),
+      findsOneWidget,
+    );
     expect(find.text('Arc chair'), findsOneWidget);
-    expect(find.text('Body: #0F172A'), findsOneWidget);
+    expect(find.text('Body: Midnight navy'), findsOneWidget);
 
     await _capture(tester, 'us055-cart.png');
   });
@@ -125,6 +128,7 @@ Future<void> _capture(WidgetTester tester, String fileName) async {
 Widget _auditProductModelViewerBuilder(
   BuildContext context,
   CatalogProductDetail detail,
+  Map<String, String> selectedMeshColors,
 ) {
   return Semantics(
     label: 'Audit 3D viewer placeholder for ${detail.name}',

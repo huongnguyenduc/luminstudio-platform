@@ -20,6 +20,7 @@ import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/catalog_
 import 'package:lumin_studio_mobile/features/catalog/presentation/product_model_viewer.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/shell_page.dart';
+import 'package:lumin_studio_mobile/shared/api/product_image_endpoints.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LuminStudioApp extends StatelessWidget {
@@ -53,6 +54,9 @@ class LuminStudioApp extends StatelessWidget {
       providers: [
         RepositoryProvider<CatalogRepository>.value(value: catalog),
         RepositoryProvider<CartRepository>.value(value: cart),
+        RepositoryProvider<ProductImageEndpoints>.value(
+          value: ProductImageEndpoints(apiBaseUri),
+        ),
         RepositoryProvider<DeviceTierResolver>.value(value: deviceTierResolver),
         RepositoryProvider<ProductModelViewerBuilder>.value(
           value: productModelViewerBuilder,

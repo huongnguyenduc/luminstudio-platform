@@ -42,22 +42,38 @@ abstract final class LuminRadii {
 }
 
 /// Reusable elevation shadows tuned per brightness.
+///
+/// Cards use a soft two-layer recipe (a tight contact shadow plus a wider,
+/// very light ambient layer) so surfaces read as gently floating rather than
+/// heavily dropped — a more modern, premium feel.
 abstract final class LuminShadows {
   static List<BoxShadow> card(Brightness brightness) {
     if (brightness == Brightness.dark) {
       return const [
         BoxShadow(
-          color: Color(0x66000000),
+          color: Color(0x40000000),
+          blurRadius: 6,
+          offset: Offset(0, 2),
+        ),
+        BoxShadow(
+          color: Color(0x33000000),
           blurRadius: 24,
-          offset: Offset(0, 12),
+          offset: Offset(0, 14),
+          spreadRadius: -4,
         ),
       ];
     }
     return const [
       BoxShadow(
+        color: Color(0x0D101C18),
+        blurRadius: 4,
+        offset: Offset(0, 1),
+      ),
+      BoxShadow(
         color: Color(0x14101C18),
-        blurRadius: 24,
+        blurRadius: 22,
         offset: Offset(0, 12),
+        spreadRadius: -6,
       ),
     ];
   }
@@ -65,10 +81,10 @@ abstract final class LuminShadows {
   static List<BoxShadow> glow(Color color) {
     return [
       BoxShadow(
-        color: color.withValues(alpha: 0.35),
-        blurRadius: 22,
-        spreadRadius: -2,
-        offset: const Offset(0, 10),
+        color: color.withValues(alpha: 0.22),
+        blurRadius: 28,
+        spreadRadius: 0,
+        offset: const Offset(0, 6),
       ),
     ];
   }

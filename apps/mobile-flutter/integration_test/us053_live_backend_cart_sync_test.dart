@@ -49,7 +49,10 @@ void main() {
     );
     await _pumpUntilVisible(tester, productCard);
     await tester.tap(productCard);
-    await _pumpUntilVisible(tester, find.text('Model tier: high'));
+    await _pumpUntilVisible(
+      tester,
+      find.byKey(ValueKey<String>('product-model-panel-$productId')),
+    );
 
     final swatch = find.byKey(
       ValueKey<String>('mesh-color-$meshId-$meshColor'),
@@ -216,17 +219,26 @@ Future<void> _pumpUntilText(
 }
 
 Future<void> _scrollUntilVisible(WidgetTester tester, Finder finder) async {
-  if (finder.evaluate().isNotEmpty) {
-    return;
-  }
+  final scrollable = find.descendant(
+    of: find.byKey(const PageStorageKey<String>('product-detail-scroll')),
+    matching: find.byType(Scrollable),
+  );
   await tester.scrollUntilVisible(
     finder,
     160,
-    scrollable: find.descendant(
-      of: find.byKey(const PageStorageKey<String>('product-detail-scroll')),
-      matching: find.byType(Scrollable),
-    ),
+    scrollable: scrollable,
     maxScrolls: 20,
   );
   await tester.pumpAndSettle();
+
+  final safeBottom =
+      tester.view.physicalSize.height / tester.view.devicePixelRatio - 180;
+  for (var attempt = 0; attempt < 8; attempt += 1) {
+    final center = tester.getCenter(finder);
+    if (center.dy < safeBottom) {
+      return;
+    }
+    await tester.drag(scrollable, const Offset(0, -120));
+    await tester.pumpAndSettle();
+  }
 }

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:lumin_studio_mobile/app/theme/app_theme.dart';
 import 'package:lumin_studio_mobile/features/cart/presentation/cubit/cart_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/product_detail_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/product_model_viewer.dart';
 import 'package:lumin_studio_mobile/features/shell/presentation/cubit/shell_cubit.dart';
+import 'package:lumin_studio_mobile/shared/format/color_finish.dart';
 import 'package:lumin_studio_mobile/shared/format/money.dart';
 import 'package:lumin_studio_mobile/shared/widgets/animated_counter.dart';
 import 'package:lumin_studio_mobile/shared/widgets/cart_badge_icon.dart';
@@ -181,13 +183,14 @@ class _ProductDetailReady extends StatelessWidget {
         key: const PageStorageKey<String>('product-detail-scroll'),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 132),
         children: [
-          _InteractiveModelPanel(detail: detail)
+          _InteractiveModelPanel(
+                detail: detail,
+                selectedMeshColors: selectedMeshColors,
+              )
               .animate()
               .fadeIn(duration: 350.ms)
               .slideY(begin: 0.06, end: 0, curve: Curves.easeOutCubic),
-          const SizedBox(height: 14),
-          _ProductModelMetadata(detail: detail),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Text(detail.name, style: theme.textTheme.headlineSmall),
           const SizedBox(height: 10),
           Wrap(
@@ -239,7 +242,10 @@ class _ProductDetailReady extends StatelessWidget {
             ],
           ],
           const SizedBox(height: 18),
-          Text(detail.description, style: theme.textTheme.bodyLarge),
+          _MarkdownDescription(
+            markdown: detail.description,
+            baseUri: detail.spriteUri ?? detail.modelUri,
+          ),
           if (detail.informationSections.isNotEmpty) ...[
             const SizedBox(height: 18),
             Text('Product information', style: theme.textTheme.titleMedium),
@@ -256,57 +262,76 @@ class _ProductDetailReady extends StatelessWidget {
 }
 
 class _InteractiveModelPanel extends StatelessWidget {
-  const _InteractiveModelPanel({required this.detail});
+  const _InteractiveModelPanel({
+    required this.detail,
+    required this.selectedMeshColors,
+  });
 
   final CatalogProductDetail detail;
+  final Map<String, String> selectedMeshColors;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final modelViewerBuilder = context.read<ProductModelViewerBuilder>();
     final screenHeight = MediaQuery.sizeOf(context).height;
     final panelHeight = (screenHeight * 0.32).clamp(200.0, 360.0);
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: context.gradients.mediaBackdrop,
-        borderRadius: BorderRadius.circular(LuminRadii.lg),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: LuminShadows.card(theme.brightness),
-      ),
-      clipBehavior: Clip.antiAlias,
+    // No framed backdrop: the viewer paints the page background so the model
+    // appears to float on the page rather than sitting inside a grey box.
+    return SizedBox(
+      height: panelHeight,
+      width: double.infinity,
       child: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(10),
+          const Positioned.fill(child: _ModelLoadingBackdrop()),
+          Positioned.fill(
             child: SizedBox(
               key: ValueKey<String>('product-model-panel-${detail.id}'),
-              height: panelHeight,
-              width: double.infinity,
-              child: modelViewerBuilder(context, detail),
+              child: modelViewerBuilder(context, detail, selectedMeshColors),
             ),
           ),
-          if (detail.spriteUri != null)
-            Positioned(
-              top: 14,
-              left: 14,
-              child: _GlassPill(
-                icon: Icons.threesixty,
-                label: '360°',
-              ),
-            ),
           if (detail.modelUri != null)
             Positioned(
-              bottom: 14,
+              bottom: 6,
               left: 0,
               right: 0,
               child: Center(
                 child: _GlassPill(
-                  icon: Icons.touch_app_outlined,
+                  icon: Icons.threesixty,
                   label: 'Drag to rotate',
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Quiet placeholder shown behind the 3D viewer until it paints. It is static
+/// (no spinning indicator) so `pumpAndSettle` in widget tests never hangs.
+class _ModelLoadingBackdrop extends StatelessWidget {
+  const _ModelLoadingBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.view_in_ar_outlined,
+            size: 44,
+            color: theme.colorScheme.primary.withValues(alpha: 0.55),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Loading 3D model',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -349,45 +374,60 @@ class _GlassPill extends StatelessWidget {
   }
 }
 
-class _ProductModelMetadata extends StatelessWidget {
-  const _ProductModelMetadata({required this.detail});
+/// Product description rendered as Markdown so seeded copy can use headings,
+/// bold, lists, and an inline product image. Relative image URLs (e.g.
+/// `/catalog/products/{id}/image`) are resolved against [baseUri] — the
+/// product's own sprite/model URL — so they work regardless of the API host.
+class _MarkdownDescription extends StatelessWidget {
+  const _MarkdownDescription({required this.markdown, required this.baseUri});
 
-  final CatalogProductDetail detail;
+  final String markdown;
+  final Uri? baseUri;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final items = <String>[
-      '${detail.modelTier.wireName.toUpperCase()} model',
-      if (detail.spriteUri != null) '360 ready',
-      if (detail.categories.isNotEmpty) detail.categories.first.name,
-    ];
+    final styleSheet = MarkdownStyleSheet.fromTheme(theme).copyWith(
+      p: theme.textTheme.bodyLarge,
+      listBullet: theme.textTheme.bodyLarge,
+    );
+    return MarkdownBody(
+      data: markdown,
+      shrinkWrap: true,
+      styleSheet: styleSheet,
+      imageBuilder: (uri, title, alt) =>
+          _MarkdownImage(uri: uri, baseUri: baseUri),
+    );
+  }
+}
 
-    return Wrap(
-      spacing: 10,
-      runSpacing: 6,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Icon(Icons.view_in_ar, size: 16, color: theme.colorScheme.primary),
-        for (var index = 0; index < items.length; index++) ...[
-          Text(
-            items[index],
-            key: index == 0
-                ? const ValueKey<String>('product-detail-model-tier')
-                : null,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (index != items.length - 1)
-            Text(
-              '/',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
-        ],
-      ],
+/// Resolves a possibly-relative markdown image URL against the API base and
+/// renders it, silently collapsing if the image cannot be loaded.
+class _MarkdownImage extends StatelessWidget {
+  const _MarkdownImage({required this.uri, required this.baseUri});
+
+  final Uri uri;
+  final Uri? baseUri;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = uri.hasScheme
+        ? uri
+        : (baseUri ?? uri).replace(
+            path: uri.path,
+            query: uri.hasQuery ? uri.query : null,
+          );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(LuminRadii.md),
+        child: Image.network(
+          resolved.toString(),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+        ),
+      ),
     );
   }
 }
@@ -640,7 +680,7 @@ String _selectedChoiceLabel(CatalogMeshColorOptions options, String color) {
 }
 
 String _finishNameForOptions(CatalogMeshColorOptions options, String color) {
-  return options.labelForColor(color) ?? _finishNameForColor(color);
+  return options.labelForColor(color) ?? finishNameForHex(color);
 }
 
 String _friendlyMeshName(String meshId) {
@@ -792,57 +832,3 @@ class _ColorSwatch extends StatelessWidget {
   }
 }
 
-String _finishNameForColor(String value) {
-  switch (value.toUpperCase()) {
-    case '#FFFFFF':
-      return 'Porcelain white';
-    case '#F8FAFC':
-      return 'Soft white';
-    case '#E5E7EB':
-      return 'Mist grey';
-    case '#CBD5E1':
-      return 'Cloud grey';
-    case '#94A3B8':
-      return 'Slate grey';
-    case '#64748B':
-      return 'Storm grey';
-    case '#475569':
-      return 'Smoke grey';
-    case '#334155':
-      return 'Charcoal slate';
-    case '#1F2937':
-      return 'Graphite';
-    case '#0F172A':
-      return 'Midnight navy';
-    case '#111827':
-      return 'Ink black';
-    case '#000000':
-      return 'Black';
-    case '#F5E6D3':
-      return 'Warm linen';
-    case '#D6B98C':
-      return 'Natural oak';
-    case '#B45309':
-      return 'Cognac';
-    case '#92400E':
-      return 'Saddle brown';
-    case '#78350F':
-      return 'Walnut';
-    case '#F59E0B':
-      return 'Amber';
-    case '#D97706':
-      return 'Burnished brass';
-    case '#16A34A':
-      return 'Garden green';
-    case '#0F766E':
-      return 'Deep teal';
-    case '#2563EB':
-      return 'Cobalt blue';
-    case '#7C3AED':
-      return 'Violet';
-    case '#DC2626':
-      return 'Signal red';
-    default:
-      return 'Custom finish';
-  }
-}

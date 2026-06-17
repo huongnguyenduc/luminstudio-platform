@@ -73,21 +73,27 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      _testApp(catalogRepository: _FakeCatalogRepository.empty()),
+      _testApp(
+        catalogRepository: _FakeCatalogRepository.withProducts(2),
+        deviceTierResolver: const FixedDeviceTierResolver(ProductModelTier.low),
+        productModelViewerBuilder: _fakeProductModelViewerBuilder,
+      ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Home detail'));
+    // Push a detail route on the Home tab's nested navigator.
+    await tester.tap(find.text('Product 1'));
     await tester.pumpAndSettle();
-    expect(find.text('Home state retained'), findsOneWidget);
+    expect(find.text('Add to cart'), findsOneWidget);
 
     await tester.tap(find.text('Category'));
     await tester.pumpAndSettle();
     expect(find.text('No categories yet'), findsOneWidget);
 
+    // Returning to Home retains the pushed detail route.
     await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
-    expect(find.text('Home state retained'), findsOneWidget);
+    expect(find.text('Add to cart'), findsOneWidget);
   });
 
   testWidgets('category tab loads categories and first category products', (
@@ -164,7 +170,6 @@ void main() {
 
     expect(find.text('Product 1'), findsOneWidget);
     expect(find.text('Product 2'), findsOneWidget);
-    expect(find.text('360 preview ready'), findsOneWidget);
   });
 
   testWidgets('home tab searches catalog products through the API repository', (
@@ -428,7 +433,6 @@ void main() {
       find.byKey(const ValueKey<String>('fake-model-viewer-prod_1')),
       findsOneWidget,
     );
-    expect(find.text('HIGH model'), findsOneWidget);
     expect(find.text('Selected finish'), findsNothing);
     await tester.drag(
       find.byKey(const PageStorageKey<String>('product-detail-scroll')),
@@ -560,11 +564,11 @@ void main() {
       await tester.tap(find.text('Cart'));
       await tester.pumpAndSettle();
 
-      expect(find.text('1 in cart, 1 selected'), findsOneWidget);
-      expect(find.text('Subtotal USD 129.00'), findsOneWidget);
-      expect(find.text('Savings USD 30.00'), findsOneWidget);
+      expect(find.text('Subtotal · 1 selected'), findsOneWidget);
+      expect(find.text('USD 129.00'), findsOneWidget);
+      expect(find.text('Save USD 30.00'), findsOneWidget);
       expect(find.text('Product 1'), findsOneWidget);
-      expect(find.text('Body: #0F172A'), findsOneWidget);
+      expect(find.text('Body: Midnight navy'), findsOneWidget);
     },
   );
 
@@ -597,10 +601,10 @@ void main() {
     await tester.tap(find.text('Cart'));
     await tester.pumpAndSettle();
 
-    expect(find.text('1 in cart, 1 selected'), findsOneWidget);
-    expect(find.text('Subtotal USD 129.00'), findsOneWidget);
-    expect(find.text('Savings USD 30.00'), findsOneWidget);
-    expect(find.text('Body: #0F172A'), findsOneWidget);
+    expect(find.text('Subtotal · 1 selected'), findsOneWidget);
+    expect(find.text('USD 129.00'), findsOneWidget);
+    expect(find.text('Save USD 30.00'), findsOneWidget);
+    expect(find.text('Body: Midnight navy'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Increase prod_1 quantity'));
     await tester.pumpAndSettle();
@@ -610,16 +614,16 @@ void main() {
       findsOneWidget,
     );
     expect(cartRepository.items.single.quantity, 2);
-    expect(find.text('2 in cart, 2 selected'), findsOneWidget);
-    expect(find.text('Subtotal USD 258.00'), findsOneWidget);
-    expect(find.text('Savings USD 60.00'), findsOneWidget);
+    expect(find.text('Subtotal · 2 selected'), findsOneWidget);
+    expect(find.text('USD 258.00'), findsOneWidget);
+    expect(find.text('Save USD 60.00'), findsOneWidget);
 
     await tester.tap(find.byType(Checkbox));
     await tester.pumpAndSettle();
 
     expect(cartRepository.items.single.isSelected, isFalse);
-    expect(find.text('2 in cart, 0 selected'), findsOneWidget);
-    expect(find.text('Subtotal USD 258.00'), findsNothing);
+    expect(find.text('Subtotal · 0 selected'), findsOneWidget);
+    expect(find.text('USD 258.00'), findsNothing);
   });
 
   testWidgets('cart tab shows backend sync state during mutations', (
@@ -653,16 +657,27 @@ void main() {
     await tester.tap(find.byTooltip('Increase prod_1 quantity'));
     await tester.pump();
 
+    // The sync strip is delayed so fast saves never flash it; it stays hidden
+    // immediately after the tap.
+    expect(
+      find.byKey(const ValueKey<String>('cart-sync-progress')),
+      findsNothing,
+    );
+
+    // Once the save lags past the reveal delay, the strip appears.
+    await tester.pump(const Duration(milliseconds: 400));
     expect(
       find.byKey(const ValueKey<String>('cart-sync-progress')),
       findsOneWidget,
     );
-    expect(find.text('Syncing cart'), findsOneWidget);
 
     cartRepository.completeSave();
     await tester.pumpAndSettle();
 
-    expect(find.text('Syncing cart'), findsNothing);
+    expect(
+      find.byKey(const ValueKey<String>('cart-sync-progress')),
+      findsNothing,
+    );
     expect(cartRepository.items.single.quantity, 2);
   });
 
@@ -713,7 +728,7 @@ void main() {
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
 
-    expect(find.text('LOW model'), findsOneWidget);
+    expect(find.text('Add to cart'), findsOneWidget);
   });
 
   testWidgets('home tab retains product detail route when switching tabs', (
@@ -730,7 +745,7 @@ void main() {
 
     await tester.tap(find.text('Product 1'));
     await tester.pumpAndSettle();
-    expect(find.text('LOW model'), findsOneWidget);
+    expect(find.text('Add to cart'), findsOneWidget);
 
     await tester.tap(find.text('Category'));
     await tester.pumpAndSettle();
@@ -738,7 +753,7 @@ void main() {
 
     await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
-    expect(find.text('LOW model'), findsOneWidget);
+    expect(find.text('Add to cart'), findsOneWidget);
   });
 }
 
@@ -760,6 +775,7 @@ Widget _testApp({
 Widget _fakeProductModelViewerBuilder(
   BuildContext context,
   CatalogProductDetail detail,
+  Map<String, String> selectedMeshColors,
 ) {
   final modelUri = detail.modelUri;
   if (modelUri == null) {

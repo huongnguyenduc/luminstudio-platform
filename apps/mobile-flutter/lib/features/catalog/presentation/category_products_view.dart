@@ -20,8 +20,31 @@ import 'package:lumin_studio_mobile/shared/widgets/product_media_tile.dart';
 import 'package:lumin_studio_mobile/shared/widgets/shimmer_box.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-const _categoryPreviewActivationDelay = Duration(seconds: 3);
+const _categoryPreviewActivationDelay = Duration(seconds: 2);
 const _categoryPreviewVisibilityThreshold = 0.8;
+
+/// One-shot fade/slide entrance for category tiles. Latched off after the first
+/// render so rebuilds (scroll-to-top toggle, sort, pagination) don't re-stutter.
+Widget _maybeAnimateEntrance({
+  required int index,
+  required bool animate,
+  required Widget child,
+}) {
+  if (!animate) {
+    return child;
+  }
+  final delay = (40 * index.clamp(0, 8)).ms;
+  return child
+      .animate()
+      .fadeIn(delay: delay, duration: 280.ms)
+      .slideY(
+        begin: 0.12,
+        end: 0,
+        delay: delay,
+        duration: 280.ms,
+        curve: Curves.easeOutCubic,
+      );
+}
 
 class CategoryProductsView extends StatefulWidget {
   const CategoryProductsView({required this.scrollKey, super.key});
@@ -36,6 +59,13 @@ class _CategoryProductsViewState extends State<CategoryProductsView> {
   late final ScrollController _scrollController;
   late final ValueNotifier<bool> _isScrolling;
   bool _showScrollToTop = false;
+
+  /// Product IDs whose entrance animation already played (see
+  /// [_maybeAnimateEntrance]). A tile animates once when it first appears; later
+  /// rebuilds (scroll-to-top toggle, sort, the same category re-rendering) skip
+  /// it so the list doesn't re-stutter, while a newly selected category's
+  /// products still animate in.
+  final Set<String> _animatedIds = <String>{};
 
   @override
   void initState() {
@@ -105,6 +135,12 @@ class _CategoryProductsViewState extends State<CategoryProductsView> {
   Widget build(BuildContext context) {
     return BlocBuilder<CategoryCubit, CategoryState>(
       builder: (context, state) {
+        if (state.productsStatus == CategoryProductsStatus.ready) {
+          final ids = [for (final product in state.products) product.id];
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _animatedIds.addAll(ids);
+          });
+        }
         return Semantics(
           label: 'Category tab content',
           child: Stack(
@@ -116,6 +152,7 @@ class _CategoryProductsViewState extends State<CategoryProductsView> {
                   scrollController: _scrollController,
                   isScrolling: _isScrolling,
                   state: state,
+                  animatedIds: _animatedIds,
                 ),
               ),
               if (_showScrollToTop)
@@ -143,12 +180,14 @@ class _CategoryContent extends StatelessWidget {
     required this.scrollController,
     required this.isScrolling,
     required this.state,
+    required this.animatedIds,
   });
 
   final PageStorageKey<String> scrollKey;
   final ScrollController scrollController;
   final ValueListenable<bool> isScrolling;
   final CategoryState state;
+  final Set<String> animatedIds;
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +204,7 @@ class _CategoryContent extends StatelessWidget {
           CategoryStatus.ready => _CategoryReady(
             isScrolling: isScrolling,
             state: state,
+            animatedIds: animatedIds,
           ),
         },
       ],
@@ -173,10 +213,15 @@ class _CategoryContent extends StatelessWidget {
 }
 
 class _CategoryReady extends StatelessWidget {
-  const _CategoryReady({required this.isScrolling, required this.state});
+  const _CategoryReady({
+    required this.isScrolling,
+    required this.state,
+    required this.animatedIds,
+  });
 
   final ValueListenable<bool> isScrolling;
   final CategoryState state;
+  final Set<String> animatedIds;
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +266,7 @@ class _CategoryReady extends StatelessWidget {
           CategoryProductsStatus.ready => _CategoryProductList(
             isScrolling: isScrolling,
             state: state,
+            animatedIds: animatedIds,
           ),
         },
       ],
@@ -325,10 +371,15 @@ class _CategorySortControl extends StatelessWidget {
 }
 
 class _CategoryProductList extends StatelessWidget {
-  const _CategoryProductList({required this.isScrolling, required this.state});
+  const _CategoryProductList({
+    required this.isScrolling,
+    required this.state,
+    required this.animatedIds,
+  });
 
   final ValueListenable<bool> isScrolling;
   final CategoryState state;
+  final Set<String> animatedIds;
 
   @override
   Widget build(BuildContext context) {
@@ -336,18 +387,13 @@ class _CategoryProductList extends StatelessWidget {
     return Column(
       children: [
         for (var i = 0; i < products.length; i++) ...[
-          _CategoryProductTile(
-            product: products[i],
-            isScrolling: isScrolling,
-          ).animate().fadeIn(
-            delay: (40 * i.clamp(0, 8)).ms,
-            duration: 280.ms,
-          ).slideY(
-            begin: 0.12,
-            end: 0,
-            delay: (40 * i.clamp(0, 8)).ms,
-            duration: 280.ms,
-            curve: Curves.easeOutCubic,
+          _maybeAnimateEntrance(
+            index: i,
+            animate: !animatedIds.contains(products[i].id),
+            child: _CategoryProductTile(
+              product: products[i],
+              isScrolling: isScrolling,
+            ),
           ),
           const SizedBox(height: 14),
         ],
@@ -551,6 +597,21 @@ class _CategoryProductTileState extends State<_CategoryProductTile> {
       return;
     }
 
+    // Warm the sprite sheet during the dwell window so the 360 swing starts
+    // instantly instead of flashing an empty tile while it decodes for the
+    // first time — at rest only the description image is mounted, so the sprite
+    // is otherwise fetched only at swap time.
+    final previewUri = widget.product.spritePreviewUri;
+    if (previewUri != null) {
+      // Best-effort cache warm; the sprite widget has its own errorBuilder and
+      // an unhandled image error would otherwise surface as a test failure.
+      precacheImage(
+        NetworkImage(previewUri.toString()),
+        context,
+        onError: (_, __) {},
+      );
+    }
+
     _activationTimer = Timer(_categoryPreviewActivationDelay, () {
       if (!mounted ||
           widget.product.spritePreviewUri == null ||
@@ -637,10 +698,13 @@ class _CategoryProductTileState extends State<_CategoryProductTile> {
             subtlePreviewKey: ValueKey<String>(
               'category-subtle-preview-${product.id}',
             ),
+            descriptionImageKey: ValueKey<String>(
+              'category-description-image-${product.id}',
+            ),
             iconKey: ValueKey<String>('category-product-icon-${product.id}'),
           ),
           categoryLabel: categoryLabel,
-          statusLabel: product.hasPreview ? '360 preview ready' : statusLabel,
+          statusLabel: product.hasPreview ? null : statusLabel,
           name: product.name,
           description: product.description,
           price: product.price,

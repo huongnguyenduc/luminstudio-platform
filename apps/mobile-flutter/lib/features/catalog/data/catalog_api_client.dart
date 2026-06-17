@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
+import 'package:lumin_studio_mobile/shared/format/markdown_text.dart';
 
 class CatalogApiClient {
   CatalogApiClient({required Uri baseUri, http.Client? httpClient})
@@ -134,9 +135,10 @@ class CatalogApiClient {
     if (decoded is! Map<String, Object?>) {
       throw const CatalogApiException('Catalog API returned an invalid body');
     }
-    return CatalogProductsDto.fromJson(
-      decoded,
-    ).toDomain(spritePreviewUriFor: _catalogSpriteUri);
+    return CatalogProductsDto.fromJson(decoded).toDomain(
+      spritePreviewUriFor: _catalogSpriteUri,
+      descriptionImageUriFor: _resolveCatalogUrl,
+    );
   }
 
   Uri _catalogSpriteUri(String productId) {
@@ -146,6 +148,22 @@ class CatalogApiClient {
         '/catalog/products/${Uri.encodeComponent(productId)}/sprite',
       ),
       queryParameters: null,
+    );
+  }
+
+  /// Resolves a (possibly relative) URL pulled from the description markdown —
+  /// e.g. `/catalog/products/{id}/image` — against the API base, mirroring how
+  /// the product detail page renders inline images.
+  Uri _resolveCatalogUrl(String rawUrl) {
+    final parsed = Uri.parse(rawUrl);
+    if (parsed.hasScheme) {
+      return parsed;
+    }
+    return _baseUri.replace(
+      path: _joinPath(_baseUri.path, parsed.path),
+      queryParameters: parsed.queryParameters.isEmpty
+          ? null
+          : parsed.queryParameters,
     );
   }
 
@@ -217,11 +235,15 @@ class CatalogProductsDto {
 
   CatalogProductsPage toDomain({
     Uri Function(String productId)? spritePreviewUriFor,
+    Uri Function(String rawUrl)? descriptionImageUriFor,
   }) {
     return CatalogProductsPage(
       items: [
         for (final item in items)
-          item.toDomain(spritePreviewUriFor: spritePreviewUriFor),
+          item.toDomain(
+            spritePreviewUriFor: spritePreviewUriFor,
+            descriptionImageUriFor: descriptionImageUriFor,
+          ),
       ],
       total: total,
       limit: limit,
@@ -280,7 +302,9 @@ class CatalogProductDto {
 
   CatalogProduct toDomain({
     Uri Function(String productId)? spritePreviewUriFor,
+    Uri Function(String rawUrl)? descriptionImageUriFor,
   }) {
+    final descriptionImageUrl = firstMarkdownImageUrl(description);
     return CatalogProduct(
       id: id,
       name: name,
@@ -294,6 +318,9 @@ class CatalogProductDto {
       spritePreviewUri: spriteAsset == null
           ? null
           : spritePreviewUriFor?.call(id),
+      descriptionImageUri: descriptionImageUrl == null
+          ? null
+          : descriptionImageUriFor?.call(descriptionImageUrl),
     );
   }
 }

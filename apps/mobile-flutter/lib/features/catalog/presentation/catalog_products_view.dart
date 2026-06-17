@@ -20,8 +20,32 @@ import 'package:lumin_studio_mobile/shared/widgets/product_media_tile.dart';
 import 'package:lumin_studio_mobile/shared/widgets/shimmer_box.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-const _previewActivationDelay = Duration(seconds: 3);
+const _previewActivationDelay = Duration(seconds: 2);
 const _previewVisibilityThreshold = 0.8;
+
+/// Wraps a list tile in a one-shot fade/slide entrance. Returns the child
+/// unchanged once entrance animations have been latched off (see
+/// [_CatalogProductsViewState._entranceAnimated]) so rebuilds don't re-stutter.
+Widget _maybeAnimateEntrance({
+  required int index,
+  required bool animate,
+  required Widget child,
+}) {
+  if (!animate) {
+    return child;
+  }
+  final delay = (40 * index.clamp(0, 8)).ms;
+  return child
+      .animate()
+      .fadeIn(delay: delay, duration: 280.ms)
+      .slideY(
+        begin: 0.12,
+        end: 0,
+        delay: delay,
+        duration: 280.ms,
+        curve: Curves.easeOutCubic,
+      );
+}
 
 class CatalogProductsView extends StatefulWidget {
   const CatalogProductsView({required this.scrollKey, super.key});
@@ -36,6 +60,13 @@ class _CatalogProductsViewState extends State<CatalogProductsView> {
   late final TextEditingController _searchController;
   late final ScrollController _scrollController;
   late final ValueNotifier<bool> _isScrolling;
+
+  /// Product IDs whose entrance (fade/slide) animation has already played. A
+  /// tile animates once, when it first appears; on later rebuilds (search
+  /// keystrokes, pagination, scroll, cart changes) the same IDs are skipped so
+  /// the list doesn't visibly re-stutter — while genuinely new results (a fresh
+  /// search, the next page) still animate in.
+  final Set<String> _animatedIds = <String>{};
 
   @override
   void initState() {
@@ -97,6 +128,12 @@ class _CatalogProductsViewState extends State<CatalogProductsView> {
         }
       },
       builder: (context, state) {
+        if (state.status == CatalogStatus.ready) {
+          final ids = [for (final product in state.products) product.id];
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _animatedIds.addAll(ids);
+          });
+        }
         return NotificationListener<ScrollNotification>(
           onNotification: _handleScrollNotification,
           child: Semantics(
@@ -130,6 +167,7 @@ class _CatalogProductsViewState extends State<CatalogProductsView> {
                 searchController: _searchController,
                 isScrolling: _isScrolling,
                 state: state,
+                animatedIds: _animatedIds,
               ),
             },
           ),
@@ -228,11 +266,6 @@ class _HomeHero extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 450.ms).slideY(
-      begin: 0.08,
-      end: 0,
-      duration: 450.ms,
-      curve: Curves.easeOutCubic,
     );
   }
 }
@@ -412,6 +445,7 @@ class _CatalogList extends StatelessWidget {
     required this.searchController,
     required this.isScrolling,
     required this.state,
+    required this.animatedIds,
   });
 
   final PageStorageKey<String> scrollKey;
@@ -419,6 +453,7 @@ class _CatalogList extends StatelessWidget {
   final TextEditingController searchController;
   final ValueListenable<bool> isScrolling;
   final CatalogState state;
+  final Set<String> animatedIds;
 
   @override
   Widget build(BuildContext context) {
@@ -447,18 +482,13 @@ class _CatalogList extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             for (var i = 0; i < products.length; i++) ...[
-              _CatalogProductTile(
-                product: products[i],
-                isScrolling: isScrolling,
-              ).animate().fadeIn(
-                delay: (40 * i.clamp(0, 8)).ms,
-                duration: 280.ms,
-              ).slideY(
-                begin: 0.12,
-                end: 0,
-                delay: (40 * i.clamp(0, 8)).ms,
-                duration: 280.ms,
-                curve: Curves.easeOutCubic,
+              _maybeAnimateEntrance(
+                index: i,
+                animate: !animatedIds.contains(products[i].id),
+                child: _CatalogProductTile(
+                  product: products[i],
+                  isScrolling: isScrolling,
+                ),
               ),
               const SizedBox(height: 14),
             ],
@@ -663,6 +693,21 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
       return;
     }
 
+    // Warm the sprite sheet during the dwell window so the 360 swing starts
+    // instantly instead of flashing an empty tile while it decodes for the
+    // first time — at rest only the description image is mounted, so the sprite
+    // is otherwise fetched only at swap time.
+    final previewUri = widget.product.spritePreviewUri;
+    if (previewUri != null) {
+      // Best-effort cache warm; the sprite widget has its own errorBuilder and
+      // an unhandled image error would otherwise surface as a test failure.
+      precacheImage(
+        NetworkImage(previewUri.toString()),
+        context,
+        onError: (_, __) {},
+      );
+    }
+
     _activationTimer = Timer(_previewActivationDelay, () {
       if (!mounted ||
           widget.product.spritePreviewUri == null ||
@@ -745,10 +790,13 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
             previewActive: _previewActive,
             spriteFrameKey: ValueKey<String>('sprite-frame-${product.id}'),
             subtlePreviewKey: ValueKey<String>('subtle-preview-${product.id}'),
+            descriptionImageKey: ValueKey<String>(
+              'description-image-${product.id}',
+            ),
             iconKey: ValueKey<String>('product-icon-${product.id}'),
           ),
           categoryLabel: categoryLabel,
-          statusLabel: product.hasPreview ? '360 preview ready' : statusLabel,
+          statusLabel: product.hasPreview ? null : statusLabel,
           name: product.name,
           description: product.description,
           price: product.price,

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lumin_studio_mobile/app/theme/theme_mode_cubit.dart';
@@ -134,23 +133,7 @@ class _TabRootPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        actions: [
-          const _ThemeToggleButton(),
-          // Test-only navigation hook (verifies nested-navigator state
-          // retention); hidden from end users in release builds.
-          if (kDebugMode)
-            IconButton(
-              tooltip: '${tab.label} detail',
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => _TabDetailPage(tab: tab),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.open_in_new),
-            ),
-        ],
+        actions: const [_ThemeToggleButton()],
       ),
       body: _TabList(tab: tab),
     );
@@ -202,25 +185,6 @@ class _TabList extends StatelessWidget {
 
     return const CategoryProductsView(
       scrollKey: PageStorageKey<String>('category-scroll'),
-    );
-  }
-}
-
-class _TabDetailPage extends StatelessWidget {
-  const _TabDetailPage({required this.tab});
-
-  final CustomerTab tab;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('${tab.label} detail')),
-      body: Center(
-        child: Text(
-          '${tab.label} state retained',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-      ),
     );
   }
 }
