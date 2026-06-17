@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for release builds to reach the Lumin API. Flutter only injects
+         this automatically into the debug/profile manifests. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="lumin_studio_mobile"
         android:name="${applicationName}"
