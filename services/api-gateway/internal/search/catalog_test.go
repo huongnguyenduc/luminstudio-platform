@@ -288,6 +288,11 @@ func TestGetCatalogProductModelStreamsLowTierModel(t *testing.T) {
 	if recorder.Header().Get("Content-Type") != "model/gltf-binary" {
 		t.Fatalf("content-type = %q", recorder.Header().Get("Content-Type"))
 	}
+	// The mobile 3D viewer fetches the GLB cross-origin from inside a WebView,
+	// so the asset response must be CORS-readable or the model fails to load.
+	if recorder.Header().Get("Access-Control-Allow-Origin") != "*" {
+		t.Fatalf("access-control-allow-origin = %q, want *", recorder.Header().Get("Access-Control-Allow-Origin"))
+	}
 	if recorder.Header().Get("Content-Length") != "4" {
 		t.Fatalf("content-length = %q", recorder.Header().Get("Content-Length"))
 	}

@@ -245,6 +245,7 @@ func (handler Handler) GetCatalogProductModel(response http.ResponseWriter, requ
 	if contentType == "" {
 		contentType = "model/gltf-binary"
 	}
+	setAssetCORS(response)
 	response.Header().Set("Content-Type", contentType)
 	response.Header().Set("Cache-Control", "public, max-age=300")
 	if modelAsset.ETag != "" {
@@ -299,6 +300,7 @@ func (handler Handler) GetCatalogProductSprite(response http.ResponseWriter, req
 	if contentType == "" {
 		contentType = "image/jpeg"
 	}
+	setAssetCORS(response)
 	response.Header().Set("Content-Type", contentType)
 	response.Header().Set("Cache-Control", "public, max-age=300")
 	if record.SpriteAsset.ETag != "" {
@@ -311,6 +313,16 @@ func (handler Handler) GetCatalogProductSprite(response http.ResponseWriter, req
 	if _, err := io.Copy(response, asset); err != nil {
 		return
 	}
+}
+
+// setAssetCORS allows any origin to read catalog binary assets. The mobile
+// 3D viewer (model_viewer_plus) loads the GLB inside a WebView through a local
+// proxy origin and then follows a redirect to this gateway, making the fetch
+// cross-origin; without this header the WebView blocks the response and the
+// model fails to load. These assets are public and unauthenticated, so a
+// wildcard is safe.
+func setAssetCORS(response http.ResponseWriter) {
+	response.Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func modelTierFromRequest(request *http.Request) (string, error) {
