@@ -95,6 +95,17 @@
           "items": {
             "$ref": "#/$defs/HexColor"
           }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/HexColor"
+          }
         }
       }
     },

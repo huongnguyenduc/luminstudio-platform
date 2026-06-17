@@ -81,15 +81,16 @@ class _EmptyCart extends StatelessWidget {
       label: 'Cart empty state',
       child: ListView(
         key: const PageStorageKey<String>('cart-scroll'),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
           Container(
             constraints: const BoxConstraints(minHeight: 168),
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
               border: Border.all(color: theme.colorScheme.outlineVariant),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Text('Cart is empty', style: theme.textTheme.titleMedium),
           ),
@@ -110,7 +111,7 @@ class _CartReady extends StatelessWidget {
       label: 'Cart with ${state.totalQuantity} items',
       child: ListView.separated(
         key: const PageStorageKey<String>('cart-scroll'),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         itemBuilder: (context, index) {
           if (index == 0) {
             return _CartSummary(state: state);
@@ -140,8 +141,11 @@ class _CartSummary extends StatelessWidget {
       key: const ValueKey<String>('cart-summary'),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.18),
+        ),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +153,19 @@ class _CartSummary extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.shopping_bag, color: theme.colorScheme.primary),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.86),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.shopping_bag,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -170,25 +186,22 @@ class _CartSummary extends StatelessWidget {
           ),
           if (totals != null) ...[
             const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Selected total',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                Text(
-                  'Subtotal ${_formatMoney(totals.subtotalCents, totals.currency)}',
-                  key: const ValueKey<String>('cart-subtotal'),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ],
+            Text(
+              'Selected total',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Subtotal ${_formatMoney(totals.subtotalCents, totals.currency)}',
+              key: const ValueKey<String>('cart-subtotal'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w800,
+              ),
             ),
             if (totals.savingsCents > 0) ...[
               const SizedBox(height: 6),
@@ -243,7 +256,14 @@ class _CartItemTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,7 +328,9 @@ class _CartItemTile extends StatelessWidget {
               const Spacer(),
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.70,
+                  ),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Row(
@@ -375,10 +397,13 @@ class _CartColorChip extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.52,
+        ),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

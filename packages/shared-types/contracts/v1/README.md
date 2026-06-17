@@ -10,7 +10,8 @@ later stories, but generated output must not replace these contract sources.
 ## Files
 
 - `common.schema.json`: shared identifiers, object storage references, and mesh
-  color configuration.
+  color configuration, including optional customer-facing labels for allowed
+  finish colors.
 - `product.schema.json`: initial product draft, persisted product record,
   product category, customer catalog item, category list, catalog search
   response, product detail response, cart upsert request, and cart record

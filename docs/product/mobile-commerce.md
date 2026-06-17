@@ -257,6 +257,48 @@ language as Home. Checkout, payments, authentication, authorization, inventory
 checks, tax, shipping, order fulfillment, signed object URLs, new backend
 contracts, and direct service access remain deferred.
 
+`US-058` refreshes the Flutter customer app visual system after real product UI
+review. The app now uses a more premium studio-commerce theme, refined surface
+hierarchy, larger product-led catalog media blocks, a more prominent Product
+Detail model panel, and softer Cart summary/item treatment across existing
+Home, Category, Product Detail, and Cart flows. Checkout, payments,
+authentication, authorization, inventory checks, tax, shipping, order
+fulfillment, signed object URLs, new backend contracts, new 360 preview
+semantics, new color naming contracts, and direct service access remain
+deferred.
+
+`US-059` corrects the Flutter catalog sprite preview behavior on product list
+cards. Home and Category cards now crop a single product frame from the existing
+24-frame sprite sheet whenever a processed sprite is available, then switch to a
+short near-front left/right frame sequence only after the visible card remains
+idle long enough. The app no longer presents the sprite sheet as the product
+media surface and still cancels pending or active preview when scrolling or
+visibility changes. Checkout, payments, authentication, authorization,
+inventory checks, tax, shipping, order fulfillment, signed object URLs, new
+backend contracts, new color naming contracts, and direct service access remain
+deferred.
+
+`US-060` improves the Flutter Product Detail first-screen hierarchy after real
+product review. The interactive model panel is now materially larger, model and
+preview metadata are compact inline support text instead of large tags, and the
+standalone Selected finish card is removed. The visible selected finish labels
+and swatch accessibility labels use customer-readable finish names derived in
+Flutter from the existing color values while cart payloads still retain the
+authoritative hex selections. Checkout, payments, authentication,
+authorization, inventory checks, tax, shipping, order fulfillment, signed
+object URLs, backend color-name contracts, and direct service access remain
+deferred.
+
+`US-061` adds the first backend finish-label contract for Product Detail mesh
+color configuration. Each mesh color option may now include customer-facing
+labels keyed by allowed hex color values, the Go API validates those labels
+against the authoritative mesh color config, and Flutter Product Detail uses
+the API label before falling back to its local color-name map. Cart mutations
+and snapshots still send and store the authoritative selected hex values, so
+checkout, payments, authentication, authorization, inventory checks, tax,
+shipping, order fulfillment, signed object URLs, cart label snapshots, and
+direct service access remain deferred.
+
 ## Cart
 
 Cart state is persisted locally with product identity, product name, display

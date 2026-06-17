@@ -46,8 +46,9 @@ type ProductCategory struct {
 }
 
 type MeshColorOption struct {
-	Default string   `json:"default"`
-	Allowed []string `json:"allowed"`
+	Default string            `json:"default"`
+	Allowed []string          `json:"allowed"`
+	Labels  map[string]string `json:"labels,omitempty"`
 }
 
 type MeshColorConfig map[string]MeshColorOption
@@ -251,6 +252,18 @@ func (config MeshColorConfig) validate() error {
 		}
 		if _, ok := seen[strings.ToUpper(option.Default)]; !ok {
 			return fmt.Errorf("meshColorConfig[%q]: default color must be in allowed", meshID)
+		}
+		for color, label := range option.Labels {
+			normalized := strings.ToUpper(color)
+			if !hexColorPattern.MatchString(color) {
+				return fmt.Errorf("meshColorConfig[%q]: labels contains an invalid hex color", meshID)
+			}
+			if _, ok := seen[normalized]; !ok {
+				return fmt.Errorf("meshColorConfig[%q]: label color must be in allowed", meshID)
+			}
+			if err := validateText("label", strings.TrimSpace(label), 1, 80); err != nil {
+				return fmt.Errorf("meshColorConfig[%q]: labels[%q]: %w", meshID, color, err)
+			}
 		}
 	}
 	return nil

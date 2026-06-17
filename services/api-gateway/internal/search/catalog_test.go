@@ -226,6 +226,9 @@ func TestGetCatalogProductDetailReturnsTieredModelAccess(t *testing.T) {
 	if got.MeshColorConfig["mesh_body"].Default != "#FFFFFF" {
 		t.Fatalf("meshColorConfig = %#v", got.MeshColorConfig)
 	}
+	if got.MeshColorConfig["mesh_body"].Labels["#FFFFFF"] != "Porcelain white" {
+		t.Fatalf("meshColorConfig labels = %#v", got.MeshColorConfig)
+	}
 	if got.Price.AmountCents != 12900 || got.Price.Currency != "USD" {
 		t.Fatalf("price = %#v", got.Price)
 	}
@@ -459,6 +462,19 @@ func ProductRecordWithAssets(size int64) product.ProductRecord {
 		Body:               "Powder-coated steel.",
 		CollapsedByDefault: true,
 	}}
+	record.MeshColorConfig = product.MeshColorConfig{
+		"mesh_body": {
+			Default: "#FFFFFF",
+			Allowed: []string{
+				"#FFFFFF",
+				"#0F172A",
+			},
+			Labels: map[string]string{
+				"#FFFFFF": "Porcelain white",
+				"#0F172A": "Midnight navy",
+			},
+		},
+	}
 	record.SourceAsset = &product.ObjectRef{
 		Bucket:      "lumin-source-glb",
 		Key:         "products/prod_12345678/source.glb",

@@ -132,7 +132,11 @@ void main() {
   "meshColorConfig": {
     "mesh_body": {
       "default": "#FFFFFF",
-      "allowed": ["#FFFFFF", "#0F172A"]
+      "allowed": ["#FFFFFF", "#0F172A"],
+      "labels": {
+        "#FFFFFF": "Chalk ceramic",
+        "#0F172A": "Deep navy"
+      }
     }
   },
   "processingStatus": "completed",
@@ -168,6 +172,11 @@ void main() {
     expect(detail.informationSections.single.title, 'Materials');
     expect(detail.meshColorConfig.single.meshId, 'mesh_body');
     expect(detail.meshColorConfig.single.defaultColor, '#FFFFFF');
+    expect(
+      detail.meshColorConfig.single.labelForColor('#FFFFFF'),
+      'Chalk ceramic',
+    );
+    expect(detail.meshColorConfig.single.labelForColor('#0f172a'), 'Deep navy');
     expect(detail.modelAsset?.bucket, 'lumin-source-glb');
     expect(
       detail.modelUri,

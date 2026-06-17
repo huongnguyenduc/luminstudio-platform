@@ -8,6 +8,7 @@ import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.d
 import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/device_tier.dart';
 import 'package:lumin_studio_mobile/features/catalog/domain/get_catalog_product_detail.dart';
+import 'package:lumin_studio_mobile/features/catalog/presentation/catalog_sprite_preview.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/catalog_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/cubit/product_detail_cubit.dart';
 import 'package:lumin_studio_mobile/features/catalog/presentation/product_detail_view.dart';
@@ -15,9 +16,6 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 const _previewActivationDelay = Duration(seconds: 3);
 const _previewVisibilityThreshold = 0.8;
-const _spriteFrameCount = 24;
-const _spriteColumns = 6;
-const _spriteRows = 4;
 
 class CatalogProductsView extends StatefulWidget {
   const CatalogProductsView({required this.scrollKey, super.key});
@@ -593,48 +591,34 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
         button: true,
         label: 'Catalog product ${product.name}',
         child: Material(
-          color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(18),
           child: InkWell(
             onTap: _openProductDetail,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(18),
             child: Container(
-              constraints: const BoxConstraints(minHeight: 128),
+              constraints: const BoxConstraints(minHeight: 156),
               padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.shadow.withValues(alpha: 0.05),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 72,
-                    height: 78,
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
-                      color: product.hasPreview
-                          ? theme.colorScheme.primaryContainer
-                          : theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      child: _previewActive && previewUri != null
-                          ? _SpriteSheetPreview(
-                              key: ValueKey<String>('preview-${product.id}'),
-                              uri: previewUri,
-                              productName: product.name,
-                            )
-                          : Icon(
-                              product.hasPreview
-                                  ? Icons.view_in_ar
-                                  : Icons.view_in_ar_outlined,
-                              color: theme.colorScheme.primary,
-                            ),
-                    ),
+                  _ProductMediaTile(
+                    product: product,
+                    previewActive: _previewActive,
+                    previewUri: previewUri,
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -667,7 +651,8 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w800,
+                            height: 1.08,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -679,7 +664,7 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
                         ),
                         const SizedBox(height: 10),
                         Wrap(
-                          spacing: 8,
+                          spacing: 10,
                           runSpacing: 8,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
@@ -690,6 +675,7 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
                               ),
                               style: theme.textTheme.titleSmall?.copyWith(
                                 color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                             Text(
@@ -704,31 +690,144 @@ class _CatalogProductTileState extends State<_CatalogProductTile> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.10,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Icon(
-                            Icons.chevron_right,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondary.withValues(
+                        alpha: 0.14,
                       ),
-                    ],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(7),
+                      child: Icon(
+                        Icons.chevron_right,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ProductMediaTile extends StatelessWidget {
+  const _ProductMediaTile({
+    required this.product,
+    required this.previewActive,
+    required this.previewUri,
+  });
+
+  final CatalogProduct product;
+  final bool previewActive;
+  final Uri? previewUri;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: 96,
+      height: 112,
+      alignment: Alignment.center,
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: product.hasPreview
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.74)
+            : theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.surface.withValues(alpha: 0.40),
+                    theme.colorScheme.primary.withValues(alpha: 0.12),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: product.hasPreview && previewUri != null
+                  ? SizedBox.square(
+                      key: ValueKey<String>(
+                        previewActive
+                            ? 'subtle-preview-${product.id}'
+                            : 'sprite-frame-${product.id}',
+                      ),
+                      dimension: 86,
+                      child: previewActive
+                          ? CatalogSubtleSpritePreview(
+                              uri: previewUri!,
+                              productName: product.name,
+                            )
+                          : CatalogSpriteFrame(
+                              uri: previewUri!,
+                              productName: product.name,
+                            ),
+                    )
+                  : Icon(
+                      key: ValueKey<String>('product-icon-${product.id}'),
+                      product.hasPreview
+                          ? Icons.view_in_ar
+                          : Icons.view_in_ar_outlined,
+                      size: 36,
+                      color: theme.colorScheme.primary,
+                    ),
+            ),
+          ),
+          if (product.hasPreview)
+            Positioned(
+              left: 8,
+              right: 8,
+              bottom: 8,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.82),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.threesixty,
+                        size: 13,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '360',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -745,11 +844,11 @@ class _ProductStatusPill extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(6),
+        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Text(
           label,
           maxLines: 1,
@@ -767,84 +866,4 @@ String _formatMoney(int cents, String currency) {
   final whole = cents ~/ 100;
   final fraction = (cents % 100).toString().padLeft(2, '0');
   return '$currency $whole.$fraction';
-}
-
-class _SpriteSheetPreview extends StatefulWidget {
-  const _SpriteSheetPreview({
-    required this.uri,
-    required this.productName,
-    super.key,
-  });
-
-  final Uri uri;
-  final String productName;
-
-  @override
-  State<_SpriteSheetPreview> createState() => _SpriteSheetPreviewState();
-}
-
-class _SpriteSheetPreviewState extends State<_SpriteSheetPreview>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Semantics(
-      image: true,
-      label: '360 preview active for ${widget.productName}',
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final height = constraints.maxHeight;
-
-          return ClipRect(
-            child: AnimatedBuilder(
-              animation: _controller,
-              child: Image.network(
-                widget.uri.toString(),
-                width: width * _spriteColumns,
-                height: height * _spriteRows,
-                fit: BoxFit.fill,
-                errorBuilder: (context, error, stackTrace) => Center(
-                  child: Icon(
-                    Icons.broken_image_outlined,
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-              builder: (context, child) {
-                final frame =
-                    (_controller.value * _spriteFrameCount).floor() %
-                    _spriteFrameCount;
-                final column = frame % _spriteColumns;
-                final row = frame ~/ _spriteColumns;
-
-                return Transform.translate(
-                  offset: Offset(-width * column, -height * row),
-                  child: child,
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
 }

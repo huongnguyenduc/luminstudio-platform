@@ -318,12 +318,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(
+      find.byKey(const ValueKey<String>('sprite-frame-prod_2')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('subtle-preview-prod_2')),
+      findsNothing,
+    );
+
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 3100));
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(
-      find.byKey(const ValueKey<String>('preview-prod_2')),
+      find.byKey(const ValueKey<String>('subtle-preview-prod_2')),
       findsOneWidget,
     );
     expect(
@@ -357,8 +366,40 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
 
     expect(
-      find.bySemanticsLabel('360 preview active for Product 2'),
+      find.bySemanticsLabel('Subtle 360 preview active for Product 2'),
       findsNothing,
+    );
+  });
+
+  testWidgets('category tab uses the same subtle idle sprite preview', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      _testApp(catalogRepository: _FakeCatalogRepository.withCategories()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Category'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Lighting Product 2'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey<String>('category-sprite-frame-prod_2')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('category-subtle-preview-prod_2')),
+      findsNothing,
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 3100));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(
+      find.byKey(const ValueKey<String>('category-subtle-preview-prod_2')),
+      findsOneWidget,
     );
   });
 
@@ -387,8 +428,8 @@ void main() {
       find.byKey(const ValueKey<String>('fake-model-viewer-prod_1')),
       findsOneWidget,
     );
-    expect(find.text('Model tier: high'), findsOneWidget);
-    expect(find.text('Selected finish'), findsOneWidget);
+    expect(find.text('HIGH model'), findsOneWidget);
+    expect(find.text('Selected finish'), findsNothing);
     await tester.drag(
       find.byKey(const PageStorageKey<String>('product-detail-scroll')),
       const Offset(0, -360),
@@ -451,10 +492,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Selected finish'), findsOneWidget);
-    expect(find.text('Body #FFFFFF'), findsOneWidget);
+    expect(find.text('Selected finish'), findsNothing);
+    expect(find.text('Body Chalk ceramic'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('mesh_body color #FFFFFF default selected'),
+      find.bySemanticsLabel('Body Chalk ceramic default selected'),
       findsOneWidget,
     );
 
@@ -463,13 +504,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.bySemanticsLabel('Body Deep navy selected'), findsOneWidget);
+    expect(find.text('Body Deep navy'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('mesh_body color #0F172A selected'),
-      findsOneWidget,
-    );
-    expect(find.text('Body #0F172A'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('mesh_body color #FFFFFF default selected'),
+      find.bySemanticsLabel('Body Chalk ceramic default selected'),
       findsNothing,
     );
   });
@@ -502,7 +540,7 @@ void main() {
         find.byKey(const ValueKey<String>('mesh-color-mesh_body-#0F172A')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Body #0F172A'), findsOneWidget);
+      expect(find.text('Body Deep navy'), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey<String>('add-selected-product-to-cart')),
       );
@@ -675,7 +713,7 @@ void main() {
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Model tier: low'), findsOneWidget);
+    expect(find.text('LOW model'), findsOneWidget);
   });
 
   testWidgets('home tab retains product detail route when switching tabs', (
@@ -692,7 +730,7 @@ void main() {
 
     await tester.tap(find.text('Product 1'));
     await tester.pumpAndSettle();
-    expect(find.text('Model tier: low'), findsOneWidget);
+    expect(find.text('LOW model'), findsOneWidget);
 
     await tester.tap(find.text('Category'));
     await tester.pumpAndSettle();
@@ -700,7 +738,7 @@ void main() {
 
     await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
-    expect(find.text('Model tier: low'), findsOneWidget);
+    expect(find.text('LOW model'), findsOneWidget);
   });
 }
 
@@ -1011,6 +1049,7 @@ CatalogProductDetail _catalogProductDetail(
         meshId: 'mesh_body',
         defaultColor: '#FFFFFF',
         allowedColors: ['#FFFFFF', '#0F172A'],
+        colorLabels: {'#FFFFFF': 'Chalk ceramic', '#0F172A': 'Deep navy'},
       ),
     ],
     processingStatus: 'completed',

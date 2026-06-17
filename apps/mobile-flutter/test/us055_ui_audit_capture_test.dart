@@ -48,13 +48,13 @@ void main() {
     await tester.tap(find.text('Arc chair'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Model tier: high'), findsOneWidget);
+    expect(find.text('HIGH model'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('audit-model-viewer-prod_arc')),
       findsOneWidget,
     );
     expect(find.text('Add to cart'), findsOneWidget);
-    expect(find.text('Selected finish'), findsOneWidget);
+    expect(find.text('Selected finish'), findsNothing);
     expect(find.text('Customize color'), findsOneWidget);
 
     await _capture(tester, 'us055-detail-top.png');
@@ -75,7 +75,7 @@ void main() {
 
     expect(find.text('Customize color'), findsOneWidget);
     expect(find.text('Body'), findsOneWidget);
-    expect(find.text('Body #FFFFFF'), findsOneWidget);
+    expect(find.text('Body Chalk ceramic'), findsOneWidget);
     expect(find.text('Product information'), findsOneWidget);
 
     await _capture(tester, 'us055-detail-customization.png');
@@ -273,6 +273,11 @@ class _AuditCatalogRepository implements CatalogRepository {
           meshId: 'mesh_body',
           defaultColor: '#FFFFFF',
           allowedColors: ['#FFFFFF', '#0F172A', '#C8A46A'],
+          colorLabels: {
+            '#FFFFFF': 'Chalk ceramic',
+            '#0F172A': 'Deep navy',
+            '#C8A46A': 'Aged brass',
+          },
         ),
       ],
       processingStatus: product.processingStatus,

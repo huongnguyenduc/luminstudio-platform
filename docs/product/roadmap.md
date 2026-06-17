@@ -380,3 +380,32 @@ Selected work:
   authentication, authorization, inventory checks, tax, shipping, order
   fulfillment, signed object URLs, new backend contracts, or direct platform
   access.
+- `US-058 Flutter Premium Visual System Refresh` refreshes the existing
+  Flutter customer app visual system after real product UI review. It updates
+  theme, surface hierarchy, product-card media treatment, Product Detail model
+  prominence, and Cart presentation across existing Home, Category, Product
+  Detail, and Cart flows without adding checkout, payments, authentication,
+  authorization, inventory checks, tax, shipping, order fulfillment, signed
+  object URLs, new backend contracts, new 360 preview semantics, new color
+  naming contracts, or direct platform access.
+- `US-059 Catalog Subtle 360 Idle Preview` corrects the existing Flutter
+  catalog sprite-card behavior. Home and Category product cards crop a single
+  product frame from the existing sprite sheet before idle activation, then use
+  only a short near-front left/right frame sequence after idle without adding
+  checkout, payments, authentication, authorization, inventory checks, tax,
+  shipping, order fulfillment, signed object URLs, new backend contracts, new
+  color naming contracts, or direct platform access.
+- `US-060 Product Detail Model First Finish Polish` improves the existing
+  Flutter Product Detail hierarchy. The model panel becomes the dominant
+  first-screen product surface, model and preview metadata move to compact
+  support text, and finish selections use customer-readable names in visible UI
+  without adding checkout, payments, authentication, authorization, inventory
+  checks, tax, shipping, order fulfillment, signed object URLs, backend color
+  naming contracts, or direct platform access.
+- `US-061 Product Detail Finish Label Contract` adds optional backend-owned
+  finish labels to the existing mesh color configuration contract. The Go API
+  validates label keys against allowed color values and Flutter Product Detail
+  renders those labels before falling back to its local hex-name map without
+  changing cart selected-color payloads, checkout, payments, authentication,
+  authorization, inventory checks, tax, shipping, order fulfillment, signed
+  object URLs, or direct platform access.

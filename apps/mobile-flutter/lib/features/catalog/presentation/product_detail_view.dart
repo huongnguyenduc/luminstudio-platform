@@ -116,11 +116,11 @@ class _ProductDetailReady extends StatelessWidget {
       label: 'Product detail for ${detail.name}',
       child: ListView(
         key: const PageStorageKey<String>('product-detail-scroll'),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 128),
         children: [
-          _ProductDetailHighlights(detail: detail),
-          const SizedBox(height: 14),
           _InteractiveModelPanel(detail: detail),
+          const SizedBox(height: 10),
+          _ProductModelMetadata(detail: detail),
           const SizedBox(height: 18),
           Text(detail.name, style: theme.textTheme.headlineSmall),
           const SizedBox(height: 8),
@@ -132,11 +132,6 @@ class _ProductDetailReady extends StatelessWidget {
             ),
           ),
           if (detail.meshColorConfig.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _SelectedConfigurationSummary(
-              detail: detail,
-              selectedMeshColors: selectedMeshColors,
-            ),
             const SizedBox(height: 16),
             Text('Customize color', style: theme.textTheme.titleMedium),
             const SizedBox(height: 4),
@@ -198,73 +193,66 @@ class _InteractiveModelPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final modelViewerBuilder = context.read<ProductModelViewerBuilder>();
     final screenHeight = MediaQuery.sizeOf(context).height;
-    final panelHeight = (screenHeight * 0.24).clamp(176.0, 224.0);
+    final panelHeight = (screenHeight * 0.38).clamp(300.0, 420.0);
 
-    return SizedBox(
-      key: ValueKey<String>('product-model-panel-${detail.id}'),
-      height: panelHeight,
-      width: double.infinity,
-      child: modelViewerBuilder(context, detail),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: SizedBox(
+          key: ValueKey<String>('product-model-panel-${detail.id}'),
+          height: panelHeight,
+          width: double.infinity,
+          child: modelViewerBuilder(context, detail),
+        ),
+      ),
     );
   }
 }
 
-class _ProductDetailHighlights extends StatelessWidget {
-  const _ProductDetailHighlights({required this.detail});
+class _ProductModelMetadata extends StatelessWidget {
+  const _ProductModelMetadata({required this.detail});
 
   final CatalogProductDetail detail;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        _HighlightChip(
-          icon: Icons.view_in_ar,
-          label: 'Model tier: ${detail.modelTier.wireName}',
-        ),
-        if (detail.spriteUri != null)
-          const _HighlightChip(
-            icon: Icons.threesixty,
-            label: '360 preview ready',
-          ),
-        if (detail.categories.isNotEmpty)
-          _HighlightChip(
-            icon: Icons.category_outlined,
-            label: detail.categories.first.name,
-          ),
-      ],
-    );
-  }
-}
-
-class _HighlightChip extends StatelessWidget {
-  const _HighlightChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final items = <String>[
+      '${detail.modelTier.wireName.toUpperCase()} model',
+      if (detail.spriteUri != null) '360 ready',
+      if (detail.categories.isNotEmpty) detail.categories.first.name,
+    ];
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: theme.colorScheme.primary),
-            const SizedBox(width: 6),
-            Text(label, style: theme.textTheme.labelLarge),
-          ],
-        ),
-      ),
+    return Wrap(
+      spacing: 10,
+      runSpacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Icon(Icons.view_in_ar, size: 16, color: theme.colorScheme.primary),
+        for (var index = 0; index < items.length; index++) ...[
+          Text(
+            items[index],
+            key: index == 0
+                ? const ValueKey<String>('product-detail-model-tier')
+                : null,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (index != items.length - 1)
+            Text(
+              '/',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+        ],
+      ],
     );
   }
 }
@@ -296,7 +284,7 @@ class _ProductDetailBottomBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
           child: Row(
             children: [
               Expanded(
@@ -352,83 +340,6 @@ class _ProductDetailBottomBar extends StatelessWidget {
   }
 }
 
-class _SelectedConfigurationSummary extends StatelessWidget {
-  const _SelectedConfigurationSummary({
-    required this.detail,
-    required this.selectedMeshColors,
-  });
-
-  final CatalogProductDetail detail;
-  final Map<String, String> selectedMeshColors;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final labels = _selectedChoiceLabels(detail, selectedMeshColors);
-
-    return Semantics(
-      label: labels.isEmpty
-          ? 'No product configuration selected'
-          : 'Selected configuration ${labels.join(', ')}',
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Selected finish', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (labels.isEmpty)
-                    Text(
-                      'Standard configuration',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    )
-                  else
-                    for (final label in labels)
-                      _SelectedConfigurationChip(label: label),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SelectedConfigurationChip extends StatelessWidget {
-  const _SelectedConfigurationChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Text(label, style: theme.textTheme.labelMedium),
-      ),
-    );
-  }
-}
-
 class _InformationSection extends StatelessWidget {
   const _InformationSection({required this.section});
 
@@ -443,7 +354,8 @@ class _InformationSection extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,8 +375,19 @@ List<String> _selectedChoiceLabels(
 ) {
   return [
     for (final options in detail.meshColorConfig)
-      '${_friendlyMeshName(options.meshId)} ${selectedMeshColors[options.meshId] ?? options.defaultColor}',
+      _selectedChoiceLabel(
+        options,
+        selectedMeshColors[options.meshId] ?? options.defaultColor,
+      ),
   ];
+}
+
+String _selectedChoiceLabel(CatalogMeshColorOptions options, String color) {
+  return '${_friendlyMeshName(options.meshId)} ${_finishNameForOptions(options, color)}';
+}
+
+String _finishNameForOptions(CatalogMeshColorOptions options, String color) {
+  return options.labelForColor(color) ?? _finishNameForColor(color);
 }
 
 class _MeshColorOptions extends StatelessWidget {
@@ -481,8 +404,9 @@ class _MeshColorOptions extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,6 +415,14 @@ class _MeshColorOptions extends StatelessWidget {
             _friendlyMeshName(options.meshId),
             style: theme.textTheme.titleSmall,
           ),
+          const SizedBox(height: 4),
+          Text(
+            _selectedChoiceLabel(options, selectedColor),
+            key: ValueKey<String>('selected-finish-${options.meshId}'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -498,6 +430,7 @@ class _MeshColorOptions extends StatelessWidget {
             children: [
               for (final color in options.allowedColors)
                 _ColorSwatch(
+                  options: options,
                   meshId: options.meshId,
                   color: color,
                   isDefault: color == options.defaultColor,
@@ -513,12 +446,14 @@ class _MeshColorOptions extends StatelessWidget {
 
 class _ColorSwatch extends StatelessWidget {
   const _ColorSwatch({
+    required this.options,
     required this.meshId,
     required this.color,
     required this.isDefault,
     required this.isSelected,
   });
 
+  final CatalogMeshColorOptions options;
   final String meshId;
   final String color;
   final bool isDefault;
@@ -532,8 +467,10 @@ class _ColorSwatch extends StatelessWidget {
         ? theme.colorScheme.surface
         : Color(0xFF000000 | parsed);
     final iconColor = _iconColorFor(swatchColor);
+    final meshName = _friendlyMeshName(meshId);
+    final finishName = _finishNameForOptions(options, color);
     final label =
-        '$meshId color $color${isDefault ? ' default' : ''}${isSelected ? ' selected' : ''}';
+        '$meshName $finishName${isDefault ? ' default' : ''}${isSelected ? ' selected' : ''}';
 
     return Semantics(
       button: true,
@@ -595,5 +532,60 @@ class _ColorSwatch extends StatelessWidget {
     return ThemeData.estimateBrightnessForColor(background) == Brightness.dark
         ? Colors.white
         : Colors.black;
+  }
+}
+
+String _finishNameForColor(String value) {
+  switch (value.toUpperCase()) {
+    case '#FFFFFF':
+      return 'Porcelain white';
+    case '#F8FAFC':
+      return 'Soft white';
+    case '#E5E7EB':
+      return 'Mist grey';
+    case '#CBD5E1':
+      return 'Cloud grey';
+    case '#94A3B8':
+      return 'Slate grey';
+    case '#64748B':
+      return 'Storm grey';
+    case '#475569':
+      return 'Smoke grey';
+    case '#334155':
+      return 'Charcoal slate';
+    case '#1F2937':
+      return 'Graphite';
+    case '#0F172A':
+      return 'Midnight navy';
+    case '#111827':
+      return 'Ink black';
+    case '#000000':
+      return 'Black';
+    case '#F5E6D3':
+      return 'Warm linen';
+    case '#D6B98C':
+      return 'Natural oak';
+    case '#B45309':
+      return 'Cognac';
+    case '#92400E':
+      return 'Saddle brown';
+    case '#78350F':
+      return 'Walnut';
+    case '#F59E0B':
+      return 'Amber';
+    case '#D97706':
+      return 'Burnished brass';
+    case '#16A34A':
+      return 'Garden green';
+    case '#0F766E':
+      return 'Deep teal';
+    case '#2563EB':
+      return 'Cobalt blue';
+    case '#7C3AED':
+      return 'Violet';
+    case '#DC2626':
+      return 'Signal red';
+    default:
+      return 'Custom finish';
   }
 }

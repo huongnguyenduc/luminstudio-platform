@@ -31,6 +31,10 @@ func validDraft() ProductDraft {
 					"#FFFFFF",
 					"#000000",
 				},
+				Labels: map[string]string{
+					"#FFFFFF": "Porcelain white",
+					"#000000": "Ink black",
+				},
 			},
 		},
 		SourceAsset: &ObjectRef{
@@ -137,6 +141,24 @@ func TestProductDraftValidateRejectsContractViolations(t *testing.T) {
 				draft.MeshColorConfig["mesh_body"] = option
 			},
 			want: "default color",
+		},
+		{
+			name: "label color not allowed",
+			mutate: func(draft *ProductDraft) {
+				option := draft.MeshColorConfig["mesh_body"]
+				option.Labels = map[string]string{"#111111": "Graphite"}
+				draft.MeshColorConfig["mesh_body"] = option
+			},
+			want: "label color",
+		},
+		{
+			name: "empty label",
+			mutate: func(draft *ProductDraft) {
+				option := draft.MeshColorConfig["mesh_body"]
+				option.Labels = map[string]string{"#FFFFFF": ""}
+				draft.MeshColorConfig["mesh_body"] = option
+			},
+			want: "labels",
 		},
 		{
 			name: "bad bucket",

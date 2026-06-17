@@ -528,11 +528,13 @@ class CatalogMeshColorOptionsDto {
     required this.meshId,
     required this.defaultColor,
     required this.allowedColors,
+    required this.colorLabels,
   });
 
   final String meshId;
   final String defaultColor;
   final List<String> allowedColors;
+  final Map<String, String> colorLabels;
 
   factory CatalogMeshColorOptionsDto.fromJson(
     String meshId,
@@ -555,6 +557,7 @@ class CatalogMeshColorOptionsDto {
         for (final color in allowed)
           _expectString(color, 'meshColorConfig.$meshId.allowed color'),
       ],
+      colorLabels: _parseColorLabels(json['labels'], meshId),
     );
   }
 
@@ -563,8 +566,23 @@ class CatalogMeshColorOptionsDto {
       meshId: meshId,
       defaultColor: defaultColor,
       allowedColors: allowedColors,
+      colorLabels: colorLabels,
     );
   }
+}
+
+Map<String, String> _parseColorLabels(Object? value, String meshId) {
+  if (value == null) {
+    return const {};
+  }
+  final labels = _expectMap(value, 'meshColorConfig.$meshId.labels');
+  return {
+    for (final entry in labels.entries)
+      entry.key: _expectString(
+        entry.value,
+        'meshColorConfig.$meshId.labels.${entry.key}',
+      ),
+  };
 }
 
 List<CatalogMeshColorOptionsDto> _parseMeshColorConfig(Object? value) {

@@ -137,11 +137,23 @@ class CatalogMeshColorOptions {
     required this.meshId,
     required this.defaultColor,
     required this.allowedColors,
+    this.colorLabels = const {},
   });
 
   final String meshId;
   final String defaultColor;
   final List<String> allowedColors;
+  final Map<String, String> colorLabels;
+
+  String? labelForColor(String color) {
+    final normalized = color.toUpperCase();
+    for (final entry in colorLabels.entries) {
+      if (entry.key.toUpperCase() == normalized) {
+        return entry.value;
+      }
+    }
+    return null;
+  }
 }
 
 class CatalogProductDetail {
