@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-console
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/component: object-storage
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: minio-dev.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  name: console

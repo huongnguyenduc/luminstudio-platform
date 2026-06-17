@@ -3,7 +3,130 @@
 Flutter customer application for catalog navigation, search, 360 previews, 3D
 product interaction, configuration, and local cart management.
 
-Phase 0 defines this ownership boundary only. Flutter project generation,
-BLoCs, platform shells, and executable Bazel targets belong to Phase 3 and
-Phase 4 stories.
+Phase 3 now provides the first executable Flutter application boundary for
+Android and iOS. The app shell exposes Home, Category, and Cart tabs with state
+retained while users switch tabs. The Home tab loads customer-safe catalog
+product cards from the Go API `GET /catalog/products` route through a
+repository/use-case boundary. The Home tab also submits catalog searches to the
+Go API `GET /catalog/search?q=...` route through the same boundary and renders
+loading, empty, failure/retry, clear, and result states. The Home tab now
+paginates both catalog and search result lists through the existing Go API
+`limit` and `offset` parameters with inline load-more retry behavior. The Go
+API now exposes completed sprite JPEGs at
+`GET /catalog/products/{id}/sprite`; the Flutter Home tab activates those
+sprite previews after a product card remains at least 80% visible and idle for
+three seconds.
+The Go API now also exposes product detail and tiered model routes through
+`GET /catalog/products/{id}?tier=low|high` and
+`GET /catalog/products/{id}/model?tier=low|high`. The Home tab now opens a
+product detail screen from catalog cards, derives a low/high model tier, and
+renders seller-provided sections, mesh color configuration, and gateway
+model/sprite route metadata without direct storage access. The product detail
+screen now renders the selected gateway model route with an interactive
+rotate/zoom 3D viewer. Product detail mesh color configuration now renders as
+selectable material swatches backed by local Flutter state. Product Detail can
+now add the selected configuration to a locally persisted cart, and the Cart tab
+renders stored product identity, selected colors, quantity, selection state,
+selected subtotal, and savings from locally stored price snapshots. Category
+taxonomy and sorting are now active in the Category tab through the Go API
+gateway, with category selection, sorting, pagination, incremental retry, and
+scroll-to-top behavior. The app now has a Bazel-owned validation boundary that
+runs the accepted Flutter dependency, formatting, analysis, and test checks from
+a copied temporary app directory. Checkout, payment, auth, inventory, discount
+engines and production mobile release packaging remain deferred. The existing
+commerce flow now has local iOS simulator proof through `US-050`. `US-052`
+connects the default cart repository to the Go API `POST /cart`,
+`GET /cart/{id}`, and `PUT /cart/{id}` routes while retaining the server cart
+id and latest item snapshot in local preferences as a fallback cache. `US-053`
+adds live iOS simulator proof that the Flutter Cart tab creates, updates, saves,
+and hydrates backend cart snapshots through the Go API.
 
+Verify the shell from the repository root:
+
+```bash
+bash scripts/verify-us-030.sh
+```
+
+Verify catalog products API integration from the repository root:
+
+```bash
+bash scripts/verify-us-031.sh
+```
+
+Verify catalog search UI integration from the repository root:
+
+```bash
+bash scripts/verify-us-032.sh
+```
+
+Verify catalog pagination and infinite scroll from the repository root:
+
+```bash
+bash scripts/verify-us-033.sh
+```
+
+Verify 360-degree catalog preview activation from the repository root:
+
+```bash
+bash scripts/verify-us-035.sh
+```
+
+Verify product detail and device tier integration from the repository root:
+
+```bash
+bash scripts/verify-us-037.sh
+```
+
+Verify the interactive 3D product viewer from the repository root:
+
+```bash
+bash scripts/verify-us-038.sh
+```
+
+Verify material color selection from the repository root:
+
+```bash
+bash scripts/verify-us-039.sh
+```
+
+Verify local cart persistence from the repository root:
+
+```bash
+bash scripts/verify-us-040.sh
+```
+
+Verify product pricing contract and cart totals from the repository root:
+
+```bash
+bash scripts/verify-us-041.sh
+```
+
+Verify Flutter category tab API integration from the repository root:
+
+```bash
+bash scripts/verify-us-043.sh
+```
+
+Verify the Flutter Bazel build and test boundary from the repository root:
+
+```bash
+bash scripts/verify-us-044.sh
+```
+
+Verify the live Flutter customer commerce smoke from the repository root:
+
+```bash
+LUMIN_US050_API_BASE_URL=http://127.0.0.1:8080 bash scripts/verify-us-050.sh
+```
+
+Verify Flutter backend cart API integration from the repository root:
+
+```bash
+bash scripts/verify-us-052.sh
+```
+
+Verify the live Flutter backend cart sync smoke from the repository root:
+
+```bash
+LUMIN_US053_API_BASE_URL=http://127.0.0.1:8080 bash scripts/verify-us-053.sh
+```

@@ -7,7 +7,7 @@ Lumin Studio is a multi-language, event-driven monorepo with these surfaces:
 - React + Vite admin browser application.
 - Flutter customer mobile application using BLoC and Clean Architecture.
 - Go API gateway for synchronous business behavior and relational state.
-- Rust worker with a C++ FFI boundary for asynchronous 3D processing.
+- Rust worker using reviewed Rust crates for asynchronous 3D processing.
 - K3d dev platform with PostgreSQL, MinIO, NATS, Meilisearch, and Traefik.
 
 Bazel is the top-level build graph and Bzlmod is the dependency model. Phase 0
@@ -86,4 +86,3 @@ must not be used as a substitute for audit history.
 - 360-degree headless renderer.
 - Flutter 3D viewer and bridge strategy.
 - Retry, dead-letter, and idempotency policies for event workflows.
-

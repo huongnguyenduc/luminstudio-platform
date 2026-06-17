@@ -1,0 +1,63 @@
+# Áp dụng schema migrations cho Postgres prod khi deploy.
+#
+# Các file .sql (services/api-gateway/migrations/*.sql) KHÔNG idempotent (CREATE TYPE/
+# TABLE/INDEX), nên Job theo dõi phiên bản đã chạy trong bảng schema_migrations và chỉ
+# áp dụng mỗi file đúng một lần — chạy lại ở mỗi lần deploy là an toàn.
+#
+# ConfigMap `db-migrations` (chứa các file .sql) được deploy-prod.sh tạo imperative
+# trước khi apply, vì kustomize không đọc được file nằm ngoài thư mục overlay.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  labels:
+    app.kubernetes.io/name: db-migrate
+    app.kubernetes.io/component: schema-migration
+spec:
+  backoffLimit: 10
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: db-migrate
+        app.kubernetes.io/component: schema-migration
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: docker.io/library/postgres:17.5-alpine
+          envFrom:
+            - secretRef:
+                name: postgres
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              export PGPASSWORD="$POSTGRES_PASSWORD"
+              PSQL="psql -v ON_ERROR_STOP=1 -h postgres -U $POSTGRES_USER -d $POSTGRES_DB"
+              echo "waiting for postgres..."
+              until $PSQL -c 'SELECT 1' >/dev/null 2>&1; do sleep 2; done
+              $PSQL -c "CREATE TABLE IF NOT EXISTS schema_migrations (
+                version text PRIMARY KEY,
+                applied_at timestamptz NOT NULL DEFAULT now()
+              );"
+              for f in /migrations/*.sql; do
+                v=$(basename "$f")
+                if [ "$($PSQL -tA -c "SELECT 1 FROM schema_migrations WHERE version='$v'")" = "1" ]; then
+                  echo "skip $v (already applied)"
+                  continue
+                fi
+                echo "applying $v"
+                # File + ghi nhận version trong cùng 1 transaction (-1) -> atomic.
+                $PSQL -1 -f "$f" -c "INSERT INTO schema_migrations(version) VALUES ('$v');"
+                echo "applied $v"
+              done
+              echo "migrations complete"
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+              readOnly: true
+      volumes:
+        - name: migrations
+          configMap:
+            name: db-migrations

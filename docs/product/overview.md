@@ -30,15 +30,16 @@ add those products to a local cart on mobile devices.
 
 - Admin product management and 3D upload configuration.
 - Event-driven search synchronization and 3D processing.
-- Mobile catalog, search, product detail, customization, and local cart.
+- Mobile catalog, search, product detail, customization, local cart, and
+  backend-synchronized anonymous cart snapshots.
 - Local/dev infrastructure on K3d using PostgreSQL, MinIO, NATS, and
   Meilisearch.
 
 ## Explicit Non-Goals
 
 - Authentication and authorization are deferred through Phase 4.
-- Checkout, payment processing, order fulfillment, and seller settlement are
-  not defined by the current contract.
+- Checkout, payment processing, inventory checks, order fulfillment, and seller
+  settlement are not defined by the current contract.
 - Production cloud topology is not selected; the current deployment target is
   the existing local PC/K3d environment.
 
@@ -49,4 +50,3 @@ add those products to a local cart on mobile devices.
 - PostgreSQL is the relational system of record.
 - Meilisearch is a derived search index, not the source of truth.
 - NATS carries asynchronous product/search and 3D processing events.
-

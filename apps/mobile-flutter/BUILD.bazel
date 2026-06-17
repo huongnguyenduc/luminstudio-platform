@@ -1,4 +1,28 @@
+load(":flutter_validation_test.bzl", "flutter_validation_test")
+
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["README.md"])
+filegroup(
+    name = "mobile-flutter-sources",
+    srcs = glob(
+        ["**"],
+        exclude = [
+            ".dart_tool/**",
+            ".idea/**",
+            "build/**",
+        ],
+    ),
+)
 
+flutter_validation_test(
+    name = "mobile-flutter-test",
+    data = [":mobile-flutter-sources"],
+    runner = "tools/bazel_flutter_check.sh",
+    tags = [
+        "local",
+        "no-sandbox",
+    ],
+    timeout = "long",
+)
+
+exports_files(["README.md"])

@@ -1,13 +1,29 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
 rust_library(
     name = "worker_3d_lib",
-    srcs = ["src/lib.rs"],
+    srcs = [
+        "src/glb_optimizer.rs",
+        "src/lib.rs",
+        "src/processing_pipeline.rs",
+        "src/runtime.rs",
+        "src/sprite_renderer.rs",
+    ],
+    aliases = aliases(),
     crate_name = "worker_3d",
     edition = "2024",
+    deps = all_crate_deps(
+        normal = True,
+    ),
+    proc_macro_deps = all_crate_deps(
+        proc_macro = True,
+    ),
 )
+
+exports_files(["scripts/render_360_sprite.py"])
 
 rust_binary(
     name = "worker-3d",
@@ -16,7 +32,25 @@ rust_binary(
     deps = [":worker_3d_lib"],
 )
 
+rust_binary(
+    name = "optimize-glb",
+    srcs = ["src/bin/optimize_glb.rs"],
+    edition = "2024",
+    deps = [":worker_3d_lib"],
+)
+
 rust_test(
     name = "worker_3d_test",
+    aliases = aliases(
+        normal_dev = True,
+        proc_macro_dev = True,
+    ),
     crate = ":worker_3d_lib",
+    data = ["//resources:pet_tag_glb"],
+    deps = all_crate_deps(
+        normal_dev = True,
+    ),
+    proc_macro_deps = all_crate_deps(
+        proc_macro_dev = True,
+    ),
 )

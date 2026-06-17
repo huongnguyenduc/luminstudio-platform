@@ -10,4 +10,9 @@ filegroup(
     srcs = ["import-api-image.sh"],
 )
 
+filegroup(
+    name = "import-worker-image",
+    srcs = ["import-worker-image.sh"],
+)
+
 exports_files(["README.md"])

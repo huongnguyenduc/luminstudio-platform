@@ -1,0 +1,36 @@
+name: deploy-prod
+
+# Deploy lên cluster k3d self-hosted thông qua runner "Luca" chạy ngay trên máy WSL2.
+# Runner đã có sẵn docker, k3d, kubectl. Cần thêm bazelisk trong PATH của runner
+# (xem docs/deploy-self-hosted.md).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/**'
+      - 'packages/**'
+      - 'infra/k8s/**'
+      - '.github/workflows/deploy-prod.yml'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag ảnh (mặc định = commit sha). Dùng để re-deploy/rollback.'
+        required: false
+
+# Không cho hai lần deploy chạy chồng lên nhau.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to k3d (build → import → apply → rollout)
+        run: bash infra/scripts/deploy-prod.sh
+        env:
+          LUMIN_CLUSTER_NAME: luminstudio
+          IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}

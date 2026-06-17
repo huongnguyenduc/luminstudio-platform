@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  template:
+    spec:
+      containers:
+        - name: api-gateway
+          # Ảnh được nạp sẵn vào node bằng `k3d image import`; không kéo từ registry.
+          imagePullPolicy: IfNotPresent

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,8 +10,12 @@ import (
 	"strconv"
 	"time"
 
+	"lumin.studio/services/api-gateway/internal/cart"
 	"lumin.studio/services/api-gateway/internal/health"
 	"lumin.studio/services/api-gateway/internal/platform"
+	"lumin.studio/services/api-gateway/internal/processing"
+	"lumin.studio/services/api-gateway/internal/product"
+	"lumin.studio/services/api-gateway/internal/search"
 )
 
 const defaultPort = 8080
@@ -38,9 +43,42 @@ func run(getenv func(string) string) error {
 	}
 	defer checker.Close()
 
+	productStore := product.NewStore(checker.Postgres())
+	cartStore := cart.NewStore(checker.Postgres())
+	eventPublisher := product.NewNATSPublisher(config.NATSURL, config.DependencyTimeout)
+	searchSyncer := search.NewSyncer(
+		productStore,
+		search.NewMeilisearchIndexer(config.MeilisearchURL, config.MeilisearchKey, config.DependencyTimeout),
+	)
+	go func() {
+		err := search.NewNATSSubscriber(config.NATSURL, config.DependencyTimeout, searchSyncer).Run(context.Background())
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.Error("product search sync stopped", "error", err)
+		}
+	}()
+	completionHandler := processing.NewCompletionHandler(productStore).WithEventPublisher(eventPublisher)
+	go func() {
+		err := processing.NewNATSSubscriber(config.NATSURL, config.DependencyTimeout, completionHandler).Run(context.Background())
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.Error("processing completion subscriber stopped", "error", err)
+		}
+	}()
+
 	server := &http.Server{
-		Addr:              fmt.Sprintf(":%d", port),
-		Handler:           routes(checker),
+		Addr: fmt.Sprintf(":%d", port),
+		Handler: routes(
+			checker,
+			product.NewHandler(productStore).
+				WithSourceAssetStore(product.NewMinIOSourceAssetStore(checker.MinIO())).
+				WithProductImageStore(product.NewMinIOProductImageStore(checker.MinIO())).
+				WithEventPublisher(eventPublisher),
+			search.NewHandler(search.NewMeilisearchSearcher(config.MeilisearchURL, config.MeilisearchKey, config.DependencyTimeout)).
+				WithCatalogProductReader(productStore).
+				WithSpriteAssetStore(search.NewMinIOSpriteAssetStore(checker.MinIO())).
+				WithModelAssetStore(search.NewMinIOModelAssetStore(checker.MinIO())).
+				WithProductImageStore(product.NewMinIOProductImageStore(checker.MinIO())),
+			cart.NewHandler(cartStore, productStore),
+		),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -51,10 +89,27 @@ func run(getenv func(string) string) error {
 	return nil
 }
 
-func routes(readiness health.Readiness) http.Handler {
+func routes(readiness health.Readiness, productHandler product.Handler, searchHandler search.Handler, cartHandler cart.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", health.Handler)
 	mux.Handle("GET /readyz", health.ReadinessHandler(readiness))
+	mux.HandleFunc("POST /admin/products", productHandler.CreateProduct)
+	mux.HandleFunc("GET /admin/products", productHandler.ListProducts)
+	mux.HandleFunc("GET /admin/products/{id}", productHandler.GetProduct)
+	mux.HandleFunc("PUT /admin/products/{id}", productHandler.UpdateProduct)
+	mux.HandleFunc("POST /admin/products/{id}/source-glb", productHandler.UploadProductSource)
+	mux.HandleFunc("POST /admin/products/{id}/image", productHandler.UploadProductImage)
+	mux.HandleFunc("GET /catalog/categories", searchHandler.ListCatalogCategories)
+	mux.HandleFunc("GET /catalog/categories/{slug}/products", searchHandler.ListCategoryProducts)
+	mux.HandleFunc("GET /catalog/products", searchHandler.ListCatalogProducts)
+	mux.HandleFunc("GET /catalog/products/{id}", searchHandler.GetCatalogProductDetail)
+	mux.HandleFunc("GET /catalog/products/{id}/model", searchHandler.GetCatalogProductModel)
+	mux.HandleFunc("GET /catalog/products/{id}/sprite", searchHandler.GetCatalogProductSprite)
+	mux.HandleFunc("GET /catalog/products/{id}/image", searchHandler.GetCatalogProductImage)
+	mux.HandleFunc("GET /catalog/search", searchHandler.SearchCatalogProducts)
+	mux.HandleFunc("POST /cart", cartHandler.CreateCart)
+	mux.HandleFunc("GET /cart/{id}", cartHandler.GetCart)
+	mux.HandleFunc("PUT /cart/{id}", cartHandler.UpdateCart)
 	return mux
 }
 

@@ -1,0 +1,51 @@
+import 'package:lumin_studio_mobile/features/catalog/data/catalog_api_client.dart';
+import 'package:lumin_studio_mobile/features/catalog/domain/catalog_product.dart';
+import 'package:lumin_studio_mobile/features/catalog/domain/catalog_repository.dart';
+
+class HttpCatalogRepository implements CatalogRepository {
+  const HttpCatalogRepository(this._client);
+
+  final CatalogApiClient _client;
+
+  @override
+  Future<List<CatalogCategory>> listCategories() {
+    return _client.listCategories();
+  }
+
+  @override
+  Future<CatalogProductsPage> listProducts({int limit = 20, int offset = 0}) {
+    return _client.listProducts(limit: limit, offset: offset);
+  }
+
+  @override
+  Future<CatalogProductsPage> searchProducts(
+    String query, {
+    int limit = 20,
+    int offset = 0,
+  }) {
+    return _client.searchProducts(query, limit: limit, offset: offset);
+  }
+
+  @override
+  Future<CatalogProductsPage> listCategoryProducts(
+    String categorySlug, {
+    CategoryProductSort sort = CategoryProductSort.newest,
+    int limit = 20,
+    int offset = 0,
+  }) {
+    return _client.listCategoryProducts(
+      categorySlug,
+      sort: sort,
+      limit: limit,
+      offset: offset,
+    );
+  }
+
+  @override
+  Future<CatalogProductDetail> getProductDetail(
+    String productId, {
+    required ProductModelTier tier,
+  }) {
+    return _client.getProductDetail(productId, tier: tier);
+  }
+}

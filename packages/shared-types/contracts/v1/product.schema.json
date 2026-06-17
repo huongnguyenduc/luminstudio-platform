@@ -1,0 +1,601 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumin.studio/contracts/v1/product.schema.json",
+  "title": "Lumin Product Administration Contract v1",
+  "type": "object",
+  "$defs": {
+    "InformationSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
+        "collapsedByDefault": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "ProductPrice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amountCents",
+        "currency"
+      ],
+      "properties": {
+        "amountCents": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "compareAtAmountCents": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "ProductCategory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slug",
+        "name"
+      ],
+      "properties": {
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 120
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      }
+    },
+    "ProductDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "slug",
+        "description",
+        "price"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 180
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
+        },
+        "categories": {
+          "type": "array",
+          "default": [],
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/ProductCategory"
+          }
+        },
+        "informationSections": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InformationSection"
+          }
+        },
+        "meshColorConfig": {
+          "$ref": "common.schema.json#/$defs/MeshColorConfig"
+        },
+        "sourceAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        }
+      }
+    },
+    "ProductRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "description",
+        "price",
+        "createdAt",
+        "updatedAt",
+        "processingStatus"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 180
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
+        },
+        "categories": {
+          "type": "array",
+          "default": [],
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/ProductCategory"
+          }
+        },
+        "informationSections": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InformationSection"
+          }
+        },
+        "meshColorConfig": {
+          "$ref": "common.schema.json#/$defs/MeshColorConfig"
+        },
+        "sourceAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "createdAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        },
+        "updatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        },
+        "processingStatus": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "queued",
+            "processing",
+            "completed",
+            "failed"
+          ]
+        },
+        "optimizedAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "spriteAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        }
+      }
+    },
+    "CatalogItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "description",
+        "price",
+        "processingStatus",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 180
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
+        },
+        "categories": {
+          "type": "array",
+          "default": [],
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/ProductCategory"
+          }
+        },
+        "processingStatus": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "queued",
+            "processing",
+            "completed",
+            "failed"
+          ]
+        },
+        "spriteAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "updatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        }
+      }
+    },
+    "CatalogSearchResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "total",
+        "limit",
+        "offset"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogItem"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "query": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "categorySlug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 120
+        },
+        "sort": {
+          "type": "string",
+          "enum": [
+            "newest",
+            "price_asc",
+            "price_desc",
+            "name_asc"
+          ]
+        }
+      }
+    },
+    "CategoryListResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "categories"
+      ],
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProductCategory"
+          }
+        }
+      }
+    },
+    "CartItemInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "productId",
+        "quantity",
+        "selected"
+      ],
+      "properties": {
+        "productId": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "selectedColors": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "common.schema.json#/$defs/HexColor"
+          },
+          "propertyNames": {
+            "$ref": "common.schema.json#/$defs/MeshId"
+          }
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "selected": {
+          "type": "boolean"
+        }
+      }
+    },
+    "CartUpsertRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/CartItemInput"
+          }
+        }
+      }
+    },
+    "CartItemSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "productId",
+        "productName",
+        "price",
+        "quantity",
+        "selected",
+        "productUpdatedAt",
+        "productProcessingStatus"
+      ],
+      "properties": {
+        "productId": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "productName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
+        },
+        "categories": {
+          "type": "array",
+          "default": [],
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/ProductCategory"
+          }
+        },
+        "selectedColors": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "common.schema.json#/$defs/HexColor"
+          },
+          "propertyNames": {
+            "$ref": "common.schema.json#/$defs/MeshId"
+          }
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "selected": {
+          "type": "boolean"
+        },
+        "productUpdatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        },
+        "productProcessingStatus": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "queued",
+            "processing",
+            "completed",
+            "failed"
+          ]
+        }
+      }
+    },
+    "CartTotals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selectedItemCount",
+        "selectedQuantity",
+        "selectedAmountCents",
+        "selectedSavingsCents",
+        "mixedCurrency"
+      ],
+      "properties": {
+        "selectedItemCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selectedQuantity": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "selectedAmountCents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selectedCompareAtAmountCents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selectedSavingsCents": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mixedCurrency": {
+          "type": "boolean"
+        }
+      }
+    },
+    "CartRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "items",
+        "totals",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/CartId"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/CartItemSnapshot"
+          }
+        },
+        "totals": {
+          "$ref": "#/$defs/CartTotals"
+        },
+        "createdAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        },
+        "updatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        }
+      }
+    },
+    "ProductDetailResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "description",
+        "price",
+        "informationSections",
+        "processingStatus",
+        "modelTier",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "common.schema.json#/$defs/ProductId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 180
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "price": {
+          "$ref": "#/$defs/ProductPrice"
+        },
+        "categories": {
+          "type": "array",
+          "default": [],
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/ProductCategory"
+          }
+        },
+        "informationSections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InformationSection"
+          }
+        },
+        "meshColorConfig": {
+          "$ref": "common.schema.json#/$defs/MeshColorConfig"
+        },
+        "processingStatus": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "queued",
+            "processing",
+            "completed",
+            "failed"
+          ]
+        },
+        "modelTier": {
+          "type": "string",
+          "enum": [
+            "low",
+            "high"
+          ]
+        },
+        "modelAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "modelUrl": {
+          "type": "string",
+          "pattern": "^/catalog/products/prod_[A-Za-z0-9][A-Za-z0-9_-]{7,63}/model\\?tier=(low|high)$"
+        },
+        "spriteAsset": {
+          "$ref": "common.schema.json#/$defs/ObjectRef"
+        },
+        "spriteUrl": {
+          "type": "string",
+          "pattern": "^/catalog/products/prod_[A-Za-z0-9][A-Za-z0-9_-]{7,63}/sprite$"
+        },
+        "updatedAt": {
+          "$ref": "common.schema.json#/$defs/IsoDateTime"
+        }
+      }
+    }
+  }
+}

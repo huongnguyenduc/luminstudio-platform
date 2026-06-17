@@ -15,6 +15,8 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
+const natsConnect = "CONNECT {\"verbose\":false,\"pedantic\":true,\"lang\":\"go\",\"version\":\"lumin-api-gateway\"}\r\n"
+
 type Checker struct {
 	postgres       *pgxpool.Pool
 	httpClient     *http.Client
@@ -56,6 +58,14 @@ func NewChecker(config Config) (*Checker, error) {
 
 func (checker *Checker) Close() {
 	checker.postgres.Close()
+}
+
+func (checker *Checker) Postgres() *pgxpool.Pool {
+	return checker.postgres
+}
+
+func (checker *Checker) MinIO() *minio.Client {
+	return checker.minio
 }
 
 func (checker *Checker) Check(ctx context.Context) error {
@@ -132,7 +142,7 @@ func (checker *Checker) checkNATS(ctx context.Context) error {
 	if !strings.HasPrefix(line, "INFO ") {
 		return fmt.Errorf("unexpected server greeting")
 	}
-	if _, err := connection.Write([]byte("PING\r\n")); err != nil {
+	if _, err := connection.Write([]byte(natsConnect + "PING\r\n")); err != nil {
 		return err
 	}
 	line, err = reader.ReadString('\n')

@@ -7,9 +7,9 @@
 | `apps/web-admin` | React + Vite | Product administration and asset upload UI |
 | `apps/mobile-flutter` | Flutter + BLoC | Customer catalog, 3D detail, and cart |
 | `services/api-gateway` | Go | Business API, persistence, storage coordination, and event publication |
-| `services/worker-3d` | Rust + C++ FFI | Mesh optimization, 360 rendering, and processed asset upload |
+| `services/worker-3d` | Rust | Mesh optimization, 360 rendering, and processed asset upload |
 | `packages/shared-types` | Protobuf/OpenAPI/JSON Schema | Versioned contracts shared across components |
-| `packages/third-party` | Native sources/metadata | Reviewed native dependencies such as meshoptimizer |
+| `packages/third-party` | Native sources/metadata | Reviewed native dependencies only when a selected story requires them |
 | `infra/k8s` | Kustomize/Kubernetes | Dev namespace resources and routing |
 | `infra/scripts` | Shell/automation | Repeatable local and CI operational commands |
 
@@ -23,8 +23,14 @@
   `rules_go` 0.61.1 with Go 1.26.4, and `rules_rust` 0.70.0 with Rust 1.95.0
   for the first executable service targets. The Web Admin uses
   `aspect_rules_js` 3.2.1 with Node.js 22.20.0 for its first executable React +
-  Vite target. Flutter rules must still be introduced before
-  `bazel build //...` becomes a repository-wide acceptance claim.
+  Vite target. The Flutter customer app now has a native Flutter Android/iOS
+  shell with `flutter analyze` and `flutter test` proof plus a Bazel test
+  boundary in `apps/mobile-flutter` that runs dependency resolution,
+  formatting, analysis, and tests from a copied temporary app directory.
+  Bazel tests inherit local CLI discovery environment and run without sandboxing
+  for Flutter until a hermetic Flutter toolchain is selected. The existing
+  Flutter customer commerce flow now has local iOS simulator proof through
+  `US-050`; production mobile release packaging remains deferred.
 
 ## Runtime Topology
 
@@ -49,6 +55,8 @@ Required platform services:
   local development routes such as `minio-dev.local` and `search-dev.local`.
 - The Go API proves connectivity to PostgreSQL, MinIO, NATS, and Meilisearch.
 - A repeatable NATS publish/subscribe smoke command passes.
+- MinIO administration and Meilisearch are reachable through local development
+  routes.
 
 Current proof is intentionally incremental: `US-001` covers the Go API build,
 tests, and operational health endpoint; `US-002` covers the Rust worker build,
@@ -67,9 +75,194 @@ namespace-local Service, and proves the existing health endpoint from inside an
 isolated K3d cluster. `US-011` adds required platform configuration and a
 separate readiness endpoint that checks PostgreSQL, MinIO, NATS, and
 Meilisearch, including failure propagation during a controlled NATS outage.
-These stories do not satisfy the complete Phase 1 acceptance contract above;
-storage buckets, external development routes, and publish/subscribe proof
-remain outstanding.
+`US-012` adds a repeatable in-cluster NATS publish/subscribe smoke proof through
+the namespace-local Service. `US-013` adds idempotent MinIO development buckets
+for source GLB assets, optimized GLB assets, and 360-degree sprite assets.
+`US-014` adds local Traefik host routes for MinIO administration and
+Meilisearch inspection. `US-015` adds Phase 2 shared product, asset, and event
+contract schemas. `US-016` adds the first Go API product validation and
+PostgreSQL product schema foundation without applying it to the live K3d
+database yet. `US-017` adds the first runtime admin product creation route on
+the Go API with unit and Bazel proof, without adding live K3d platform proof,
+uploads, event publication, search synchronization, worker behavior, auth, or
+UI. `US-018` and `US-019` add admin product read and full-replacement update
+routes. `US-020` wires product mutation event publication to NATS with unit and
+Bazel proof, without adding live K3d platform proof or search synchronization.
+`US-021` adds the first product search-sync consumer and Meilisearch document
+upsert path with unit and Bazel proof, without adding live K3d platform proof
+or customer search routes. `US-022` adds the first admin source GLB upload API,
+MinIO source object write, queued product source state, and
+`3d.task.created` event publication with unit and Bazel proof, without adding
+live K3d platform proof or worker processing. `US-023` adds the Rust worker
+task intake foundation for `3d.task.created`: v1 event parsing, validation,
+the `lumin.3d.task.created` subscription boundary, and source asset reader
+handoff, without adding live K3d platform proof, mesh optimization, rendering,
+processed uploads, or completion publication.
+`US-024` adds the first mesh optimization boundary through the pinned Rust
+`meshopt` crate. It parses supported GLB 2.0 triangle primitives, simplifies
+their index buffers, rebuilds a valid embedded binary buffer, preserves
+scene/node/material metadata, and verifies the supplied pet-tag fixture through
+Cargo and Bazel without adding renderer, storage, event, or runtime subscriber
+wiring.
+`US-025` selects Blender 4.5 LTS as the headless sprite renderer and proves a
+fixed 24-frame JPEG sprite sheet against the supplied GLB fixture without
+adding worker image packaging, storage upload, completion events, runtime task
+wiring, or live K3d proof.
+`US-026` wires the worker runtime processing boundary through source download,
+mesh optimization, Blender rendering, MinIO processed asset uploads, and
+`3d.task.completed` publication with unit and Bazel proof, without adding
+worker image packaging, live K3d deployment, retries, or API completion
+consumption.
+`US-027` adds the API completion consumer, which validates
+`3d.task.completed` and atomically records both processed asset references plus
+completed product state without adding live K3d proof or retry/dead-letter
+semantics.
+`US-028` packages the Rust worker as a local development image, deploys it to
+K3d, and proves one live processing path from API source upload through NATS,
+worker processing, MinIO processed uploads, completion publication, and API
+completion consumption without adding production image hardening,
+retry/dead-letter behavior, auth, UI, mobile, or customer catalog/search
+routes.
+`US-029` starts Phase 3 by exposing customer catalog/search HTTP routes through
+the Go API gateway. The routes query the derived Meilisearch `products` index
+and return v1 customer catalog item response shapes without adding Flutter UI,
+category taxonomy, sorting, signed object URLs, product detail, auth,
+retry/dead-letter behavior, or live K3d proof.
+`US-030` adds the first executable Flutter customer app shell for Android and
+iOS with Home, Category, and Cart tabs plus retained tab scroll and nested
+navigation state, without adding catalog API integration, search, 360-degree
+previews, product detail, cart persistence, Flutter Bazel rules, or live device
+proof.
+`US-031` adds Flutter catalog products API integration through the existing Go
+API `GET /catalog/products` boundary and renders Home tab product cards with
+loading, empty, and failure states, without adding search UI, category behavior,
+360-degree preview activation, product detail, cart persistence, Flutter Bazel
+rules, or live device proof.
+`US-032` adds Flutter catalog search UI integration through the existing Go API
+`GET /catalog/search?q=...` boundary and renders Home tab search loading,
+empty, failure/retry, clear, and result states, without adding category
+behavior, 360-degree preview activation, product detail, cart persistence,
+Flutter Bazel rules, or live device proof.
+`US-033` adds Flutter Home tab pagination for both catalog browsing and search
+results through the existing Go API `limit` and `offset` parameters, with
+append behavior, end-of-list messaging, and inline retry for incremental load
+failures, without adding category behavior, sorting controls, 360-degree
+preview activation, product detail, cart persistence, Flutter Bazel rules, or
+live device proof.
+`US-034` adds the first customer sprite asset access route,
+`GET /catalog/products/{id}/sprite`, through the Go API gateway. The route
+checks the authoritative PostgreSQL product row and streams only completed
+`lumin-360-sprites` JPEG assets from MinIO, without adding signed URLs, direct
+client storage access, Flutter preview activation, product detail, auth, or
+live K3d proof.
+`US-035` activates those sprite assets in the Flutter Home tab after a catalog
+card is at least 80% visible and idle for three seconds. Preview rendering
+still goes through the Go API sprite route and does not add direct storage
+access, signed URLs, product detail, cart persistence, Flutter Bazel rules, or
+live device proof.
+`US-036` starts Phase 4 product detail by adding
+`GET /catalog/products/{id}?tier=low|high` and
+`GET /catalog/products/{id}/model?tier=low|high` through the Go API gateway.
+The detail route returns seller-provided sections, mesh color configuration,
+sprite/model gateway routes, and the selected model asset after the API reads
+the authoritative PostgreSQL row. The model route streams completed low-tier
+optimized GLB output or high-tier source GLB bytes from MinIO without exposing
+direct storage access, signed URLs, Flutter viewer behavior, cart persistence,
+or live device proof.
+`US-037` connects the Flutter Home tab to the product-detail boundary. Catalog
+cards now open a detail screen that resolves a low/high model tier locally and
+requests product detail through the Go API repository/use-case boundary. The
+screen displays seller-provided sections, mesh color configuration, and
+gateway model/sprite route metadata while keeping direct storage/search/message
+access, interactive viewer behavior, cart persistence, Flutter Bazel rules,
+and live device proof deferred.
+`US-038` adds the first interactive Flutter product model viewer on that detail
+screen. The viewer consumes only the API gateway model route selected by the
+existing detail response and enables rotate/zoom controls through the chosen
+WebView-backed Flutter bridge, while keeping material editing, cart
+persistence, direct storage/search/message access, Flutter Bazel rules, and
+live device proof deferred.
+`US-039` adds customer material color selection to the same detail screen using
+the existing `meshColorConfig` response. Selection remains local Flutter state
+inside `ProductDetailCubit`, keeps direct storage/search/message access out of
+the app, and leaves cart persistence, Flutter Bazel rules, and live device
+proof deferred.
+`US-040` adds the first local Flutter cart persistence slice. Product Detail can
+add the selected product configuration to a local cart repository, and the Cart
+tab renders stored product identity, selected mesh colors, quantity, and
+selection state without introducing backend cart APIs, checkout, payment,
+inventory, direct storage/search/message access, Flutter Bazel rules, or live
+device proof.
+`US-041` adds a required display price contract to product drafts and records,
+propagates that price through the API-owned search/catalog/detail boundary, and
+lets the local Flutter cart calculate selected subtotal and savings from stored
+price snapshots without introducing checkout, payment, auth, inventory,
+backend cart APIs, direct storage/search/message access, Flutter Bazel rules,
+or live device proof.
+`US-042` adds the first category taxonomy and sorting API boundary. Product
+drafts and records can carry category slug/name pairs, the search-sync document
+stores category metadata plus filter slugs and sortable price amounts, and the
+Go API exposes `GET /catalog/categories` plus
+`GET /catalog/categories/{slug}/products` without introducing Flutter Category
+tab UI, checkout, payment, auth, inventory, backend cart APIs, direct
+storage/search/message access, Flutter Bazel rules, or live device proof.
+`US-043` connects the Flutter Category tab to those category routes through the
+existing repository/use-case boundary. The tab renders category selection,
+sorting, pagination, incremental retry, scroll-to-top, and existing product
+detail navigation without introducing checkout, payment, auth, inventory,
+backend cart APIs, direct storage/search/message access, Flutter Bazel rules,
+or live device proof.
+`US-044` adds the Flutter Bazel build and test boundary. The target validates
+the app with `flutter pub get`, formatting, analysis, and tests in a copied
+temporary directory, keeping generated Flutter files out of the source checkout
+and leaving checkout, payment, auth, inventory, production mobile release
+packaging, and live device proof deferred.
+`US-045` adds the first product workflow to the Web Admin shell. The React app
+calls `GET /admin/products` through the Go API boundary and renders product
+list loading, empty, failure/retry, and ready states without adding product
+create, edit, delete, source GLB upload, auth, direct platform access, or live
+backend proof.
+`US-046` adds the first product create workflow to the Web Admin shell. The
+React app posts v1 product drafts to `POST /admin/products`, validates the
+admin form before submit, renders inline success and failure states, and
+refreshes the list through `GET /admin/products` without adding edit, delete,
+source GLB upload, auth, direct platform access, backend contract changes, or
+live backend proof.
+`US-047` adds the first product edit workflow to the Web Admin shell. The React
+app hydrates the selected v1 product record into the draft form, submits
+full-replacement updates to `PUT /admin/products/{id}`, validates before
+submit, renders inline success and failure states, and refreshes the list
+through `GET /admin/products` without adding delete, source GLB upload, auth,
+direct platform access, backend contract changes, or live backend proof.
+`US-048` adds the first Web Admin source asset workflow. The selected product
+panel uploads one `.glb` file through the Go API
+`POST /admin/products/{id}/source-glb` route as multipart field `source`,
+validates file selection before submit, renders inline upload states, and
+refreshes the list through `GET /admin/products` without adding delete, auth,
+direct platform access, backend contract changes, signed object URLs, or live
+backend proof.
+`US-049` adds an isolated K3d live processed product catalog smoke. The proof
+uses the existing API and worker images with PostgreSQL, MinIO, NATS, and
+Meilisearch to process one uploaded GLB from admin creation through customer
+catalog/search/category/detail/sprite/model routes. The API now republishes
+`product.updated` after processing completion so the derived Meilisearch
+catalog document reflects completed processing state and sprite metadata.
+`US-050` adds local iOS simulator proof for the existing Flutter customer
+commerce flow against a live Go API gateway selected by
+`LUMIN_US050_API_BASE_URL`.
+`US-051` adds the first backend cart API foundation. The Go API persists
+anonymous cart snapshots in PostgreSQL behind `POST /cart`, `GET /cart/{id}`,
+and `PUT /cart/{id}`, validating requested products and selected colors against
+authoritative product rows while leaving Flutter integration, checkout,
+payment, auth, inventory, order fulfillment, and live platform proof deferred.
+`US-052` connects Flutter cart persistence to those Go API cart routes while
+keeping the server cart id and latest item snapshot in local preferences as a
+cache. Checkout, payment, auth, inventory, order fulfillment, and live platform
+proof remain deferred.
+`US-053` adds live iOS simulator and Go API proof for that backend cart sync
+path, including backend cart create, read, update, saved cart id, and fresh Cart
+tab hydration. Checkout, payment, auth, inventory, order fulfillment, signed
+URLs, and new cart contracts remain deferred.
 
 ## Boundary Rules
 
@@ -107,6 +300,7 @@ complete in the Harness matrix.
 
 - Go HTTP framework: Fiber or Gin.
 - Exact Bazel rules and pinned toolchains for Go, Rust, JavaScript, and Dart.
-- Headless renderer used for 360-degree sprite generation.
+- Production worker image packaging approach for the pinned Blender 4.5 LTS
+  runtime.
 - Flutter 3D viewer and JavaScript/native bridge implementation.
 - Event schema format and compatibility/versioning policy.

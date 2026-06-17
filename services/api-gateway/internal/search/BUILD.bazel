@@ -1,0 +1,29 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "search",
+    srcs = [
+        "catalog.go",
+        "model_assets.go",
+        "sprite_assets.go",
+        "sync.go",
+    ],
+    importpath = "lumin.studio/services/api-gateway/internal/search",
+    visibility = ["//services/api-gateway:__pkg__"],
+    deps = [
+        "//services/api-gateway/internal/product",
+        "@com_github_minio_minio_go_v7//:minio-go",
+    ],
+)
+
+go_test(
+    name = "search_test",
+    srcs = [
+        "catalog_test.go",
+        "sync_test.go",
+    ],
+    embed = [":search"],
+    deps = [
+        "//services/api-gateway/internal/product",
+    ],
+)
