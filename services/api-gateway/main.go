@@ -70,11 +70,13 @@ func run(getenv func(string) string) error {
 			checker,
 			product.NewHandler(productStore).
 				WithSourceAssetStore(product.NewMinIOSourceAssetStore(checker.MinIO())).
+				WithProductImageStore(product.NewMinIOProductImageStore(checker.MinIO())).
 				WithEventPublisher(eventPublisher),
 			search.NewHandler(search.NewMeilisearchSearcher(config.MeilisearchURL, config.MeilisearchKey, config.DependencyTimeout)).
 				WithCatalogProductReader(productStore).
 				WithSpriteAssetStore(search.NewMinIOSpriteAssetStore(checker.MinIO())).
-				WithModelAssetStore(search.NewMinIOModelAssetStore(checker.MinIO())),
+				WithModelAssetStore(search.NewMinIOModelAssetStore(checker.MinIO())).
+				WithProductImageStore(product.NewMinIOProductImageStore(checker.MinIO())),
 			cart.NewHandler(cartStore, productStore),
 		),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -96,12 +98,14 @@ func routes(readiness health.Readiness, productHandler product.Handler, searchHa
 	mux.HandleFunc("GET /admin/products/{id}", productHandler.GetProduct)
 	mux.HandleFunc("PUT /admin/products/{id}", productHandler.UpdateProduct)
 	mux.HandleFunc("POST /admin/products/{id}/source-glb", productHandler.UploadProductSource)
+	mux.HandleFunc("POST /admin/products/{id}/image", productHandler.UploadProductImage)
 	mux.HandleFunc("GET /catalog/categories", searchHandler.ListCatalogCategories)
 	mux.HandleFunc("GET /catalog/categories/{slug}/products", searchHandler.ListCategoryProducts)
 	mux.HandleFunc("GET /catalog/products", searchHandler.ListCatalogProducts)
 	mux.HandleFunc("GET /catalog/products/{id}", searchHandler.GetCatalogProductDetail)
 	mux.HandleFunc("GET /catalog/products/{id}/model", searchHandler.GetCatalogProductModel)
 	mux.HandleFunc("GET /catalog/products/{id}/sprite", searchHandler.GetCatalogProductSprite)
+	mux.HandleFunc("GET /catalog/products/{id}/image", searchHandler.GetCatalogProductImage)
 	mux.HandleFunc("GET /catalog/search", searchHandler.SearchCatalogProducts)
 	mux.HandleFunc("POST /cart", cartHandler.CreateCart)
 	mux.HandleFunc("GET /cart/{id}", cartHandler.GetCart)

@@ -40,6 +40,10 @@ type ModelAssetStore interface {
 	GetModelAsset(ctx context.Context, ref product.ObjectRef) (io.ReadCloser, error)
 }
 
+type ProductImageStore interface {
+	GetProductImage(ctx context.Context, productID string) (io.ReadCloser, product.ProductImageInfo, error)
+}
+
 type ProductSearchQuery struct {
 	Query        string
 	CategorySlug string
@@ -102,6 +106,7 @@ type Handler struct {
 	productReader CatalogProductReader
 	spriteAssets  SpriteAssetStore
 	modelAssets   ModelAssetStore
+	productImages ProductImageStore
 }
 
 func NewHandler(searcher ProductSearcher) Handler {
@@ -120,6 +125,11 @@ func (handler Handler) WithSpriteAssetStore(store SpriteAssetStore) Handler {
 
 func (handler Handler) WithModelAssetStore(store ModelAssetStore) Handler {
 	handler.modelAssets = store
+	return handler
+}
+
+func (handler Handler) WithProductImageStore(store ProductImageStore) Handler {
+	handler.productImages = store
 	return handler
 }
 
@@ -308,6 +318,48 @@ func (handler Handler) GetCatalogProductSprite(response http.ResponseWriter, req
 	}
 	if record.SpriteAsset.SizeBytes != nil {
 		response.Header().Set("Content-Length", strconv.FormatInt(*record.SpriteAsset.SizeBytes, 10))
+	}
+	response.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(response, asset); err != nil {
+		return
+	}
+}
+
+func (handler Handler) GetCatalogProductImage(response http.ResponseWriter, request *http.Request) {
+	if handler.productImages == nil {
+		writeError(response, http.StatusServiceUnavailable, "catalog product images are not configured")
+		return
+	}
+
+	id := request.PathValue("id")
+	if !product.ValidProductID(id) {
+		writeError(response, http.StatusBadRequest, "id must match the v1 product id contract")
+		return
+	}
+
+	asset, info, err := handler.productImages.GetProductImage(request.Context(), id)
+	if err != nil {
+		if errors.Is(err, product.ErrProductImageNotFound) {
+			writeError(response, http.StatusNotFound, "product image not found")
+			return
+		}
+		writeError(response, http.StatusBadGateway, "could not read product image")
+		return
+	}
+	defer asset.Close()
+
+	contentType := info.ContentType
+	if contentType == "" {
+		contentType = "image/webp"
+	}
+	setAssetCORS(response)
+	response.Header().Set("Content-Type", contentType)
+	response.Header().Set("Cache-Control", "public, max-age=300")
+	if info.ETag != "" {
+		response.Header().Set("ETag", info.ETag)
+	}
+	if info.Size > 0 {
+		response.Header().Set("Content-Length", strconv.FormatInt(info.Size, 10))
 	}
 	response.WriteHeader(http.StatusOK)
 	if _, err := io.Copy(response, asset); err != nil {

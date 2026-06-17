@@ -16,6 +16,7 @@ import (
 
 const maxProductDraftBytes = 1 << 20
 const maxSourceGLBBytes = 200 << 20
+const maxProductImageBytes = 10 << 20
 
 type Creator interface {
 	InsertProduct(ctx context.Context, id string, draft ProductDraft, now time.Time) (ProductRecord, error)
@@ -45,9 +46,14 @@ type SourceAssetStore interface {
 	PutSourceAsset(ctx context.Context, productID string, source io.Reader, sizeBytes int64) (ObjectRef, error)
 }
 
+type ProductImageStore interface {
+	PutProductImage(ctx context.Context, productID string, source io.Reader, sizeBytes int64, contentType string) (ObjectRef, error)
+}
+
 type Handler struct {
 	repository     Repository
 	sourceAssets   SourceAssetStore
+	productImages  ProductImageStore
 	eventPublisher EventPublisher
 	now            func() time.Time
 	newID          func() (string, error)
@@ -74,6 +80,11 @@ func (handler Handler) WithEventPublisher(publisher EventPublisher) Handler {
 
 func (handler Handler) WithSourceAssetStore(store SourceAssetStore) Handler {
 	handler.sourceAssets = store
+	return handler
+}
+
+func (handler Handler) WithProductImageStore(store ProductImageStore) Handler {
+	handler.productImages = store
 	return handler
 }
 
@@ -221,6 +232,59 @@ func (handler Handler) UploadProductSource(response http.ResponseWriter, request
 	}
 
 	writeJSON(response, http.StatusAccepted, record)
+}
+
+func (handler Handler) UploadProductImage(response http.ResponseWriter, request *http.Request) {
+	if handler.repository == nil {
+		writeError(response, http.StatusServiceUnavailable, "product persistence is not configured")
+		return
+	}
+	if handler.productImages == nil {
+		writeError(response, http.StatusServiceUnavailable, "product image storage is not configured")
+		return
+	}
+
+	id := request.PathValue("id")
+	if !productIDPattern.MatchString(id) {
+		writeError(response, http.StatusBadRequest, "id must match the v1 product id contract")
+		return
+	}
+	if _, err := handler.repository.GetProduct(request.Context(), id); err != nil {
+		if errors.Is(err, ErrProductNotFound) {
+			writeError(response, http.StatusNotFound, "product not found")
+			return
+		}
+		writeError(response, http.StatusInternalServerError, "could not read product")
+		return
+	}
+
+	request.Body = http.MaxBytesReader(response, request.Body, maxProductImageBytes)
+	if err := request.ParseMultipartForm(1 << 20); err != nil {
+		writeError(response, http.StatusBadRequest, "request body must be multipart/form-data with an image file")
+		return
+	}
+	file, header, err := request.FormFile("image")
+	if err != nil {
+		writeError(response, http.StatusBadRequest, "image file is required")
+		return
+	}
+	defer file.Close()
+	if header.Size <= 0 {
+		writeError(response, http.StatusBadRequest, "image file must not be empty")
+		return
+	}
+	if !strings.HasSuffix(strings.ToLower(header.Filename), ".webp") {
+		writeError(response, http.StatusBadRequest, "image filename must end with .webp")
+		return
+	}
+
+	imageAsset, err := handler.productImages.PutProductImage(request.Context(), id, file, header.Size, "image/webp")
+	if err != nil {
+		writeError(response, http.StatusBadGateway, "could not store product image")
+		return
+	}
+
+	writeJSON(response, http.StatusAccepted, imageAsset)
 }
 
 func (handler Handler) GetProduct(response http.ResponseWriter, request *http.Request) {

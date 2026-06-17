@@ -172,7 +172,7 @@ func NewTaskCreatedEvent(eventID, correlationID, taskID string, record ProductRe
 			TaskID:          taskID,
 			ProductID:       record.ID,
 			SourceAsset:     *record.SourceAsset,
-			MeshColorConfig: record.MeshColorConfig,
+			MeshColorConfig: record.MeshColorConfig.withoutLabels(),
 		},
 	}, nil
 }

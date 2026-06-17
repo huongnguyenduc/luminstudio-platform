@@ -32,3 +32,4 @@ spec:
               mc mb --ignore-existing dev-minio/lumin-source-glb
               mc mb --ignore-existing dev-minio/lumin-optimized-glb
               mc mb --ignore-existing dev-minio/lumin-360-sprites
+              mc mb --ignore-existing dev-minio/lumin-product-images

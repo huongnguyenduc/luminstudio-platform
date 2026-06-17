@@ -269,6 +269,24 @@ func (config MeshColorConfig) validate() error {
 	return nil
 }
 
+// withoutLabels returns a copy carrying only the fields the 3d.task.created
+// event contract exposes to the worker (default + allowed). The worker decodes
+// mesh color options with deny_unknown_fields, so display-only labels must not
+// leak into the event even though they are stored on the product record.
+func (config MeshColorConfig) withoutLabels() MeshColorConfig {
+	if config == nil {
+		return nil
+	}
+	stripped := make(MeshColorConfig, len(config))
+	for meshID, option := range config {
+		stripped[meshID] = MeshColorOption{
+			Default: option.Default,
+			Allowed: option.Allowed,
+		}
+	}
+	return stripped
+}
+
 func (ref ObjectRef) validate() error {
 	if _, ok := validBuckets[ref.Bucket]; !ok {
 		return errors.New("bucket must be one of the v1 asset buckets")

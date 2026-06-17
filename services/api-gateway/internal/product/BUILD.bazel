@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "events.go",
         "handler.go",
+        "image_assets.go",
         "model.go",
         "source_assets.go",
         "store.go",
