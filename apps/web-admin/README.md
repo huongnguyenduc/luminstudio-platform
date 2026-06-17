@@ -1,39 +1,47 @@
 # Web Admin
 
-React + Vite administration surface for product CRUD, GLB upload, mesh color
-configuration, and dynamic product information sections.
+The React + Vite administration surface for Lumin Studio. Merchants use it to
+author products and upload the 3D source models that drive the customer catalog.
+Every read and write goes through the Go API gateway — the admin app never
+touches infrastructure directly.
 
-Phase 1 provides the executable React + Vite shell, native checks, and Bazel
-build/test targets. `US-045` adds the first product workflow: a read-only
-product list loaded from the Go API `GET /admin/products` boundary with
-loading, empty, failure, and ready states. `US-046` adds product creation
-through the Go API `POST /admin/products` boundary with client-side validation,
-submitting, success, and failure states. `US-047` adds product editing through
-the Go API `PUT /admin/products/{id}` boundary with hydrated draft values,
-client-side validation, submitting, success, and failure states. `US-048` adds
-source `.glb` upload for selected products through the Go API
-`POST /admin/products/{id}/source-glb` boundary with file validation, uploading,
-success, and failure states.
+## Features
 
-Native verification:
+- **Product list** — read-only catalog loaded from `GET /admin/products`, with
+  loading, empty, failure, and ready states.
+- **Create & edit** — product authoring through `POST /admin/products` and
+  `PUT /admin/products/{id}`, with hydrated draft values, client-side
+  validation, and submitting/success/failure states.
+- **Source GLB upload** — upload a product's source `.glb` through
+  `POST /admin/products/{id}/source-glb` to trigger 3D processing, with file
+  validation and uploading/success/failure states.
+- **Mesh color configuration** and dynamic product information sections.
+
+## Development
 
 ```bash
+# Install dependencies (from the repository root)
+pnpm install
+
+# Run the dev server, unit tests, and production build
+pnpm --dir apps/web-admin dev
 pnpm --dir apps/web-admin test
 pnpm --dir apps/web-admin build
 ```
 
-Bazel verification:
+The app talks to the Go gateway; point it at a running API during local
+development (see the root [README](../../README.md#run-the-local-platform)).
+
+## Verification
 
 ```bash
-bazelisk test //apps/web-admin/...
-bazelisk build //apps/web-admin:web-admin
-```
+# Bazel build & test
+bazel test //apps/web-admin/...
+bazel build //apps/web-admin:web-admin
 
-Story verification:
-
-```bash
-bash scripts/verify-us-045.sh
-bash scripts/verify-us-046.sh
-bash scripts/verify-us-047.sh
-bash scripts/verify-us-048.sh
+# Story verification (from the repository root)
+bash scripts/verify-us-045.sh   # product list
+bash scripts/verify-us-046.sh   # product creation
+bash scripts/verify-us-047.sh   # product editing
+bash scripts/verify-us-048.sh   # source GLB upload
 ```
